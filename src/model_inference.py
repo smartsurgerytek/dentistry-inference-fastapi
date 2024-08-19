@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 import json
-def plot_yolo_result(result: 'ultralytics.YOLOResult', image: np.ndarray, plot_setting: dict) -> None:
+def plot_yolo_results(results: 'ultralytics.YOLOResult', image: np.ndarray, plot_setting: dict) -> None:
     """
     Plots the YOLO detection results on an input image with customizable settings.
 
@@ -28,12 +28,13 @@ def plot_yolo_result(result: 'ultralytics.YOLOResult', image: np.ndarray, plot_s
     line_type = plot_setting['line_type']  # Line type
     color_dict= plot_setting['color_dict']
 
-    # 獲取類別名稱
-    class_names = result.names
-    class_name_list=[]
+
 
     # 處理結果
     for result in results:
+        # 獲取類別名稱
+        class_names = result.names
+        class_name_list=[]        
         boxes = result.boxes  # Boxes object for bbox outputs
         masks = result.masks  # Masks object for segmentation masks outputs
         
@@ -87,7 +88,6 @@ if __name__ == '__main__':
     model = YOLO('./dentistry_yolov8n_20240807_all.pt')
 
     results=model(image)
-    result=results[0]
 
     with open('./conf/mask_color_setting.json', 'r') as file:
         color_dict = json.load(file)
@@ -99,4 +99,4 @@ if __name__ == '__main__':
         'line_type':cv2.LINE_AA,
     }
     
-    plot_yolo_result(result, image, plot_setting)
+    plot_yolo_results(result, image, plot_setting)
