@@ -3,7 +3,7 @@ from ultralytics import YOLO
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-
+import json
 def plot_yolo_result(result: 'ultralytics.YOLOResult', image: np.ndarray, plot_setting: dict) -> None:
     """
     Plots the YOLO detection results on an input image with customizable settings.
@@ -61,7 +61,7 @@ def plot_yolo_result(result: 'ultralytics.YOLOResult', image: np.ndarray, plot_s
                 mask_colored = np.zeros((mask_binary.shape[0], mask_binary.shape[1], 3), dtype=np.uint8)
 
                 if class_name != 'Background':# background label is no needing
-                    mask_colored[mask_binary == 255] = color_dict[class_id]
+                    mask_colored[mask_binary == 255] = color_dict[str(class_id)]
                     
                     # Overlay the colored mask
                     plot_image = cv2.addWeighted(plot_image, 1, mask_colored, 0.8, 0)
@@ -85,25 +85,14 @@ if __name__ == '__main__':
     image = cv2.imread(image_path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     model = YOLO('./dentistry_yolov8n_20240807_all.pt')
+
     results=model(image)
     result=results[0]
-    color_list = [
-        [0, 240, 255],
-        [65, 127, 0],
-        [0, 0, 255],
-        [113, 41, 29],
-        [122, 21, 135],
-        [0, 148, 242],
-        [4, 84, 234],
-        [0, 208, 178],
-        [52, 97, 148],
-        [121, 121, 121],
-        [212, 149, 27],
-        [206, 171, 255],
-        [110, 28, 216]
-    ]
+
+    with open('./conf/mask_color_setting.json', 'r') as file:
+        color_dict = json.load(file)
     plot_setting={
-        'color_dict':{i: color for i, color in enumerate(color_list)},
+        'color_dict':color_dict,
         'font_face':cv2.FONT_HERSHEY_SIMPLEX,
         'font_scale':1,
         'thickness':3,
