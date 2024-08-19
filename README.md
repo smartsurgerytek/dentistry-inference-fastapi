@@ -11,7 +11,7 @@ For the sake of convenience, the minimum requirement is a docstring in the main 
 
 Additionally, the class is NOT necessary, but ensure a well-structured arrangement of folders, as we are still in the early stages of development.
 
-Last, kindly provide your demonstrations in notebook folder.
+Last, kindly provide your demonstrations in the notebook folders.
 
 ## Docstring
 ```
@@ -43,7 +43,7 @@ If the condition over two or too long, be sure to split it into lines.
 ```
 
 
-## Nested IF-ElSE Using Not Probably
+## Nested IF-ElSE
 ```
 def apply_coupon(user, cart):
     if user.is_first_purchase:
