@@ -21,6 +21,7 @@ def plot_yolo_results(results: 'ultralytics.YOLOResult', image: np.ndarray, plot
     # 定義文本參數
     plot_image=image.copy()
 
+
     font_face = plot_setting['font_face']  # Font type
     font_scale = plot_setting['font_scale']  # Font size
     thickness = plot_setting['thickness']  # Text thickness
@@ -89,13 +90,6 @@ if __name__ == '__main__':
     results=model(image)
 
     with open('./conf/mask_color_setting.json', 'r') as file:
-        color_dict = json.load(file)
-    plot_setting={
-        'color_dict':color_dict,
-        'font_face':cv2.FONT_HERSHEY_SIMPLEX,
-        'font_scale':1,
-        'thickness':3,
-        'line_type':cv2.LINE_AA,
-    }
-    
-    plot_yolo_results(result, image, plot_setting)
+        plot_setting = json.load(file)
+
+    plot_yolo_results(results, image, plot_setting)
