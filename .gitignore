@@ -1,0 +1,9 @@
+output/
+models/
+inference/
+data/pics/AI
+data/pics/Mask
+data/pics/output
+data/pics/try
+data/pics/test
+data/pics/processed
