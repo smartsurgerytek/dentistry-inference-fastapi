@@ -11,7 +11,7 @@ For the sake of convenience, the minimum requirement is a docstring in the main 
 
 Additionally, the class is NOT necessary, but ensure a well-structured arrangement of folders, as we are still in the early stages of development.
 
-Last, kindly provide your demonstrations in the notebook folders.
+Last, kindly provide your demonstrations in the notebooks folder.
 
 ## Docstring
 ```
