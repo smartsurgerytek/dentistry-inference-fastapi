@@ -17,10 +17,24 @@ diseases: Ground rules, clarifications and “gray zones”
 Some of observation are given as follows and we hope to clarify and to verify by such the computer vision approaches. 
 
 ## time-based stage (current running)
-We will sort the data by phase of pathology into different stages like I, II, III(IV).
-So far our main goal is to get the time-based stage by the attachment loss (bone loss) from the periapical films.
 
-### the segmentation of dental components
+Our main goal is to get the time-based stage by the attachment loss (bone loss) from the periapical films.
+
+The distance between the cemento-enamel junction (CEJ) and the alveolar bone level (bone) being <1.5–2 mm indicates a normal tooth, and there is no need to classify periodontal disease so that is can be sorted of "zero" stage. 
+
+A distance of ≥2.0 mm between the CEJ and the bone is considered indicative of periodontal disease, and further classification is required.
+We will sort the data by phase of pathology into different stages like I, II, III(IV).
+
+**Zero**: the cemento-enamel junction (CEJ) and the alveolar bone level (bone) being <1.5–2 mm
+
+**I**: bone loss < 15%
+
+**II**: bone loss ≥ 15% and <33%
+
+**III** bone loss ≥ 33%
+
+
+### the segmentation of dental components 
 The dental components are segmented by the machine learning approach. 
 
 By such the segmentation, the dental components are segmented into the following components: 
@@ -55,3 +69,12 @@ We aim to enhance the efficiency and convenience of dental workflows by implemen
 
 ## patient-based stage
 My understanding is the observation is based on the patient's properties such as age, gender, smoking status, etc. It means the image is not the only factor to determine the periodontitis. The way to implement this is to use the patient's medical history and other factors (The score of periodontal from image presumably) is trees-model approach such as Random Forest, XGBoost, LGBM are desirable.
+
+
+# DATA aviability
+check in our google cloud:
+https://drive.google.com/drive/u/0/folders/1pVjfbgGWWcPv0x4HVd1HNvlm8Fwi5VNg
+
+300.rar: contains dental position in remark.png and excel report.
+raw_data_pytorch_4.34: contains raw data in our annotations labels and images.
+split_data_pytorch_4.34: contains  training and validations in CoCo dataset format.
