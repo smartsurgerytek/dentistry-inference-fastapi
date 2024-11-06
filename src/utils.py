@@ -3,6 +3,36 @@ import cv2
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+
+def show_two(img1, img2, title1="Image 1", title2="Image 2"):
+    """
+    顯示兩張圖像並設定標題
+    
+    參數:
+    - img1: 第一張圖像
+    - img2: 第二張圖像
+    - title1: 第一張圖像的標題
+    - title2: 第二張圖像的標題
+    """
+    # 檢查圖像是否為灰階，若是則轉換成 RGB 以便 matplotlib 正確顯示
+    if len(img1.shape) == 2:
+        img1 = cv2.cvtColor(img1, cv2.COLOR_GRAY2RGB)
+    if len(img2.shape) == 2:
+        img2 = cv2.cvtColor(img2, cv2.COLOR_GRAY2RGB)
+
+    # 使用 matplotlib 顯示兩張圖像
+    plt.figure(figsize=(10, 5))
+    plt.subplot(1, 2, 1)
+    plt.imshow(img1)
+    plt.title(title1)
+    plt.axis("off")  # 關閉坐標軸
+
+    plt.subplot(1, 2, 2)
+    plt.imshow(img2)
+    plt.title(title2)
+    plt.axis("off")  # 關閉坐標軸
+
+    plt.show()
 def show_plot(image):
     """
     顯示圖片並顯示滑鼠當前指向的 XY 座標
@@ -213,10 +243,6 @@ def extract_features(binary_images, original_img):
     for key in key_color_mapping.keys():
         if binary_images.get(key) is not None:
             overlay[binary_images[key] > 0] = key_color_mapping[key]
-    # overlay[binary_images["dental_crown"] > 0] = (163, 118, 158)  # 將 dental_crown 顯示
-    # overlay[binary_images["dentin"] > 0] = (117, 122, 152)  # 將 dentin 顯示
-    # overlay[binary_images['gum'] > 0] = (0, 177, 177)  # 將 dentin 顯示
-    # overlay[binary_images['crown'] > 0] = (255, 0, 128) # 將 crown 顯示
 
     # 回傳疊加後的影像和線條影像
     return overlay, line_image, non_masked_area

@@ -35,6 +35,7 @@ def locate_points_with_dental_crown(dental_crown_bin, dilated_mask, mid_x, mid_y
     # 獲取每個獨立 mask 與原始 mask 的交集區域
     #breakpoint()
     intersection = cv2.bitwise_and(dental_crown_bin, dilated_mask)
+
     overlay[intersection > 0] = (255, 0, 0)  # 將 dentin 顯示
     # 取得交集區域的 contour 作為交點
     contours, _ = cv2.findContours(intersection, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -383,8 +384,8 @@ def draw_image_and_print_information(prediction, image_for_drawing, line_image):
         print("None Detected. Not drawing line.")
 
 if __name__ == '__main__':
-    image=cv2.imread('./raw_12.png')
-    model=YOLO('./dentistry_yolov8n_20240807_all.pt')
+    image=cv2.imread('./data/pics/raw_12.png')
+    model=YOLO('./model/dentistry_yolov11x-seg_4.42.pt')
     results=model.predict(image)
     result=results[0]
 
@@ -420,7 +421,7 @@ if __name__ == '__main__':
         if np.sum(mask_binary) == 0:
             continue
 
-    _, binary_img = cv2.threshold(image, 128, 255, cv2.THRESH_BINARY)
+    #_, binary_img = cv2.threshold(image, 128, 255, cv2.THRESH_BINARY)
     
     denti_measure_names_map={
         'Alveolar_bone': 'gum',
@@ -432,10 +433,26 @@ if __name__ == '__main__':
 
     masks_dict = {denti_measure_names_map.get(k, k): v for k, v in masks_dict.items()}
 
-    #dentin=
+    #dentin=dentin+pulp+restoration
     for key in ['Pulp','Restoration']:
-        masks_dict['dentin']=np.maximum(masks_dict['dentin'], masks_dict[key])
-
+        if masks_dict.get(key) is not None:
+            masks_dict['dentin']=np.maximum(masks_dict['dentin'], masks_dict[key]) # find the union
+            
+    dental_contours=np.maximum(masks_dict['dentin'], masks_dict['dental_crown'])
+ 
+    kernel = np.ones((30,30), np.uint8)
+    filled = cv2.morphologyEx(dental_contours, cv2.MORPH_CLOSE, kernel)
+    # contours, _ = cv2.findContours(dental_contours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # # 創建空白圖像
+    # filled = np.zeros_like(dental_contours)
+    # # 填充所有輪廓
+    # cv2.drawContours(filled, contours, -1, (255,255,255), -1)
+    filled=cv2.bitwise_and(filled, cv2.bitwise_not(masks_dict['dental_crown']))
+    # kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    # filled = cv2.morphologyEx(filled, cv2.MORPH_OPEN, kernel)
+    masks_dict['dentin']=filled
+    
+    
     overlay, line_image, non_masked_area= extract_features(masks_dict, image) # 處理繪圖用圖片等特徵處理後圖片
 
     num_labels, labels = cv2.connectedComponents(masks_dict['dentin']) # 取得分割開的 dentin , num_labels 表示 labels 數量， labels 則是分割對應
