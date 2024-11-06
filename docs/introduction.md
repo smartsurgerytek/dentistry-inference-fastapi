@@ -18,14 +18,16 @@ Some of observation are given as follows and we hope to clarify and to verify by
 
 ## time-based stage (current running)
 
+the preiapical size: 31mm x 41mm or 31mm x 41mm
+
 Our main goal is to get the time-based stage by the attachment loss (bone loss) from the periapical films.
 
-The distance between the cemento-enamel junction (CEJ) and the alveolar bone level (bone) being <1.5–2 mm indicates a normal tooth, and there is no need to classify periodontal disease so that is can be sorted of "zero" stage. 
+The distance between the cemento-enamel junction (CEJ) and the alveolar bone level (bone) being <2 mm indicates a normal tooth, and there is no need to classify periodontal disease so that is can be sorted of "zero" stage. 
 
 A distance of ≥2.0 mm between the CEJ and the bone is considered indicative of periodontal disease, and further classification is required.
 We will sort the data by phase of pathology into different stages like I, II, III(IV).
 
-**Zero**: the cemento-enamel junction (CEJ) and the alveolar bone level (bone) being <1.5–2 mm
+**Zero**: the cemento-enamel junction (CEJ) and the alveolar bone level (bone) being < 2 mm
 
 **I**: bone loss < 15%
 
