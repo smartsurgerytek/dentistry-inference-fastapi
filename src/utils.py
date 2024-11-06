@@ -69,6 +69,11 @@ def calculate_distance(row_true, row_cleaned):
     cleaned_values = np.array([row_cleaned['enamel_x_predicted'], row_cleaned['enamel_y_predicted']])
     return np.linalg.norm(true_values - cleaned_values)
 
+def calculate_distance_with_scale(p1,p2,scale_x,scale_y):
+    p1_array = np.array([p1[0]*scale_x, p1[1]*scale_y])
+    p2_array = np.array([p2[0]*scale_x, p2[1]*scale_y])
+    return np.linalg.norm(p1_array - p2_array)
+    
 # 根據 mask 判斷轉正使用的旋轉角度
 def get_rotation_angle(mask):
     # 找輪廓
@@ -224,7 +229,7 @@ def get_mid_point(image, dilated_mask, idx):
         mid_point = np.mean(non_zero_points, axis=0).astype(int)
         mid_y, mid_x = mid_point
         # 在繪製用圖片標註 dentin 中心點及對應數字標籤
-        cv2.putText(image, str(idx), (mid_x-5, mid_y-5), cv2.FONT_HERSHEY_SIMPLEX,1, (255, 255, 0), 1, cv2.LINE_AA)
+        #cv2.putText(image, str(idx), (mid_x-5, mid_y-5), cv2.FONT_HERSHEY_SIMPLEX,1, (255, 255, 0), 1, cv2.LINE_AA)
         cv2.circle(image, (mid_x, mid_y), 5, (255, 255, 0), -1)  # 黃色圓點
     return mid_y, mid_x
 
@@ -539,15 +544,43 @@ def draw_point(prediction, image_for_drawing):
     return image_for_drawing
 
 def draw_line(prediction, line_image):
+    #font size setting
+    font = cv2.FONT_HERSHEY_SIMPLEX  # Font type
+    font_scale = 1  # Font scale (size)
+    thickness = 2  # Thickness of the text
+    line_type = cv2.LINE_AA  # Anti-aliased line type for smooth text    
+    
     w, h = line_image.shape[:2]
     w_threshold = w / 10
     
+    if w<h:
+        scale_w, scale_h= (31/w, 41/h)
+    else:
+        scale_w, scale_h= (41/w, 31/h)
+        
     # Define line pairs and their corresponding colors
     line_pairs = [
         (("enamel_left", "dentin_left", (0, 0, 255)), ("enamel_left", "gum_left", (0, 255, 255))),
         (("enamel_right", "dentin_right", (0, 0, 255)), ("enamel_right", "gum_right", (0, 255, 255)))
     ]
-    
+
+    def draw_line_and_text(line_image, p1, p2, color, text_position):
+        cv2.line(line_image, p1, p2, color, 2)  # Draw enamel -> dentin line
+        length=calculate_distance_with_scale(p1, p2, scale_w, scale_h)
+        cv2.putText(line_image, f'{length:.2f} mm', text_position, font, font_scale, color, thickness, line_type)
+        return length
+    def determine_stage_text(length, length2):
+        stage_text="Stage III"
+        ratio=length/length2
+        print(ratio)
+        if ratio < 0.15 and length < 2:
+            stage_text = "Stage 0"
+        elif ratio < 0.15:
+            stage_text = "Stage I"
+        elif ratio <= 0.33:
+            stage_text = "Stage II"
+        return stage_text 
+                
     # Iterate through the line pairs and draw lines
     for (start, end, color), (start2, end2, color2) in line_pairs:
         # Fetch the coordinates from the prediction
@@ -562,9 +595,14 @@ def draw_line(prediction, line_image):
         
         # Check if all points are valid and within the threshold range
         if valid_point_check and not_boundary_point_check:
-            cv2.line(line_image, p1, p2, color, 2)  # Draw enamel -> dentin line
-            cv2.line(line_image, p3, p4, color2, 2)  # Draw enamel -> gum line
-
+            length=draw_line_and_text(line_image, p1, p2, color, text_position=p2)
+            length2=draw_line_and_text(line_image, p3, p4, color2, text_position=p3)
+            stage_text=determine_stage_text(length2, length)
+            enamel_denti_mid_position=((p1[0]+p2[0])//2,(p1[1]+p2[1])//2)
+            cv2.putText(line_image, stage_text, enamel_denti_mid_position, font, font_scale, (255, 255, 0), thickness, line_type)
+            #breakpoint()
+        #show_plot(line_image)
+        #breakpoint()
     return line_image
 
         
