@@ -168,6 +168,11 @@ if __name__ == '__main__':
         prediction["dentin_id"] = None
         predictions.append(prediction)
         print(f"Tooth {i}")
-        draw_image_and_print_information(prediction, image_for_drawing, line_image)    
+        image_for_drawing=draw_point(prediction, image_for_drawing)
+        image_for_drawing=draw_line(prediction, image_for_drawing)
+            
     show_two(overlay,image_for_drawing)
     breakpoint()
+    #for prediction in predictions:
+        
+    #polt for labels

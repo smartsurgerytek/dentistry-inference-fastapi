@@ -517,42 +517,54 @@ def combine_masks(binary_images):
     return combined_mask
 
 
-def draw_image_and_print_information(prediction, image_for_drawing, line_image):
-    # 繪圖及印出資訊
-    print("Mid Points : ", prediction["mid"])
-    print("enamel_left : ", prediction["enamel_left"])
-    print("enamel_right : ", prediction["enamel_right"])
-    print("gum_left : ", prediction["gum_left"])
-    print("gum_right : ", prediction["gum_right"])
-    print("dentin_left : ", prediction["dentin_left"])
-    print("dentin_right : ", prediction["dentin_right"])
-    cv2.circle(image_for_drawing, prediction["enamel_left"], 5, (0, 0, 255), -1)
-    cv2.circle(image_for_drawing, prediction["enamel_right"], 5, (0, 0, 255), -1)
-    cv2.circle(image_for_drawing, prediction["gum_left"], 5, (0, 255, 0), -1)
-    cv2.circle(image_for_drawing, prediction["gum_right"], 5, (0, 255, 0), -1)
-    cv2.circle(image_for_drawing, prediction["dentin_left"], 5, (255, 0, 0), -1)
-    cv2.circle(image_for_drawing, prediction["dentin_right"], 5, (255, 0, 0), -1)
-    # Draw lines between points
-    print("e_l -> d_l : ", prediction["enamel_left"], prediction["dentin_left"])
-    if (prediction["enamel_left"][0] is not None) and (prediction["dentin_left"] is not None):
-        cv2.line(line_image, prediction["enamel_left"], prediction["dentin_left"], (0, 0, 255), 2)
-    else:
-        print("None Detected. Not drawing line.")
-        
-    print("e_l -> g_l : ", prediction["enamel_left"], prediction["gum_left"])
-    if (prediction["enamel_left"][0] is not None) and (prediction["gum_left"][0] is not None):
-        cv2.line(line_image, prediction["enamel_left"], prediction["gum_left"], (0, 255, 255), 2)
-    else:
-        print("None Detected. Not drawing line.")
-        
-    print("e_r -> d_r : ", prediction["enamel_right"], prediction["dentin_right"])
-    if (prediction["enamel_right"][0] is not None) and (prediction["dentin_right"] is not None):
-        cv2.line(line_image, prediction["enamel_right"], prediction["dentin_right"], (0, 0, 255), 2)
-    else:
-        print("None Detected. Not drawing line.")
+def draw_point(prediction, image_for_drawing):
+    # 定義點的顏色
+    points = {
+        "enamel_left": (0, 0, 255),
+        "enamel_right": (0, 0, 255),
+        "gum_left": (0, 255, 0),
+        "gum_right": (0, 255, 0),
+        "dentin_left": (255, 0, 0),
+        "dentin_right": (255, 0, 0)
+    }
     
-    print("e_r -> g_r : ", prediction["enamel_right"], prediction["gum_right"])
-    if (prediction["enamel_right"][0] is not None) and (prediction["gum_right"][0] is not None):
-        cv2.line(line_image, prediction["enamel_right"], prediction["gum_right"], (0, 255, 255), 2)
-    else:
-        print("None Detected. Not drawing line.")
+    # 印出所有點資訊
+    for key, color in points.items():
+        print(f"{key} : ", prediction[key])
+        cv2.circle(image_for_drawing, prediction[key], 5, color, -1)
+    
+    # 印出 Mid Points
+    print("Mid Points : ", prediction["mid"])
+    
+    return image_for_drawing
+
+def draw_line(prediction, line_image):
+    w, h = line_image.shape[:2]
+    w_threshold = w / 10
+    
+    # Define line pairs and their corresponding colors
+    line_pairs = [
+        (("enamel_left", "dentin_left", (0, 0, 255)), ("enamel_left", "gum_left", (0, 255, 255))),
+        (("enamel_right", "dentin_right", (0, 0, 255)), ("enamel_right", "gum_right", (0, 255, 255)))
+    ]
+    
+    # Iterate through the line pairs and draw lines
+    for (start, end, color), (start2, end2, color2) in line_pairs:
+        # Fetch the coordinates from the prediction
+        p1, p2, p3, p4 = (prediction.get(start), prediction.get(end),
+                          prediction.get(start2), prediction.get(end2))
+        
+        print(f"{start} -> {end}: {p1}, {p2}")
+        print(f"{start2} -> {end2}: {p3}, {p4}")
+        
+        valid_point_check=all(pt is not None for pt in [p1, p2, p3, p4])
+        not_boundary_point_check=all(w_threshold < pt[0] < w - w_threshold for pt in [p1, p2, p3, p4])
+        
+        # Check if all points are valid and within the threshold range
+        if valid_point_check and not_boundary_point_check:
+            cv2.line(line_image, p1, p2, color, 2)  # Draw enamel -> dentin line
+            cv2.line(line_image, p3, p4, color2, 2)  # Draw enamel -> gum line
+
+    return line_image
+
+        
