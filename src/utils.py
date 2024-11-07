@@ -590,8 +590,14 @@ def draw_line(prediction, line_image):
         print(f"{start} -> {end}: {p1}, {p2}")
         print(f"{start2} -> {end2}: {p3}, {p4}")
         
+
+        if any(pt is None or None in pt for pt in [p1, p2, p3, p4]):
+            continue
+        
         valid_point_check=all(pt is not None for pt in [p1, p2, p3, p4])
         not_boundary_point_check=all(w_threshold < pt[0] < w - w_threshold for pt in [p1, p2, p3, p4])
+        # Check if any of the points are None and skip this loop iteration if true
+
         
         # Check if all points are valid and within the threshold range
         if valid_point_check and not_boundary_point_check:

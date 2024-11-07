@@ -23,7 +23,7 @@ def extract_features(masks_dict, original_img):
     
     # 膨脹處理dentin
     dental_contours=np.maximum(masks_dict['dentin'], masks_dict['dental_crown'])    
-    kernel = np.ones((25,25), np.uint8)
+    kernel = np.ones((23,23), np.uint8)
     filled = cv2.morphologyEx(dental_contours, cv2.MORPH_CLOSE, kernel)
     filled=cv2.bitwise_and(filled, cv2.bitwise_not(masks_dict['dental_crown']))
     masks_dict['dentin']=filled
@@ -148,8 +148,13 @@ if __name__ == '__main__':
     for key in ['Pulp','Restoration']:
         if masks_dict.get(key) is not None:
             masks_dict['dentin']=cv2.bitwise_or(masks_dict['dentin'], masks_dict[key]) # find the union
-            
-    
+
+    #dental crown=caries+crown   
+    for key in ['Caries']:
+        if masks_dict.get(key) is not None:
+            masks_dict['dental_crown']=cv2.bitwise_or(masks_dict['dental_crown'], masks_dict[key])
+
+
     overlay, line_image, non_masked_area= extract_features(masks_dict, image) # 處理繪圖用圖片等特徵處理後圖片
 
     num_labels, labels = cv2.connectedComponents(masks_dict['dentin']) # 取得分割開的 dentin , num_labels 表示 labels 數量， labels 則是分割對應
