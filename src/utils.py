@@ -3,6 +3,8 @@ import cv2
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+import json
+
 PIXEL_THRESHOLD = 2000  # 設定閾值，僅保留像素數大於該值的區域
 AREA_THRESHOLD = 500 # 設定閾值，避免過小的分割區域
 DISTANCE_THRESHOLD = 250 # 定義距離閾值（例如：設定 10 為最大可接受距離）
@@ -611,4 +613,68 @@ def draw_line(prediction, line_image):
         #breakpoint()
     return line_image
 
+def remove_extension_name(filename):
+    base = os.path.splitext(filename)[0]
+    return base        
+
+def get_info_from_data(file_path):
+    """
+    从给定的文件路径中提取文件名、检查相关文件的存在性并加载数据。
+    """
+    if not os.path.isfile(file_path):
+        print('Please check whether file_path is valid')
+        return {}, np.array([]), False, ''
+
+    file_path_without_extension = remove_extension_name(file_path)
+    file_name = os.path.basename(file_path_without_extension)
+
+    if all(os.path.exists(file_path_without_extension + ext) for ext in ['.json', '.npy', '.png']):
+        label_info, raw_mask, files_loaded_successfully = load_image_and_mask(file_path_without_extension)
+        return label_info, raw_mask, files_loaded_successfully, file_name
+    else:
+        print(f'Either {file_path_without_extension}.npy or .json not existed')
+        return {}, np.array([]), False, file_name
+    
+def load_image_and_mask(file_path_without_extension):
+    """
+    Load image, label information, and mask data.
+
+    Return the loaded data along with a flag indicating whether the loading was successful.
+    """
+    label_info = {}
+    image = None
+    
+    def handle_load_error(e):
+        print(f"Error loading data: {e}")
+        return label_info, np.array([]), False
+
+    # Try to load the image using OpenCV
+    # try:
+    image = cv2.imread(file_path_without_extension + '.png')
+    # if image is None:
+    #     print("Image could not be loaded, try another method for fix utf8 encoding problem.")
+    # except (cv2.error, IOError) as e:
+    #     return handle_load_error(e)
+
+    # If the image still isn't loaded, try another method for paths with Chinese characters
+    if image is None:
+        try:
+            image = cv2.imdecode(np.fromfile(file=file_path_without_extension + '.png', dtype=np.uint8), cv2.IMREAD_COLOR)
+            if image is None:
+                raise ValueError("Image could not be loaded.")
+        except (IOError, ValueError) as e:
+            return handle_load_error(e)
+
+    # Initialize the mask with the correct dimensions
+    raw_mask = np.zeros((image.shape[0], image.shape[1]), dtype=np.uint8)
+
+    # Load the JSON file and the mask
+    try:
+        with open(file_path_without_extension + '.json', 'r') as f:
+            label_info = json.load(f)
         
+        raw_mask = np.load(file_path_without_extension + '.npy')
+    except (IOError, ValueError, json.JSONDecodeError) as e:
+        return handle_load_error(e)
+
+    return label_info, raw_mask, True
