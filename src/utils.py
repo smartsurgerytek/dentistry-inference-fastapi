@@ -64,6 +64,24 @@ def show_plot(image):
 
     # 顯示圖片
     plt.show()
+
+def draw_points_on_image(image, points, color=(255, 0, 0)):
+    # 確保圖像是BGR格式（OpenCV的默認格式）
+    #image = image.copy()
+
+    # 在圖像上畫一個紅色的圓點，圓心是point，半徑設為5，顏色設為紅色(255, 0, 0)，並設置厚度為-1（填充）
+    for point in points:
+        cv2.circle(image, point, 5, color, -1)
+    
+    # 使用matplotlib顯示圖像
+    # cv2默認是BGR格式，需轉換為RGB格式以正確顯示
+    #image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    
+    # plt.imshow(image_rgb)
+    # plt.axis('off')  # 不顯示座標軸
+    # plt.show()
+
+    return image
 # ---------- 函式定義 ------------ #
 # 計算基於 ['enamel_x'] 和 ['enamel_y'] 的距離函數
 def calculate_distance(row_true, row_cleaned):
