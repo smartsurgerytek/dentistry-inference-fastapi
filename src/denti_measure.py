@@ -144,10 +144,11 @@ if __name__ == '__main__':
 
     masks_dict = {denti_measure_names_map.get(k, k): v for k, v in masks_dict.items()}
 
-    #dentin=dentin+pulp+restoration
-    for key in ['Pulp','Restoration']:
+    #dental contour= union of ['Crown','Restoration', 'Dentin' ,'Enamel', 'Pulp', 'Root_canal_filling', 'Post_and_core', 'Caries']
+    masks_dict['dental_contour']=masks_dict['Dentin']
+    for key in ['Crown','Restoration', 'Enamel', 'Pulp', 'Root_canal_filling', 'Post_and_core', 'Caries']:
         if masks_dict.get(key) is not None:
-            masks_dict['dentin']=cv2.bitwise_or(masks_dict['dentin'], masks_dict[key]) # find the union
+            masks_dict['dental_contour']=cv2.bitwise_or(masks_dict['dental_contour'], masks_dict[key]) # find the union
 
     #dental crown=caries+crown   
     for key in ['Caries']:
@@ -157,7 +158,7 @@ if __name__ == '__main__':
 
     overlay, line_image, non_masked_area= extract_features(masks_dict, image) # 處理繪圖用圖片等特徵處理後圖片
 
-    num_labels, labels = cv2.connectedComponents(masks_dict['dentin']) # 取得分割開的 dentin , num_labels 表示 labels 數量， labels 則是分割對應
+    num_labels, labels = cv2.connectedComponents(masks_dict['dental_contour']) # 取得分割開的 dentin , num_labels 表示 labels 數量， labels 則是分割對應
 
     # 針對獨立分割 dentin 個別處理
     predictions = []
