@@ -102,8 +102,9 @@ def locate_points(image, component_mask, binary_images, idx, overlay):
 
 
 if __name__ == '__main__':
+
     image=cv2.imread('./data/pics/raw_12.png')
-    model=YOLO('./model/dentistry_yolov11x-seg_4.42.pt')
+    model=YOLO('./models/dentistry_yolov11x-seg_4.42.pt')
     results=model.predict(image)
     result=results[0]
 
@@ -145,7 +146,8 @@ if __name__ == '__main__':
     masks_dict = {denti_measure_names_map.get(k, k): v for k, v in masks_dict.items()}
 
     #dental contour= union of ['Crown','Restoration', 'Dentin' ,'Enamel', 'Pulp', 'Root_canal_filling', 'Post_and_core', 'Caries']
-    masks_dict['dental_contour']=masks_dict['Dentin']
+
+    masks_dict['dental_contour']=masks_dict['dentin']
     for key in ['Crown','Restoration', 'Enamel', 'Pulp', 'Root_canal_filling', 'Post_and_core', 'Caries']:
         if masks_dict.get(key) is not None:
             masks_dict['dental_contour']=cv2.bitwise_or(masks_dict['dental_contour'], masks_dict[key]) # find the union
