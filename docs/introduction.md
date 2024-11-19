@@ -24,14 +24,26 @@ The **periapical size** is measured as 31mm x 41mm, and our primary goal is to d
 The normal alveolar bone crest is typically located **1–2 mm** apical to the **cemento-enamel junction (CEJ)**. If bone loss has occurred, the alveolar bone crest is positioned more than **2 mm** apical to the CEJ. The **bone crest level** is defined as the point along the root where the intact lamina dura is present.
 
 ### Measuring Alveolar Bone Loss and Distance (ABLD)
-The value of **Alveolar Bone Loss Distance (ABLD)** is determined using two key metrics:
-1. **BL (Bone Loss)** – This is the length between the point **2 mm below the CEJ** and the **Alveolar Bone Crest (ALC)**.
-2. **TR (Tooth Root Length)** – This is the distance from the CEJ to the **root apex (APEX)**.
 
-The ABLD can be calculated using the following formula:
+![bone_loss](/docs/Bone_loss.png)
+
+**Yellow point**: The center of dental contour.
+
+**Blue point**: cemento-enamel junction (CEJ)
+
+**Green point**: alveolar Bone Crest (ALC)
+
+**Red point**: root apex (APEX)
+
+**Cyan Line**: Clinical Attachment Level (CAL) – This is the length between the point 2 mm below the CEJ and the ALC.
+
+**Blue Line**: Tooth Root Length (TRL) – This is the distance from the CEJ to the APEX.
+
+
+The value of Alveolar Bone Loss Degree (ABLD) can be calculated using the following formula:
 
 $$
-\text{ABLD} = \left( \frac{\text{CEJ} - \text{ALC} - 2 \text{mm}}{\text{CEJ} - \text{APEX} - 2 \text{mm}} \right) \times 100\%
+\text{ABLD} = \frac{\text{CAL}}{\text{TRL}}=\left( \frac{\text{CEJ} - \text{ALC} - 2 \text{mm}}{\text{CEJ} - \text{APEX} - 2 \text{mm}} \right) \times 100\%
 $$
 
 ### Classification Based on Bone Loss
