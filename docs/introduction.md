@@ -2,7 +2,7 @@
 The project is focused on the analysis of periodontal disease. 
 The aim is to identify the factors that contribute to the development of periodontal disease and to develop a predictive model that can be used to predict the likelihood of developing periodontal disease which says the "Ground rules".
 
-## what is periodontal disease?
+## What is periodontal disease?
 Periodontal disease is a group of diseases that affect the tissues of the gums. It is often called "gum disease" or "periodontitis". Periodontal disease is caused by bacteria that live in the gums. These bacteria can cause inflammation, bleeding, and other problems.
 
 
@@ -58,7 +58,7 @@ The data will be categorized according to these stages to assess the severity of
 **III** bone loss ≥ 33%
 
 
-### the segmentation of dental components 
+### The segmentation of dental components 
 The dental components are segmented by the machine learning approach. 
 
 By such the segmentation, the dental components are segmented into the following components: 
@@ -78,7 +78,7 @@ By such the segmentation, the dental components are segmented into the following
 - **12**: Root canal filling
 - **13**: Background
 
-### post processing of segmentation
+### Post processing of segmentation
 
 To enhance the segmentation, we will implement postprocessing techniques.
 
