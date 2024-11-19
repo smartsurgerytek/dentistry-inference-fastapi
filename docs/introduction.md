@@ -18,7 +18,7 @@ Some of observation are given as follows and we hope to clarify and to verify by
 
 ## Time-based stage (current running)
 
-The **periapical size** is measured as 31mm x 41mm, and our primary goal is to determine the time-based stage of attachment loss (bone loss) by analyzing the periapical films.
+The **periapical size** is measured as 31mm x 41mm or 41mm x 31mm, and our primary goal is to determine the time-based stage of attachment loss (bone loss) by analyzing the periapical films.
 
 ### Normal Alveolar Bone Crest
 The normal alveolar bone crest is typically located **1–2 mm** apical to the **cemento-enamel junction (CEJ)**. If bone loss has occurred, the alveolar bone crest is positioned more than **2 mm** apical to the CEJ. The **bone crest level** is defined as the point along the root where the intact lamina dura is present.
