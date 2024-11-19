@@ -10,7 +10,7 @@
 
 https://arxiv.org/pdf/2111.07156
 
-## Dental contours and Caries research
+## ML+OpenCV for Dental contours and Caries research
 
 [Automatic Detection of Dental Caries and Periodontal Disease Using  Dental X-ray Images](/docs/Automatic%20Detection%20of%20Dental%20Caries%20and%20Periodontal%20Disease%20Using%20Dental%20X-ray%20Images.pdf)
 
