@@ -1,4 +1,4 @@
-# periodontal disease
+# Periodontal disease
 The project is focused on the analysis of periodontal disease. 
 The aim is to identify the factors that contribute to the development of periodontal disease and to develop a predictive model that can be used to predict the likelihood of developing periodontal disease which says the "Ground rules".
 
@@ -6,7 +6,7 @@ The aim is to identify the factors that contribute to the development of periodo
 Periodontal disease is a group of diseases that affect the tissues of the gums. It is often called "gum disease" or "periodontitis". Periodontal disease is caused by bacteria that live in the gums. These bacteria can cause inflammation, bleeding, and other problems.
 
 
-# ground rules
+# Ground rules
 According to 
 
 ```
@@ -16,16 +16,38 @@ diseases: Ground rules, clarifications and “gray zones”
 
 Some of observation are given as follows and we hope to clarify and to verify by such the computer vision approaches. 
 
-## time-based stage (current running)
+## Time-based stage (current running)
 
-the preiapical size: 31mm x 41mm or 31mm x 41mm
+The **periapical size** is measured as 31mm x 41mm, and our primary goal is to determine the time-based stage of attachment loss (bone loss) by analyzing the periapical films.
 
-Our main goal is to get the time-based stage by the attachment loss (bone loss) from the periapical films.
+### Normal Alveolar Bone Crest
+The normal alveolar bone crest is typically located **1–2 mm** apical to the **cemento-enamel junction (CEJ)**. If bone loss has occurred, the alveolar bone crest is positioned more than **2 mm** apical to the CEJ. The **bone crest level** is defined as the point along the root where the intact lamina dura is present.
 
-The distance between the cemento-enamel junction (CEJ) and the alveolar bone level (bone) being <2 mm indicates a normal tooth, and there is no need to classify periodontal disease so that is can be sorted of "zero" stage. 
+### Measuring Alveolar Bone Loss and Distance (ABLD)
+The value of **Alveolar Bone Loss Distance (ABLD)** is determined using two key metrics:
+1. **BL (Bone Loss)** – This is the length between the point **2 mm below the CEJ** and the **Alveolar Bone Crest (ALC)**.
+2. **TR (Tooth Root Length)** – This is the distance from the CEJ to the **root apex (APEX)**.
 
-A distance of ≥2.0 mm between the CEJ and the bone is considered indicative of periodontal disease, and further classification is required.
-We will sort the data by phase of pathology into different stages like I, II, III(IV).
+The ABLD can be calculated using the following formula:
+
+$$
+\text{ABLD} = \left( \frac{\text{CEJ} - \text{ALC} - 2 \text{mm}}{\text{CEJ} - \text{APEX} - 2 \text{mm}} \right) \times 100\%
+$$
+
+### Classification Based on Bone Loss
+- A **normal tooth** is characterized by the distance between the CEJ and the alveolar bone level (ABL) being **< 2 mm**, indicating no bone loss. In this case, the tooth is classified as **Stage 0** (no periodontal disease).
+  
+- A **distance of ≥ 2 mm** between the CEJ and the bone indicates the presence of periodontal disease, necessitating further classification into stages.
+
+### Staging of Periodontal Disease
+Based on the ABLD values and other clinical factors, the disease progression is classified into the following stages:
+
+- **Stage I**: Mild bone loss  
+- **Stage II**: Moderate bone loss  
+- **Stage III**: Severe bone loss  
+- **Stage IV**: Advanced bone loss (extensive damage)
+
+The data will be categorized according to these stages to assess the severity of the periodontal disease.
 
 **Zero**: the cemento-enamel junction (CEJ) and the alveolar bone level (bone) being < 2 mm
 
@@ -69,11 +91,11 @@ Simple criteria may be not enough to verify the classification of periodontal di
 ## FDI clustering
 We aim to enhance the efficiency and convenience of dental workflows by implementing clustering for each FDI (Fédération Dentaire Internationale) position. By automating the organization and categorization of FDI positions, we hope to significantly reduce the time and effort required for administrative tasks, allowing dentists to focus more on patient care and less on documentation. To address the sorting problems, serval tricks can be discussed such as the multi-label regression or clustering.  
 
-## patient-based stage
+## Patient-based stage
 My understanding is the observation is based on the patient's properties such as age, gender, smoking status, etc. It means the image is not the only factor to determine the periodontitis. The way to implement this is to use the patient's medical history and other factors (The score of periodontal from image presumably) is trees-model approach such as Random Forest, XGBoost, LGBM are desirable.
 
 
-# DATA aviability
+# DATA Aviability
 check in our google cloud:
 https://drive.google.com/drive/u/0/folders/1pVjfbgGWWcPv0x4HVd1HNvlm8Fwi5VNg
 
