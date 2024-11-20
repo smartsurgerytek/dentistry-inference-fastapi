@@ -14,3 +14,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 docker build -t dental-xray-api .
 docker run -p 8000:8000 dental-xray-api
 ```
+## 3. Docker Compose (Recommended)
+```bash
+docker-compose -f docker-compose.dev.yml up
+```
