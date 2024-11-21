@@ -7,6 +7,7 @@
 -->
 ## Development Guide
 * [Setup](development/setup.md)
+* [Deployment](development/deployment.md)
 <!-- * [Docker](development/docker.md) -->
 <!--
 ## Architecture
