@@ -139,7 +139,7 @@ def get_mask_dict_from_model(model, image, method='semantic'):
 
 if __name__ == '__main__':
 
-    image=cv2.imread('./data/pics/caries-0.8510638-272-735_1_2022021402.png')
+    image=cv2.imread('./testdata/caries-1.158022-225-829_0_2022042587.png')
     _, binary_img = cv2.threshold(image, 128, 255, cv2.THRESH_BINARY)
 
     components_model=YOLO('./models/dentistry_yolov11x-seg_4.42.pt')
@@ -159,8 +159,6 @@ if __name__ == '__main__':
     
     overlay, line_image, non_masked_area= extract_features(components_model_masks_dict, image) # 處理繪圖用圖片等特徵處理後圖片
 
-    #breakpoint()
-
     predictions = []
     image_for_drawing=image.copy()
     #for i in range(1, num_labels):  # 從1開始，0是背景
@@ -176,29 +174,5 @@ if __name__ == '__main__':
         print(f"Tooth {i+1}")
         image_for_drawing=draw_point(prediction, image_for_drawing)
         image_for_drawing=draw_line(prediction, image_for_drawing)
-    breakpoint()
+    show_plot(image_for_drawing)
 
-    # num_labels, labels = cv2.connectedComponents(masks_dict['dental_contour']) # 取得分割開的 dentin , num_labels 表示 labels 數量， labels 則是分割對應
-
-    # # 針對獨立分割 dentin 個別處理
-    # predictions = []
-    # image_for_drawing=image.copy()
-    # for i in range(1, num_labels):  # 從1開始，0是背景
-    #     component_mask = np.uint8(labels == i) * 255
-    #     # 取得分析後的點
-    #     prediction = locate_points(image_for_drawing, component_mask, masks_dict, i, overlay)
-    #     # 如果無法判斷點，會回傳空字典
-    #     if len(prediction) == 0:
-    #         continue
-    #     prediction["tooth_id"] = i
-    #     prediction["dentin_id"] = None
-    #     predictions.append(prediction)
-    #     print(f"Tooth {i}")
-    #     image_for_drawing=draw_point(prediction, image_for_drawing)
-    #     image_for_drawing=draw_line(prediction, image_for_drawing)
-            
-    # show_two(overlay,image_for_drawing)
-    # breakpoint()
-    #for prediction in predictions:
-        
-    #polt for labels

@@ -584,25 +584,26 @@ def draw_line(prediction, line_image):
         (("enamel_right", "dentin_right", (0, 0, 255)), ("enamel_right", "gum_right", (0, 255, 255)))
     ]
 
-    def draw_line_and_text(line_image, p1, p2, color, text_position):
+    def draw_line_and_text(line_image, p1, p2, color, text_position, show_text=True):
         cv2.line(line_image, p1, p2, color, 2)  # Draw enamel -> dentin line
         length=calculate_distance_with_scale(p1, p2, scale_w, scale_h)
-        cv2.putText(line_image, f'{length:.2f} mm', text_position, font, font_scale, color, thickness, line_type)
+        if show_text==True:
+            cv2.putText(line_image, f'{length:.2f} mm', text_position, font, font_scale, color, thickness, line_type)
         return length
     def determine_stage_text(length, length2):
-        stage_text="Stage III"
+        stage_text="III"
         ratio=length/length2
         print(ratio)
         if ratio < 0.15 and length < 2:
-            stage_text = "Stage 0"
+            stage_text = "0"
         elif ratio < 0.15:
-            stage_text = "Stage I"
+            stage_text = "I"
         elif ratio <= 0.33:
-            stage_text = "Stage II"
+            stage_text = "II"
         return stage_text 
                 
     # Iterate through the line pairs and draw lines
-    for (start, end, color), (start2, end2, color2) in line_pairs:
+    for i, ((start, end, color), (start2, end2, color2)) in enumerate(line_pairs):
         # Fetch the coordinates from the prediction
         p1, p2, p3, p4 = (prediction.get(start), prediction.get(end),
                           prediction.get(start2), prediction.get(end2))
@@ -621,8 +622,13 @@ def draw_line(prediction, line_image):
         
         # Check if all points are valid and within the threshold range
         if valid_point_check and not_boundary_point_check:
-            length=draw_line_and_text(line_image, p1, p2, color, text_position=p2)
-            length2=draw_line_and_text(line_image, p3, p4, color2, text_position=p3)
+            if i%2==1:
+                length2=draw_line_and_text(line_image, p3, p4, color2, text_position=p3, show_text=False) #CAL
+                right_plot_text_point=(p4[0]-70,p4[1]+30)
+                cv2.putText(line_image, f'{length2:.2f} mm', right_plot_text_point, font, font_scale, color2, thickness, line_type)
+            else:
+                length2=draw_line_and_text(line_image, p3, p4, color2, text_position=p3) #CAL
+            length=draw_line_and_text(line_image, p1, p2, color, text_position=p2, show_text=False) #RL
             stage_text=determine_stage_text(length2, length)
             enamel_denti_mid_position=((p1[0]+p2[0])//2,(p1[1]+p2[1])//2)
             cv2.putText(line_image, stage_text, enamel_denti_mid_position, font, font_scale, (255, 255, 0), thickness, line_type)
