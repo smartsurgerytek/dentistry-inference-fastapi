@@ -7,5 +7,6 @@ data/pics/output
 data/pics/try
 data/pics/test
 data/pics/processed
+testdata/
 *.zip
 *.pt
