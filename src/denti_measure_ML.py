@@ -12,7 +12,11 @@ def extract_features(masks_dict, original_img):
 
     # 清理各個遮罩
     masks_dict['dental_crown'] = clean_mask(masks_dict['dental_crown'])
+    #masks_dict['dental_crown'] =cv2.dilate(masks_dict['dental_crown'], kernel=cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 100)), iterations=1)
+    #show_two(masks_dict['dental_crown'], test)
+
     masks_dict['dentin'] = clean_mask(masks_dict['dentin'], kernel_size=(30, 1), iterations=1)
+
     masks_dict['gum'] = clean_mask(masks_dict['gum'], kernel_size=(30, 1), iterations=2)
 
     # 保留最大區域
@@ -22,11 +26,11 @@ def extract_features(masks_dict, original_img):
     masks_dict['gum'] = cv2.dilate(masks_dict['gum'], kernel, iterations=10)
     
     # 膨脹處理dentin
-    dental_contours=np.maximum(masks_dict['dentin'], masks_dict['dental_crown'])    
-    kernel = np.ones((23,23), np.uint8)
-    filled = cv2.morphologyEx(dental_contours, cv2.MORPH_CLOSE, kernel)
-    filled=cv2.bitwise_and(filled, cv2.bitwise_not(masks_dict['dental_crown']))
-    masks_dict['dentin']=filled
+    # dental_contours=np.maximum(masks_dict['dentin'], masks_dict['dental_crown'])    
+    # kernel = np.ones((23,23), np.uint8)
+    # filled = cv2.morphologyEx(dental_contours, cv2.MORPH_CLOSE, kernel)
+    # filled=cv2.bitwise_and(filled, cv2.bitwise_not(masks_dict['dental_crown']))
+    # masks_dict['dentin']=filled
     
     # 合併所有遮罩
     combined_mask = combine_masks(masks_dict)
@@ -139,7 +143,7 @@ def get_mask_dict_from_model(model, image, method='semantic'):
 
 if __name__ == '__main__':
 
-    image=cv2.imread('./testdata/caries-1.158022-225-829_0_2022042587.png')
+    image=cv2.imread('./testdata/normal/nomal-x-ray-0.8510638-268-743_1_2022011003.png')
     _, binary_img = cv2.threshold(image, 128, 255, cv2.THRESH_BINARY)
 
     components_model=YOLO('./models/dentistry_yolov11x-seg_4.42.pt')
@@ -152,11 +156,25 @@ if __name__ == '__main__':
         'Alveolar_bone': 'gum',
         'Dentin': 'dentin',
         'Enamel': 'dental_crown',
-        'Crown': 'crown'
+        'Crown': 'crown' ### In fact it is enamel (why labeling man so stupid)
     }
     components_model_masks_dict = {denti_measure_names_map.get(k, k): v for k, v in components_model_masks_dict.items()}
  
+    ##denti遮罩要補全
     
+    for mask in contours_model_masks_dict['dental_contour']:
+        if not 'dental_contour' in components_model_masks_dict.keys():
+            components_model_masks_dict['dental_contour']=mask
+        else:
+            components_model_masks_dict['dental_contour']=cv2.bitwise_or(components_model_masks_dict['dental_contour'], mask) # find the union
+
+    crown_or_enamal_mask=np.zeros_like(components_model_masks_dict['dentin'])
+    for key in ['dental_crown','crown']:
+        if components_model_masks_dict.get(key) is not None:
+            crown_or_enamal_mask=cv2.bitwise_or(crown_or_enamal_mask, components_model_masks_dict[key])
+
+    components_model_masks_dict['dentin']=components_model_masks_dict['dental_contour']-cv2.bitwise_and(components_model_masks_dict['dental_contour'], crown_or_enamal_mask)
+
     overlay, line_image, non_masked_area= extract_features(components_model_masks_dict, image) # 處理繪圖用圖片等特徵處理後圖片
 
     predictions = []
@@ -174,5 +192,6 @@ if __name__ == '__main__':
         print(f"Tooth {i+1}")
         image_for_drawing=draw_point(prediction, image_for_drawing)
         image_for_drawing=draw_line(prediction, image_for_drawing)
-    show_plot(image_for_drawing)
+    show_two(overlay,image_for_drawing)
+    #show_plot(image_for_drawing)
 
