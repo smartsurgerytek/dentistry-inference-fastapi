@@ -13,11 +13,14 @@ pip install requirements
 pip install -r requirements.txt
 ```
 
-## Logging in huggingface to update [Optional]
+## logging in huggingface
 Input the huggingface token
 ```
 huggingface-cli login
 ```
+
+## pull new file to update [Optional]
+
 Pull the huggingface repo
 ```
 cd ./src/huggingface
@@ -33,6 +36,15 @@ copy ./src/huggingface/Smartsurgery_Dentistry_Models_Demo/dental_measure_utils.p
 ```
 copy ./src/huggingface/Smartsurgery_Dentistry_Models_Demo/dental_measure.py src/services/dental_measure.py
 ```
+
+## download model from huggingface
+After loggin with token, run the download scipt
+
+```
+python download.py
+```
+
+
 ## Run app
 
 run uvicorn or run main.py
