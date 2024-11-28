@@ -1,13 +1,17 @@
-from src.schemas import InferenceResponse, Measurement
+from src.schemas import InferenceResponse, Measurements
+from src.services.dental_measure import *
+import numpy as np
+import cv2
+from io import BytesIO
 
 class InferenceService:
     @staticmethod
-    def process_xray(image: bytes, scale: float) -> InferenceResponse:
+    def process_xray_test(image: bytes) -> InferenceResponse:
         # Inference logic goes here
         return InferenceResponse(
-            RequestId=1,
-            Measurements=[
-                Measurement(
+            request_id=1,
+            measurements=[
+                Measurements(
                     Id=1,
                     CEJ=[100, 200],
                     ALC=[150, 250],
@@ -18,5 +22,35 @@ class InferenceService:
                     Stage="Stage I"
                 )
             ],
-            Message="Inference completed successfully"
+            message="Inference completed successfully"
         )
+    @staticmethod
+    def process_xray(image: bytes, scale: tuple) -> InferenceResponse:
+        image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
+        measurements_list=dental_estimation(image_np, scale=scale, return_type='dict')
+
+        return InferenceResponse(
+            request_id=0,
+            measurements=measurements_list,
+            message="Inference completed successfully"
+        )    
+
+    # @staticmethod
+    # def process_xray(image: bytes, scale: float) -> InferenceResponse:
+    #     # Inference logic goes here
+    #     return InferenceResponse(
+    #         RequestId=1,
+    #         Measurements=[
+    #             Measurement(
+    #                 Id=1,
+    #                 CEJ=[100, 200],
+    #                 ALC=[150, 250],
+    #                 APEX=[200, 300],
+    #                 BL=50.0,
+    #                 TR=100.0,
+    #                 ABLD=0.5,
+    #                 Stage="Stage I"
+    #             )
+    #         ],
+    #         Message="Inference completed successfully"
+    #     )

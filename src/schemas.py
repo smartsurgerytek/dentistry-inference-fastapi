@@ -2,19 +2,24 @@ from pydantic import BaseModel
 from typing import List, Tuple
 
 class Scale(BaseModel):
-    scale: float
+    scale: Tuple[float,float]
 
-class Measurement(BaseModel):
-    Id: int
+class DentalMeasurements(BaseModel):
+    side_id: int
     CEJ: Tuple[int, int]
     ALC: Tuple[int, int]
     APEX: Tuple[int, int]
-    BL: float
-    TR: float
+    CAL: float
+    TRL: float
     ABLD: float
-    Stage: str
+    stage: str
+
+class Measurements(BaseModel):
+    teeth_id: int
+    pair_measurements: List[DentalMeasurements]
+    teeth_center: Tuple[int, int]
 
 class InferenceResponse(BaseModel):
-    RequestId: int
-    Measurements: List[Measurement]
-    Message: str
+    request_id: int
+    measurements: List[Measurements]
+    message: str
