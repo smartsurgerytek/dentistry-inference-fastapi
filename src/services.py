@@ -1,5 +1,5 @@
-from src.schemas import InferenceResponse, Measurements
-from src.services.dental_measure import *
+from src.dental_measure.schemas import InferenceResponse, Measurements
+from src.dental_measure.main import *
 import numpy as np
 import cv2
 from io import BytesIO

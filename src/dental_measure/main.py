@@ -1,11 +1,10 @@
 import cv2
 from ultralytics import YOLO
 import numpy as np
-from dental_measure_utils import *
-
+from src.dental_measure.utils import *
 components_model=YOLO('./models/dentistry_yolov11x-seg_4.42.pt')
 contour_model=YOLO('./models/dentistryContour_yolov11n_4.46.pt')
-
+print('test')
 def extract_features(masks_dict, original_img):
     """從遮罩中提取特徵點與區域資訊"""
     overlay = original_img.copy()

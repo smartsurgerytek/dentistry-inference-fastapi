@@ -1,14 +1,14 @@
 from fastapi import FastAPI, File, HTTPException, Form
 from typing import Annotated
-from src.schemas import InferenceResponse
-from src.services.inference import InferenceService
+from src.dental_measure.schemas import InferenceResponse
+from src.services import InferenceService
 import uvicorn
 import ast
 from typing import Tuple, Any
 import ast
 from pydantic.functional_validators import AfterValidator
 
-from src.validator import ScaleValidator
+from src.dental_measure.validator import ScaleValidator
 
 app = FastAPI(
     title="Dental X-ray Inference API",

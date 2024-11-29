@@ -31,18 +31,18 @@ git clone https://huggingface.co/spaces/smartsurgery/smartsurgery-dentistry-mode
 ```
 Copy the file to the fastapi
 ```
-copy ./src/huggingface/Smartsurgery_Dentistry_Models_Demo/dental_measure_utils.py src/services/dental_measure_utils.py
+copy ./src/huggingface/Smartsurgery_Dentistry_Models_Demo/dental_measure_utils.py src/dental_measure/utils.py
 ```
 
 ```
-copy ./src/huggingface/Smartsurgery_Dentistry_Models_Demo/dental_measure.py src/services/dental_measure.py
+copy ./src/huggingface/Smartsurgery_Dentistry_Models_Demo/dental_measure.py src/dental_measure/main.py
 ```
 
 ## Download model from huggingface
 After loggin with token, run the download scipt
 
 ```
-python download.py
+python src/scripts/download.py
 ```
 
 
