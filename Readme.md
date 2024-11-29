@@ -1,4 +1,4 @@
-# Installition
+# Installation
 
 ## Use python env
 ```
@@ -8,18 +8,19 @@ conda create --name cvat-fastapi python=3.9
 ```
 conda activate cvat-fastapi
 ```
-pip install requirements
+
+Install requirements
 ```
 pip install -r requirements.txt
 ```
 
-## logging in huggingface
+## Logging in huggingface
 Input the huggingface token
 ```
 huggingface-cli login
 ```
 
-## pull new file to update [Optional]
+## Pull new file to update [Optional]
 
 Pull the huggingface repo
 ```
@@ -37,7 +38,7 @@ copy ./src/huggingface/Smartsurgery_Dentistry_Models_Demo/dental_measure_utils.p
 copy ./src/huggingface/Smartsurgery_Dentistry_Models_Demo/dental_measure.py src/services/dental_measure.py
 ```
 
-## download model from huggingface
+## Download model from huggingface
 After loggin with token, run the download scipt
 
 ```

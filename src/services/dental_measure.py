@@ -170,7 +170,7 @@ def generate_error_image(text):
     return image
 
 def dental_estimation(image, scale=(31/960,41/1080), return_type='image'):
-
+    print(return_type)
     components_model_masks_dict=get_mask_dict_from_model(components_model, image, method='semantic')
     contours_model_masks_dict=get_mask_dict_from_model(contour_model, image, method='instance')
 
@@ -183,6 +183,7 @@ def dental_estimation(image, scale=(31/960,41/1080), return_type='image'):
     components_model_masks_dict = {denti_measure_names_map.get(k, k): v for k, v in components_model_masks_dict.items()}
 
     # Error handling
+
     required_components = {
         'dentin': "No dental instance detected",
         'dental_crown': "No dental_crown detected",
@@ -190,10 +191,18 @@ def dental_estimation(image, scale=(31/960,41/1080), return_type='image'):
     }
     for component, error_message in required_components.items():
         if components_model_masks_dict.get(component) is None:
-            return generate_error_image(error_message)
+            if return_type=='image':
+                return generate_error_image(error_message)
+            else:
+                return []
+        
     if contours_model_masks_dict.get('dental_contour') is None:
         generate_error_image("No dental instance detected")
-
+        if return_type=='image':
+            return generate_error_image(error_message)
+        else:
+            return []
+        
     # dentin is compensated by dental contour model
     for mask in contours_model_masks_dict['dental_contour']:
         if not 'dental_contour' in components_model_masks_dict.keys():
@@ -231,5 +240,6 @@ def dental_estimation(image, scale=(31/960,41/1080), return_type='image'):
     if return_type=='image':
         return image_for_drawing
     else:
+
         return predictions
 

@@ -28,12 +28,19 @@ class InferenceService:
     def process_xray(image: bytes, scale: tuple) -> InferenceResponse:
         image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
         measurements_list=dental_estimation(image_np, scale=scale, return_type='dict')
-
+        #print(measurements_list)
+        if not measurements_list:
+            return InferenceResponse(
+                request_id=0,
+                measurements=[],
+                message="Nothing detected for the image"
+            )
+        
         return InferenceResponse(
             request_id=0,
             measurements=measurements_list,
             message="Inference completed successfully"
-        )    
+        )
 
     # @staticmethod
     # def process_xray(image: bytes, scale: float) -> InferenceResponse:

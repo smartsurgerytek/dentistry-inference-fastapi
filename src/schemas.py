@@ -14,10 +14,12 @@ class DentalMeasurements(BaseModel):
     TRL: float
     ABLD: float
     stage: str
+
 class Measurements(BaseModel):
     teeth_id: int
     pair_measurements: List[DentalMeasurements]
     teeth_center: Tuple[int, int]
+    
 class InferenceResponse(BaseModel):
     request_id: int
     measurements: List[Measurements]
