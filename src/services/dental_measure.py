@@ -169,7 +169,7 @@ def generate_error_image(text):
     cv2.putText(image, text, (text_x, text_y), font, font_scale, color, thickness)
     return image
 
-def dental_estimation(image, scale, return_type='image'):
+def dental_estimation(image, scale=(31/960,41/1080), return_type='image'):
 
     components_model_masks_dict=get_mask_dict_from_model(components_model, image, method='semantic')
     contours_model_masks_dict=get_mask_dict_from_model(contour_model, image, method='instance')
