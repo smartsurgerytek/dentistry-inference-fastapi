@@ -53,3 +53,14 @@ Run main.py
 python main.py
 ```
 
+## Run unit test
+
+```
+pytest -vv
+```
+See the coverage
+
+```
+pytest -vv --cov src/
+```
+
