@@ -31,11 +31,11 @@ git clone https://huggingface.co/spaces/smartsurgery/smartsurgery-dentistry-mode
 ```
 Copy the file to the fastapi
 ```
-copy ./src/huggingface/Smartsurgery_Dentistry_Models_Demo/dental_measure_utils.py src/dental_measure/utils.py
+copy ./src/huggingface/Smartsurgery_Dentistry_Models_Demo_Dev/dental_measure_utils.py src/dental_measure/utils.py
 ```
 
 ```
-copy ./src/huggingface/Smartsurgery_Dentistry_Models_Demo/dental_measure.py src/dental_measure/main.py
+copy ./src/huggingface/Smartsurgery_Dentistry_Models_Demo_Dev/dental_measure.py src/dental_measure/main.py
 ```
 
 ## Download model from huggingface
@@ -48,7 +48,7 @@ python src/scripts/download.py
 
 ## Run app
 
-run uvicorn or run main.py
+Run main.py
 ```
 python main.py
 ```
