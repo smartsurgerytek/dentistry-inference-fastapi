@@ -3,3 +3,4 @@ uvicorn
 python-multipart
 ultralytics
 huggingface_hub[cli]
+pytest
