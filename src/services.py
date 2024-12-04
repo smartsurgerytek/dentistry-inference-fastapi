@@ -1,5 +1,7 @@
 from src.dental_measure.schemas import InferenceResponse, Measurements
+from src.dental_segmentation.schemas import *
 from src.dental_measure.main import *
+from src.dental_segmentation.main import *
 import numpy as np
 import cv2
 from io import BytesIO
@@ -41,7 +43,23 @@ class InferenceService:
             measurements=measurements_list,
             message="Inference completed successfully"
         )
-
+    @staticmethod
+    def inference(image: bytes) -> YoloSegmentationResponse:
+        image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
+        yolov8_result_dict=yolo_transform(image_np, return_type='dict')
+        #print(measurements_list)
+        if not yolov8_result_dict.get('yolov8_contents'):
+            return YoloSegmentationResponse(
+                request_id=0,
+                yolo_results={},
+                message="Nothing detected for the image"
+            )
+        
+        return YoloSegmentationResponse(
+            request_id=0,
+            yolo_results=yolov8_result_dict,
+            message="Inference completed successfully"
+        )
     # @staticmethod
     # def process_xray(image: bytes, scale: float) -> InferenceResponse:
     #     # Inference logic goes here
