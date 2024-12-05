@@ -1,18 +1,13 @@
-from fastapi import FastAPI, Request, File, HTTPException, Form
+from fastapi import FastAPI, Request, File
 from pydantic import ValidationError
 from fastapi.responses import JSONResponse
-
 from typing import Annotated
-from src.dental_measure.schemas import InferenceResponse
-from src.dental_segmentation.schemas import YoloSegmentationResponse
-from src.services import InferenceService
+from typing import Any
 import uvicorn
-import ast
-from typing import Tuple, Any
-import ast
-from pydantic.functional_validators import AfterValidator
-
+from src.services import InferenceService
+from src.dental_measure.schemas import InferenceResponse
 from src.dental_measure.validator import ScaleValidator
+from src.dental_segmentation.schemas import YoloSegmentationResponse
 
 
 app = FastAPI(
@@ -20,6 +15,7 @@ app = FastAPI(
     version="1.0.0",
     description="API to infer information from dental X-ray images."
 )
+
 @app.exception_handler(ValidationError)
 async def validation_exception_handler(request: Request, exc: ValidationError):
     return JSONResponse(

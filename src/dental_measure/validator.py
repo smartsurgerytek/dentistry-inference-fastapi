@@ -1,5 +1,5 @@
 from pydantic import BaseModel, validator
-from typing import List, Tuple, Any
+from typing import Any
 import ast
 
 class ScaleValidator(BaseModel):
