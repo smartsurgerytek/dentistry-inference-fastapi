@@ -47,11 +47,13 @@ class InferenceService:
     def inference(image: bytes) -> YoloSegmentationResponse:
         image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
         yolov8_result_dict=yolo_transform(image_np, return_type='dict')
+        print(yolov8_result_dict)
+        print(yolov8_result_dict.get('yolov8_contents'))
         #print(measurements_list)
         if not yolov8_result_dict.get('yolov8_contents'):
             return YoloSegmentationResponse(
                 request_id=0,
-                yolo_results={},
+                yolo_results=yolov8_result_dict,
                 message="Nothing detected for the image"
             )
         
