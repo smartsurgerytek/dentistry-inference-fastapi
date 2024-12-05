@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Dict, Union, Any
+from typing import List, Dict, Union
 from pydantic import BaseModel, validator
 
 # define yolo segmentation model
