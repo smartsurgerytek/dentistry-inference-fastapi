@@ -11,7 +11,7 @@ class YoloSegmentation(BaseModel):
     def validate_contents(cls, contents):
         for yolov8_label_list in contents:
             if not isinstance(yolov8_label_list[0], int):
-                raise ValueError("yolov8_label_list first element is class ID must be fint")
+                raise ValueError("yolov8_label_list first element is class ID must be int")
         return contents    
 # define yolo response
 class YoloSegmentationResponse(BaseModel):
