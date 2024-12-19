@@ -3,5 +3,6 @@ uvicorn
 python-multipart
 ultralytics
 huggingface_hub[cli]
+scikit-image
 pytest
 pytest-cov
