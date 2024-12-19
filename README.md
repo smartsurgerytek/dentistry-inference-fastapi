@@ -1,4 +1,4 @@
-# Dentistry-inference-periodontal
+# Dentistry-inference-core
 This repo is developed with dentistry-related functions such as dental segmentation, periodontal estimation, Caries detection.
 
 ## Introduction
