@@ -3,3 +3,6 @@ opencv-python
 fastapi[all]
 natsort
 matplotlib
+scikit-image
+pytest
+pytest-cov

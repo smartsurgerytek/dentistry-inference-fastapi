@@ -16,3 +16,13 @@ In general, we follow the Google coding style guide and Github feature branch wo
 One can follow the previous work, no need to build everything from zeros.
 
 [Read on papers](./docs/papers.md)
+
+## Pytest
+```
+pytest -vv
+```
+See the coverage
+
+```
+pytest -vv --cov src/
+```
