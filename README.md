@@ -17,7 +17,15 @@ One can follow the previous work, no need to build everything from zeros.
 
 [Read on papers](./docs/papers.md)
 
-## Pytest
+
+## Src Files Introduction
+The function created for periodontal estimation currently run with two ML models: dental_segmentation and contour_detection
+[Dental_measure](./src/Dental_measure/main.py)
+
+The function created for segmentation task and outputs yolov8 annotation format
+[Dental_segmentation](./src/Dental_segmentation/main.py)
+
+## Pytest command
 ```
 pytest -vv
 ```
