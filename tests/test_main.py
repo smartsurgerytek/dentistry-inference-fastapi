@@ -53,7 +53,6 @@ class TestDentalFunctions(unittest.TestCase):
         self.assertIn("teeth_center", prediction)
         print("locate_points 測試通過！")
 
-
     def test_dental_estimation(self):
         """測試 dental_estimation 函數"""
         print("正在測試 dental_estimation 函數...")
