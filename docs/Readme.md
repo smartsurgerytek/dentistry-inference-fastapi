@@ -38,6 +38,9 @@ P.S要先從 https://huggingface.co/smartsurgery/dentistry-models/tree/main 下�
         5. test_exception_handling
         - 測試不正確的數據是否能正確引發 ValidationError。
         - 驗證在不同屬性中出現的無效數據是否能被正確檢測並引發錯誤。  
+
+        總共5項測試。
+
     2. ```
         test_main.py
         ```
@@ -59,6 +62,8 @@ P.S要先從 https://huggingface.co/smartsurgery/dentistry-models/tree/main 下�
         5. test_dental_estimation 方法
         - 測試 dental_estimation 函數的功能。
         - 驗證該函數返回的圖像是否具有與原始測試圖像相同的形狀。   
+
+        總共3項測試。
     
     3. ```
         test_dentalMeasure.py
@@ -75,7 +80,7 @@ P.S要先從 https://huggingface.co/smartsurgery/dentistry-models/tree/main 下�
             - 調用 dental_estimation 函數時，檢查返回的結果是否為空列表 []。
             - 若返回非空結果，則引發錯誤。
 
-
+        總共2項測試。
 
 12/17 檢查筆記：  
 - schemas.py
