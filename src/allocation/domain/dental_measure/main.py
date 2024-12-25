@@ -1,7 +1,7 @@
 import cv2
 from ultralytics import YOLO
 import numpy as np
-from src.dental_measure.utils import *
+from src.allocation.domain.dental_measure.utils import *
 components_model=YOLO('./models/dentistry_yolov11x-seg_4.42.pt')
 contour_model=YOLO('./models/dentistryContour_yolov11n_4.46.pt')
 
