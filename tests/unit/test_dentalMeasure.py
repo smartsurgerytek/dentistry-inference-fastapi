@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 import cv2
-from src.dental_measure.main import *
+from src.allocation.domain.dental_measure.main import *
 def test_dentalEstimation_normalImage():
     image=cv2.imread('./data/pics/nomal-x-ray-0.8510638-270-740_0_2022011008.png')
     if image is None:
