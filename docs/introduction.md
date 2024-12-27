@@ -1,3 +1,7 @@
+
+# Caries Detection and Assessment (Clinical)
+[Caries Detection and Assessment](/docs/CARIES-DETECTION-AND-ASSESSMENT.pdf)
+
 # Periodontal disease
 The project is focused on the analysis of periodontal disease. 
 The aim is to identify the factors that contribute to the development of periodontal disease and to develop a predictive model that can be used to predict the likelihood of developing periodontal disease which says the "Ground rules".
