@@ -20,6 +20,11 @@ https://arxiv.org/pdf/2111.07156
 
 https://arxiv.org/pdf/2406.03747
 
+## Sgementations
+
+
+[Deep Learning for Early Dental Caries Detection in Bitewing Radiographs](/docs/s41598-021-96368-7.pdf)
+
 
 ## Periodontal Estimation
 
