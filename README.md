@@ -37,6 +37,16 @@ After loggin with token, run the download scipt
 python src/allocation/service_layer/download.py
 ```
 
+## Run performance test
+
+After downloading models from huggingface,
+
+download split_data_4.42.rar dataset from googlecloud
+```
+https://drive.google.com/drive/u/2/folders/1pVjfbgGWWcPv0x4HVd1HNvlm8Fwi5VNg
+```
+unrar to ./datasets/split_data_4.42
+
 ## Pytest command
 ```
 pytest -vv

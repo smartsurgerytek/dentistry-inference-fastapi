@@ -9,6 +9,7 @@ data/pics/test
 data/pics/processed
 testdata/
 val_data/
+datasets/
 runs/
 *.zip
 *.pt
