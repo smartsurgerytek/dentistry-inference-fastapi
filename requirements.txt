@@ -7,3 +7,4 @@ scikit-image
 pytest
 pytest-cov
 huggingface_hub
+tabulate
