@@ -25,6 +25,10 @@ https://arxiv.org/pdf/2406.03747
 
 [Deep learning method to automatically diagnose periodontal bone loss and periodontitis stage in dental panoramic radiograph](/docs/Deep%20learning%20method%20to%20automatically%20diagnose%20periodontal%20bone%20loss%20and%20periodontitis%20stage%20in%20dental%20panoramic%20radiograph.pdf)
 
+
+[Collaborative Deep Learning Model for Tooth Segmentation and Identification Using Panoramic Radiographs](/docs/Collaborative%20Deep%20Learning%20Model%20for%20Tooth%20Segmentation%20and%20Identification%20Using%20Panoramic%20Radiographs.pdf)
+
+
 ## Caries Research:
 
 [Validation of artificial intelligence application for dental caries diagnosis on intraoral bitewing and periapical radiographs](/docs/Validation%20of%20artificial%20intelligence%20application%20for%20dental%20caries%20diagnosis%20on%20intraoral%20bitewing%20and%20periapical%20radiographs.pdf)
