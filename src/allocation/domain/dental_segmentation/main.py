@@ -10,7 +10,7 @@ from skimage.measure import approximate_polygon
 from src.allocation.domain.dental_segmentation.utils import *
 
 
-model=YOLO('./models/dentistry_yolov11x-seg_4.42.pt')
+model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
 def find_center_mask(mask_binary):
     moments = cv2.moments(mask_binary)
 
