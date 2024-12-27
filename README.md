@@ -25,6 +25,18 @@ The function created for periodontal estimation currently run with two ML models
 The function created for segmentation task and outputs yolov8 annotation format
 [Dental_segmentation](./src/Dental_segmentation/main.py)
 
+## Download models from Huggingface
+
+```
+huggingface-cli login
+```
+
+After loggin with token, run the download scipt
+
+```
+python src/allocation/service_layer/download.py
+```
+
 ## Pytest command
 ```
 pytest -vv
