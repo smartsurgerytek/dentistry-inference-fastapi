@@ -12,3 +12,7 @@ val_data/
 *.zip
 *.pt
 *.pyc
+data/
+tests/files/split_data_4.42
+*.rar
+*.tgz
