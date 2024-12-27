@@ -1,0 +1,38 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 license
+# COCO8-seg dataset (first 8 images from COCO train2017) by Ultralytics
+# Documentation: https://docs.ultralytics.com/datasets/segment/coco8-seg/
+# Example usage: yolo train data=coco8-seg.yaml
+# parent
+# ├── ultralytics
+# └── datasets
+#     └── coco8-seg  ← downloads here (1 MB)
+
+
+# data transform setting
+input_image_extension: .png
+raw_data_path: ./data/raw_data
+exp_data_save_path: ./data/exp_data
+
+# yolo seg setting
+# Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
+path: E:\smart_surgery\dentistry-inference-periodontal\tests\files\split_data_4.42 # dataset root dir
+train: images/train # train images (relative to 'path') 4 images
+val: images/val # val images (relative to 'path') 4 images
+test: images/test # test images (optional)
+
+# Classes
+names:
+  0: Alveolar_bone
+  1: Caries
+  2: Crown
+  3: Dentin
+  4: Enamel
+  5: Implant
+  6: Mandibular_alveolar_nerve
+  7: Maxillary_sinus
+  8: Periapical_lesion
+  9: Post_and_core
+  10: Pulp
+  11: Restoration
+  12: Root_canal_filling
+  13: Background
