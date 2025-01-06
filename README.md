@@ -57,7 +57,7 @@ path: D:\boan\repo\smart_surgery_repo\Dentistry-Inference-PeriodontalDisease\dat
 
 ## Pytest command
 ```
-pytest -vv
+pytest -s -vv
 ```
 See the coverage
 
