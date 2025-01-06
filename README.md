@@ -49,6 +49,12 @@ https://drive.google.com/drive/u/2/folders/1pVjfbgGWWcPv0x4HVd1HNvlm8Fwi5VNg
 ```
 unrar to ./datasets/split_data_4.42
 
+Setting config to absolute path for path in ./config/dentistry.yaml
+
+ex:
+
+path: D:\boan\repo\smart_surgery_repo\Dentistry-Inference-PeriodontalDisease\datasets\split_data_4.42
+
 ## Pytest command
 ```
 pytest -vv
