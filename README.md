@@ -39,6 +39,8 @@ python src/allocation/service_layer/download.py
 
 ## Run performance test
 
+(If user don't want to run performance test, just remove tests/performance/)
+
 After downloading models from huggingface,
 
 download split_data_4.42.rar dataset from googlecloud
