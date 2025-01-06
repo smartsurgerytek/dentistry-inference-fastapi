@@ -23,7 +23,7 @@ The function created for periodontal estimation currently run with two ML models
 [Dental_measure](./src/allocation/domain/dental_measure/main.py)
 
 The function created for segmentation task and outputs yolov8 annotation format
-[Dental_segmentation](./src/allocation/domain/Dental_segmentation/main.py)
+[Dental_segmentation](./src/allocation/domain/dental_segmentation/main.py)
 
 ## Download models from Huggingface
 
