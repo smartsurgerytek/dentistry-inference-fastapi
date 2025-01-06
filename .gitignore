@@ -10,11 +10,10 @@ data/pics/processed
 testdata/
 val_data/
 datasets/
+data/
 runs/
 *.zip
 *.pt
 *.pyc
-data/
-tests/files/split_data_4.42
 *.rar
 *.tgz
