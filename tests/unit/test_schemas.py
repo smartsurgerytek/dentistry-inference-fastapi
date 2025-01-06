@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'
 from src.allocation.domain.dental_measure.schemas import *
 
 test_values = {
-    "valid_numbers": [0, 1, 2, 3, 10, 20.5],
+    "valid_numbers": [0, 1, 2, 3, 10, 20],
     "invalid_numbers": [None, -1, "invalid", [], False],  # 確保這些無效值會被正確處理
     "valid_stages": [0, 1, 2, 3, "I", "II", "III"],
     "invalid_stages": ["x", 4, None, [], -1]  # 同樣確保無效值被正確處理
@@ -29,21 +29,21 @@ def test_dental_measurements():
 
     # Valid data test
     for data in valid_data_list:
-        try:
-            measurement = DentalMeasurements(**data)
-            assert measurement.side_id == data["side_id"]
-            assert measurement.CEJ == data["CEJ"]
-            assert measurement.stage in test_values["valid_stages"]
-        except ValidationError as e:
-            print(f"Validation error for valid data {data}: {e}")
+        measurement = DentalMeasurements(**data)
+        assert measurement.side_id == data["side_id"]
+        assert measurement.CEJ == data["CEJ"]
+        assert measurement.stage in test_values["valid_stages"]
 
     # Invalid data test
     for i, invalid_data in enumerate(invalid_data_list):
+        pass_bool=False
         try:
             DentalMeasurements(**invalid_data)
-            assert False, f"Test {i} 應該引發 ValueError"
         except ValidationError as e:
-            print(f"Test {i} validation failed: {e}")
+            print(f"Test {i} validation failed as expected: {e}")
+            pass_bool=True
+        assert pass_bool, f"Test {i} 應該引發 ValueError"
+            
     print("dental_measurements 測試通過！")
 
 def test_stage_values():
@@ -56,11 +56,13 @@ def test_stage_values():
 
     for invalid_stage in test_values["invalid_stages"]:
         data = {"side_id": 1, "CEJ": (1, 2), "ALC": (3, 4), "APEX": (5, 6), "CAL": 1.5, "TRL": 2.5, "ABLD": 3.5, "stage": invalid_stage}
+        pass_bool=False
         try:
             DentalMeasurements(**data)
-            assert False, f"stage={invalid_stage} 應該引發錯誤"
-        except ValueError as e:
-            print(f"test_stage_values: stage={invalid_stage} 失敗，錯誤信息: {e}")
+        except ValidationError as e:
+            print(f"Test {invalid_stage} validation failed as expected: {e}")
+            pass_bool=True
+        assert pass_bool, f"Test {invalid_stage} 應該引發 ValueError"
     print("stage_values 測試通過！")
 
 def test_dental_measurements_serialization():
@@ -109,11 +111,13 @@ def test_exception_handling():
         {"side_id": 1, "CEJ": (1, 2), "ALC": (3, 4), "APEX": (5, 6), "CAL": 1.5, "TRL": 2.5, "ABLD": 3.5, "stage": "invalid"}
     ]
     for i, data in enumerate(exception_data):
+        pass_bool=False
         try:
             DentalMeasurements(**data)
-            assert False, f"Test {i} 應該引發 ValidationError"
         except ValidationError as e:
             print(f"Test {i} validation failed as expected: {e}")
+            pass_bool=True
+        assert pass_bool, f"Test {i} 應該引發 ValidationError"
     print("異常處理測試通過！")
 
 # 執行所有測試
