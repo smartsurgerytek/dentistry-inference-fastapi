@@ -3,7 +3,7 @@ from ultralytics import YOLO
 import numpy as np
 from src.allocation.domain.dental_measure.utils import *
 components_model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
-contour_model=YOLO('./models/dentistryContour_yolov11n-seg_4.46.pt')
+contour_model=YOLO('./models/dentistryContour_yolov11n_4.46.pt')
 
 def extract_features(masks_dict, original_img):
     """從遮罩中提取特徵點與區域資訊"""
@@ -14,25 +14,24 @@ def extract_features(masks_dict, original_img):
     # 清理各個遮罩
     masks_dict['dental_crown'] = clean_mask(masks_dict['dental_crown'])
     masks_dict['dentin'] = clean_mask(masks_dict['dentin'], kernel_size=(30, 1), iterations=1)
-    masks_dict['gum'] = clean_mask(masks_dict['gum'], kernel_size=(30, 1), iterations=2)
+    # binary_images['gum'] = clean_mask(binary_images['gum'], kernel_size=(30, 1), iterations=2)
 
     # 保留最大區域
     masks_dict['gum'] = extract_largest_component(masks_dict['gum'])
 
     # 膨脹處理後的 gum
     masks_dict['gum'] = cv2.dilate(masks_dict['gum'], kernel, iterations=10)
-    
-    # 膨脹處理dentin
-    dental_contours=np.maximum(masks_dict['dentin'], masks_dict['dental_crown'])    
-    kernel = np.ones((23,23), np.uint8)
-    filled = cv2.morphologyEx(dental_contours, cv2.MORPH_CLOSE, kernel)
-    filled=cv2.bitwise_and(filled, cv2.bitwise_not(masks_dict['dental_crown']))
-    masks_dict['dentin']=filled
-    
+
     # 合併所有遮罩
+    #combined_mask = combine_masks(dilated_gum, binary_images)
     combined_mask = combine_masks(masks_dict)
     non_masked_area = cv2.bitwise_not(combined_mask)
 
+     # 繪製 overlay
+    # overlay[binary_images["dental_crown"] > 0] = (163, 118, 158)  # 將 dental_crown 顯示
+    # overlay[binary_images["dentin"] > 0] = (117, 122, 152)  # 將 dentin 顯示
+    # overlay[binary_images['gum'] > 0] = (0, 177, 177)  # 將 dentin 顯示
+    # overlay[binary_images['crown'] > 0] = (255, 0, 128) # 將 crown 顯示
      # 繪製 overlay
     key_color_mapping={
         'dental_crown': (163, 118, 158),
@@ -43,7 +42,6 @@ def extract_features(masks_dict, original_img):
     for key in key_color_mapping.keys():
         if masks_dict.get(key) is not None:
             overlay[masks_dict[key] > 0] = key_color_mapping[key]
-
     # 回傳疊加後的影像和線條影像
     return overlay, line_image, non_masked_area
 
@@ -55,9 +53,9 @@ def locate_points(image, component_mask, binary_images, idx, overlay):
         # 去除掉過小的分割區域
         if area < area_threshold:
             return True
-        return False    
+        return False
+
     
-    """以分割後的 dentin 為單位進行處理"""
     prediction = {}
     if less_than_area_threshold(component_mask, AREA_THRESHOLD):
         return prediction
@@ -93,16 +91,14 @@ def locate_points(image, component_mask, binary_images, idx, overlay):
     ########### 處理與 dentin 的底端 ########### 
     dentin_left_x, dentin_left_y, dentin_right_x, dentin_right_y = locate_points_with_dentin(binary_images["gum"], dilated_mask, mid_x, mid_y, angle, short_side, image, component_mask)
     
-    prediction = {"teeth_center": (mid_x, mid_y), 
+    prediction = {"mid": (mid_x, mid_y), 
                 "enamel_left": (enamel_left_x, enamel_left_y), "enamel_right":(enamel_right_x, enamel_right_y),
                 "gum_left":(gum_left_x, gum_left_y), "gum_right": (gum_right_x, gum_right_y),
                 "dentin_left":(dentin_left_x, dentin_left_y), "dentin_right":(dentin_right_x, dentin_right_y),
                 }
-
     for key, (x, y) in prediction.items():
         # 對每一個座標進行 safe_int 處理
         prediction[key] = (int_processing(x), int_processing(y))
-
     return prediction
 
 def get_mask_dict_from_model(model, image, method='semantic'):

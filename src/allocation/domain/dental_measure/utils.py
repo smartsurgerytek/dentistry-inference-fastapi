@@ -3,11 +3,12 @@ import cv2
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from typing import Tuple
 PIXEL_THRESHOLD = 2000  # 設定閾值，僅保留像素數大於該值的區域
 AREA_THRESHOLD = 500 # 設定閾值，避免過小的分割區域
-DISTANCE_THRESHOLD = 250 # 定義距離閾值（例如：設定 10 為最大可接受距離）
+DISTANCE_THRESHOLD = 200 # 定義距離閾值（例如：設定 10 為最大可接受距離）
 SHORT_SIDE = 120 # 轉動短邊判斷閾值
 TWO_POINT_TEETH_THRESHOLD = 259 # 初判單雙牙尖使用
 RANGE_FOR_TOOTH_TIP_LEFT = 80 # 強迫判斷雙牙尖，中心區域定義使用(左)
@@ -67,7 +68,7 @@ def show_plot(image):
 # ---------- 函式定義 ------------ #
 # 計算基於 ['enamel_x'] 和 ['enamel_y'] 的距離函數
 def calculate_distance(row_true, row_cleaned):
-    true_values = np.array([row_true['enamel_x'], row_true['enamel_y']])
+    true_values = np.array([row_true['enamel_x'], row_true['enamel_y']])# enamel: 珐瑯質跟象牙質交接點
     cleaned_values = np.array([row_cleaned['enamel_x_predicted'], row_cleaned['enamel_y_predicted']])
     return np.linalg.norm(true_values - cleaned_values)
 
@@ -125,7 +126,6 @@ def convert_coord_back(coord, angle, image):
     original_coord_back = original_coord_back[:2].astype(int)
     
     return original_coord_back
-
 # 檢查數值是否在指定範圍中
 def is_within_range(value, target, range_size=50):
     return target - range_size <= value <= target + range_size
@@ -156,29 +156,78 @@ def get_top_points(contours, reverse=True):
     # 排序
     all_points = sorted(all_points, key=lambda x: x[0][1], reverse=reverse)
     return all_points
-               
+# 計算 true_stage 並轉換為毫米
+def calculate_true_stage(row):
+    enamel_x, enamel_y = row['珐瑯質跟象牙質交接點x'], row['珐瑯質跟象牙質交接點y']
+    gum_x, gum_y = row['牙齦交接點x'], row['牙齦交接點y']
+    dentin_x, dentin_y = row['牙本體尖端點x'], row['牙本體尖端點y']
+    
+    # 圖片比例轉換 (像素轉毫米)
+    x_scale = 41 / 1280
+    y_scale = 31 / 960
+
+    # 將像素轉換為毫米座標
+    enamel_x_mm = enamel_x * x_scale
+    enamel_y_mm = enamel_y * y_scale
+    gum_x_mm = gum_x * x_scale
+    gum_y_mm = gum_y * y_scale
+    dentin_x_mm = dentin_x * x_scale
+    dentin_y_mm = dentin_y * y_scale
+    
+    # 計算距離 (毫米)
+    CEJ_ALC = np.sqrt((enamel_x_mm - gum_x_mm) ** 2 + (enamel_y_mm - gum_y_mm) ** 2)
+    CEJ_APEX = np.sqrt((enamel_x_mm - dentin_x_mm) ** 2 + (enamel_y_mm - dentin_y_mm) ** 2)
+    
+    # 計算 ABLD
+    ABLD = ((CEJ_ALC - 2) / (CEJ_APEX - 2)) * 100
+    
+    # 判定 true_stage
+    if ABLD <= 0:
+        stage = "0"
+    elif ABLD <= 15:
+        stage = "I"
+    elif ABLD <= 33.3:
+        stage = "II"
+    else:
+        stage = "III"
+    
+    return stage               
 # 計算 percentage 和期數，預測資料使用
 def calculate_predicted_stage(row):
-    enamel_x, enamel_y = row['enamel_x_predicted'], row['enamel_y_predicted']
-    gum_x, gum_y = row['gum_x_predicted'], row['gum_y_predicted']
-    dentin_x, dentin_y = row['dentin_x_predicted'], row['dentin_y_predicted']
+    enamel_x, enamel_y = row['enamel_x'], row['enamel_y']
+    gum_x, gum_y = row['gum_x'], row['gum_y']
+    dentin_x, dentin_y = row['dentin_x'], row['dentin_y']
     
-    # 計算 A, B, C 點之間的距離
-    AB = np.sqrt((enamel_x - gum_x) ** 2 + (enamel_y - gum_y) ** 2)
-    AC = np.sqrt((enamel_x - dentin_x) ** 2 + (enamel_y - dentin_y) ** 2)
+    # 圖片比例轉換 (像素轉毫米)
+    x_scale = 41 / 1280
+    y_scale = 31 / 960
+
+    # 將像素轉換為毫米座標
+    enamel_x_mm = enamel_x * x_scale
+    enamel_y_mm = enamel_y * y_scale
+    gum_x_mm = gum_x * x_scale
+    gum_y_mm = gum_y * y_scale
+    dentin_x_mm = dentin_x * x_scale
+    dentin_y_mm = dentin_y * y_scale
     
-    # 計算 percentage
-    percentage = (AB / AC) * 100
+    # 計算距離 (毫米)
+    CEJ_ALC = np.sqrt((enamel_x_mm - gum_x_mm) ** 2 + (enamel_y_mm - gum_y_mm) ** 2)
+    CEJ_APEX = np.sqrt((enamel_x_mm - dentin_x_mm) ** 2 + (enamel_y_mm - dentin_y_mm) ** 2)
     
-    # 判斷期數
-    if percentage < 15:
-        stage = "1"
-    elif 15 <= percentage <= 33:
-        stage = "2"
+    # 計算 ABLD
+    ABLD = ((CEJ_ALC - 2) / (CEJ_APEX - 2)) * 100
+    
+    # 判定 predicted_stage
+    if ABLD <= 0:
+        stage = "0"
+    elif ABLD <= 15:
+        stage = "I"
+    elif ABLD <= 33.3:
+        stage = "II"
     else:
-        stage = "3"
+        stage = "III"
     
-    return percentage, stage
+    return ABLD, stage
 
 
 # ---------- 影像處理與遮罩相關函式 ------------ #
@@ -213,6 +262,7 @@ def clean_mask(mask, kernel_size=(3, 3), iterations=5):
     mask = cv2.dilate(mask, kernel, iterations=iterations)
     return mask
 
+
 def filter_large_components(mask, pixel_threshold):
     """過濾掉像素數量小於閾值的區域"""
     num_labels, labels = cv2.connectedComponents(mask)
@@ -222,7 +272,6 @@ def filter_large_components(mask, pixel_threshold):
         if label_counts[label] > pixel_threshold:
             filtered_image[labels == label] = 255
     return filtered_image
-
 # ---------- 影像分析與特徵提取相關函式 ------------ #
 def get_mid_point(image, dilated_mask, idx):
     """取得物件中點，並且繪製點及idx標籤於 image"""
@@ -231,16 +280,14 @@ def get_mid_point(image, dilated_mask, idx):
         mid_point = np.mean(non_zero_points, axis=0).astype(int)
         mid_y, mid_x = mid_point
         # 在繪製用圖片標註 dentin 中心點及對應數字標籤
-        #cv2.putText(image, str(idx), (mid_x-5, mid_y-5), cv2.FONT_HERSHEY_SIMPLEX,1, (255, 255, 0), 1, cv2.LINE_AA)
+        cv2.putText(image, str(idx), (mid_x-5, mid_y-5), cv2.FONT_HERSHEY_SIMPLEX,1, (255, 255, 0), 1, cv2.LINE_AA)
         cv2.circle(image, (mid_x, mid_y), 5, (255, 255, 0), -1)  # 黃色圓點
     return mid_y, mid_x
 
 def locate_points_with_dental_crown(dental_crown_bin, dilated_mask, mid_x, mid_y, overlay):
     """處理與 dental_crown 之交點 (Enamel的底端)"""
     # 獲取每個獨立 mask 與原始 mask 的交集區域
-    #breakpoint()
     intersection = cv2.bitwise_and(dental_crown_bin, dilated_mask)
-
     overlay[intersection > 0] = (255, 0, 0)  # 將 dentin 顯示
     # 取得交集區域的 contour 作為交點
     contours, _ = cv2.findContours(intersection, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -523,7 +570,13 @@ def combine_masks(binary_images):
             combined_mask = cv2.bitwise_or(combined_mask, binary_images[key]) if combined_mask is not None else binary_images[key]
     return combined_mask
 
-
+# def combine_masks(gum_mask, binary_images):
+#     """合併所有遮罩，形成完整的合併遮罩"""
+#     breakpoint()
+#     combined_mask = cv2.bitwise_or(gum_mask, binary_images['teeth'])
+#     combined_mask = cv2.bitwise_or(combined_mask, binary_images['dental_crown'])
+#     combined_mask = cv2.bitwise_or(combined_mask, binary_images['dentin'])
+#     return combined_mask
 def draw_point(prediction, image_for_drawing):
     # 定義點的顏色
     points = {
@@ -633,5 +686,141 @@ def int_processing(val):
     if val is None:
         return None  # 或者設為 0，根據需求決定
     return int(val)
+
+
+def draw_image_and_print_information(prediction, image_for_drawing, line_image):
+    # 繪圖及印出資訊
+    print("Mid Points : ", prediction["mid"])
+    print("enamel_left : ", prediction["enamel_left"])
+    print("enamel_right : ", prediction["enamel_right"])
+    print("gum_left : ", prediction["gum_left"])
+    print("gum_right : ", prediction["gum_right"])
+    print("dentin_left : ", prediction["dentin_left"])
+    print("dentin_right : ", prediction["dentin_right"])
+    cv2.circle(image_for_drawing, prediction["enamel_left"], 5, (0, 0, 255), -1)
+    cv2.circle(image_for_drawing, prediction["enamel_right"], 5, (0, 0, 255), -1)
+    cv2.circle(image_for_drawing, prediction["gum_left"], 5, (0, 255, 0), -1)
+    cv2.circle(image_for_drawing, prediction["gum_right"], 5, (0, 255, 0), -1)
+    cv2.circle(image_for_drawing, prediction["dentin_left"], 5, (255, 0, 0), -1)
+    cv2.circle(image_for_drawing, prediction["dentin_right"], 5, (255, 0, 0), -1)
+    # Draw lines between points
+    print("e_l -> d_l : ", prediction["enamel_left"], prediction["dentin_left"])
+    if (prediction["enamel_left"][0] is not None) and (prediction["dentin_left"] is not None):
+        cv2.line(line_image, prediction["enamel_left"], prediction["dentin_left"], (0, 0, 255), 2)
+    else:
+        print("None Detected. Not drawing line.")
+        
+    print("e_l -> g_l : ", prediction["enamel_left"], prediction["gum_left"])
+    if (prediction["enamel_left"][0] is not None) and (prediction["gum_left"][0] is not None):
+        cv2.line(line_image, prediction["enamel_left"], prediction["gum_left"], (0, 255, 255), 2)
+    else:
+        print("None Detected. Not drawing line.")
+        
+    print("e_r -> d_r : ", prediction["enamel_right"], prediction["dentin_right"])
+    if (prediction["enamel_right"][0] is not None) and (prediction["dentin_right"] is not None):
+        cv2.line(line_image, prediction["enamel_right"], prediction["dentin_right"], (0, 0, 255), 2)
+    else:
+        print("None Detected. Not drawing line.")
+    
+    print("e_r -> g_r : ", prediction["enamel_right"], prediction["gum_right"])
+    if (prediction["enamel_right"][0] is not None) and (prediction["gum_right"][0] is not None):
+        cv2.line(line_image, prediction["enamel_right"], prediction["gum_right"], (0, 255, 255), 2)
+    else:
+        print("None Detected. Not drawing line.")
+
+
+def process_and_save_predictions(predictions, dir_path, target_dir, correct_df):
+    """處理並儲存預測結果"""
+    sorted_predictions = sorted(predictions, key=lambda x: x['mid'][0])
+    df = pd.DataFrame(sorted_predictions)
+    
+    if len(df) == 0:
+        df = correct_df.drop(index=df.index)
+        df.to_excel(os.path.join(dir_path, f"{target_dir}_comparison_results.xlsx"), index=False)
+        return
+
+    df = restructure_dataframe(df)
+    df_combined = combine_and_clean_dataframe(df)
+
+    # 儲存合併結果
+    df_cleaned = df_combined.dropna()
+    if len(df_cleaned) != 0:
+        df_cleaned['percentage'], df_cleaned['predicted_stage'] = zip(*df_cleaned.apply(calculate_predicted_stage, axis=1)) # 計算 stage
+    df_true_cleaned = prepare_true_dataframe(correct_df)
+
+    df_merged = merge_dataframes(df_cleaned, df_true_cleaned)
+    df_merged = df_merged.rename(columns={'牙齒ID（相對該張影像的順序ID即可、從左至右）':'tooth_id', 
+                        "牙尖ID（從左側至右側，看是連線到哪一個牙尖端）":"dentin_id",
+                        "珐瑯質跟象牙質交接點x":"enamel_x", "珐瑯質跟象牙質交接點y":"enamel_y",
+                        "牙齦交接點x":"gum_x" , "牙齦交接點y":"gum_y",
+                        "牙本體尖端點x":"dentin_x" , "牙本體尖端點y":"dentin_y" ,
+                        "長度":"length","stage":"true_stage"
+                        })
+    df_merged.to_excel(os.path.join(dir_path, f"{target_dir}_comparison_results.xlsx"), index=False)
+
+def restructure_dataframe(df):
+    """重構 DataFrame 結構"""
+    df = df.drop(columns=['dentin_id'])
+    df['tooth_id'] = range(1, len(df) + 1)
+    df_left = df[['tooth_id', 'mid', 'enamel_left', 'gum_left', 'dentin_left']]
+    df_left.columns = ['tooth_id', 'mid', 'enamel', 'gum', 'dentin']
+    df_right = df[['tooth_id', 'mid', 'enamel_right', 'gum_right', 'dentin_right']]
+    df_right.columns = ['tooth_id', 'mid', 'enamel', 'gum', 'dentin']
+    return pd.concat([df_left, df_right]).sort_values(by=['tooth_id', 'enamel']).reset_index(drop=True)
+
+def combine_and_clean_dataframe(df_combined):
+    """合併 DataFrame 並清理資料"""
+    dentin_id = 1
+    dentin_ids = [dentin_id]
+    for i in range(1, len(df_combined)):
+        if df_combined.iloc[i]['dentin'] == df_combined.iloc[i - 1]['dentin']:
+            dentin_ids.append(dentin_id)
+        else:
+            dentin_id += 1
+            dentin_ids.append(dentin_id)
+
+    df_combined['dentin_id'] = dentin_ids
+    df_combined[['enamel_x', 'enamel_y']] = pd.DataFrame(df_combined['enamel'].tolist(), index=df_combined.index)
+    df_combined[['gum_x', 'gum_y']] = pd.DataFrame(df_combined['gum'].tolist(), index=df_combined.index)
+    df_combined[['dentin_x', 'dentin_y']] = pd.DataFrame(df_combined['dentin'].tolist(), index=df_combined.index)
+    return df_combined.drop(columns=['mid', 'enamel', 'gum', 'dentin'])
+
+def prepare_true_dataframe(correct_df):
+    """準備真實資料的 DataFrame"""
+    df_true_cleaned = correct_df
+    df_true_cleaned = correct_df.drop(columns=['長度', 'stage'])
+    #df_true_cleaned = correct_df.rename(columns={'珐瑯質跟象牙質交接點x':'enamel_x', "珐瑯質跟象牙質交接點y":"enamel_y"})
+    df_true_cleaned['true_stage'] = df_true_cleaned.apply(calculate_true_stage, axis=1)
+    return df_true_cleaned
+
+def merge_dataframes(df_cleaned, df_true_cleaned):
+    """合併預測資料與真實資料"""
+    df_merged_list = []
+    for index, row_true in df_true_cleaned.iterrows():
+        if df_cleaned.empty:
+            row_true_reset = df_true_cleaned.iloc[[index]].reset_index(drop=True)
+            #row_true_reset.loc[0, ['class', 'denture']] = np.nan
+            empty_predicted_columns = pd.DataFrame(np.nan, index=row_true_reset.index, columns=df_cleaned.columns)
+            merged_row = pd.concat([row_true_reset, empty_predicted_columns], axis=1)
+        else:
+            distances = df_cleaned.apply(lambda row_cleaned: calculate_distance(row_true, row_cleaned), axis=1)
+            closest_index = distances.idxmin()
+            min_distance = distances[closest_index]
+
+            if min_distance > DISTANCE_THRESHOLD:
+                row_true_reset = df_true_cleaned.iloc[[index]].reset_index(drop=True)
+                #row_true_reset.loc[0, ['class', 'denture']] = np.nan
+                print(row_true_reset)
+                empty_predicted_columns = pd.DataFrame(np.nan, index=row_true_reset.index, columns=df_cleaned.columns)
+                merged_row = pd.concat([row_true_reset, empty_predicted_columns], axis=1).reset_index(drop=True)
+            else:
+                row_true_reset = df_true_cleaned.iloc[[index]].reset_index(drop=True)
+                row_cleaned_reset = df_cleaned.loc[[closest_index]].reset_index(drop=True)
+                merged_row = pd.concat([row_true_reset, row_cleaned_reset], axis=1).reset_index(drop=True)
+                df_cleaned = df_cleaned.drop(closest_index)
+
+        df_merged_list.append(merged_row)
+    return pd.concat(df_merged_list, ignore_index=True)
+
 
 
