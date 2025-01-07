@@ -66,11 +66,7 @@ def show_plot(image):
     # 顯示圖片
     plt.show()
 # ---------- 函式定義 ------------ #
-# 計算基於 ['enamel_x'] 和 ['enamel_y'] 的距離函數
-def calculate_distance(row_true, row_cleaned):
-    true_values = np.array([row_true['enamel_x'], row_true['enamel_y']])# enamel: 珐瑯質跟象牙質交接點
-    cleaned_values = np.array([row_cleaned['enamel_x_predicted'], row_cleaned['enamel_y_predicted']])
-    return np.linalg.norm(true_values - cleaned_values)
+
 
 def calculate_distance_with_scale(p1,p2,scale_x,scale_y):
     p1_array = np.array([p1[0]*scale_x, p1[1]*scale_y])
@@ -156,78 +152,7 @@ def get_top_points(contours, reverse=True):
     # 排序
     all_points = sorted(all_points, key=lambda x: x[0][1], reverse=reverse)
     return all_points
-# 計算 true_stage 並轉換為毫米
-def calculate_true_stage(row):
-    enamel_x, enamel_y = row['珐瑯質跟象牙質交接點x'], row['珐瑯質跟象牙質交接點y']
-    gum_x, gum_y = row['牙齦交接點x'], row['牙齦交接點y']
-    dentin_x, dentin_y = row['牙本體尖端點x'], row['牙本體尖端點y']
-    
-    # 圖片比例轉換 (像素轉毫米)
-    x_scale = 41 / 1280
-    y_scale = 31 / 960
 
-    # 將像素轉換為毫米座標
-    enamel_x_mm = enamel_x * x_scale
-    enamel_y_mm = enamel_y * y_scale
-    gum_x_mm = gum_x * x_scale
-    gum_y_mm = gum_y * y_scale
-    dentin_x_mm = dentin_x * x_scale
-    dentin_y_mm = dentin_y * y_scale
-    
-    # 計算距離 (毫米)
-    CEJ_ALC = np.sqrt((enamel_x_mm - gum_x_mm) ** 2 + (enamel_y_mm - gum_y_mm) ** 2)
-    CEJ_APEX = np.sqrt((enamel_x_mm - dentin_x_mm) ** 2 + (enamel_y_mm - dentin_y_mm) ** 2)
-    
-    # 計算 ABLD
-    ABLD = ((CEJ_ALC - 2) / (CEJ_APEX - 2)) * 100
-    
-    # 判定 true_stage
-    if ABLD <= 0:
-        stage = "0"
-    elif ABLD <= 15:
-        stage = "I"
-    elif ABLD <= 33.3:
-        stage = "II"
-    else:
-        stage = "III"
-    
-    return stage               
-# 計算 percentage 和期數，預測資料使用
-def calculate_predicted_stage(row):
-    enamel_x, enamel_y = row['enamel_x'], row['enamel_y']
-    gum_x, gum_y = row['gum_x'], row['gum_y']
-    dentin_x, dentin_y = row['dentin_x'], row['dentin_y']
-    
-    # 圖片比例轉換 (像素轉毫米)
-    x_scale = 41 / 1280
-    y_scale = 31 / 960
-
-    # 將像素轉換為毫米座標
-    enamel_x_mm = enamel_x * x_scale
-    enamel_y_mm = enamel_y * y_scale
-    gum_x_mm = gum_x * x_scale
-    gum_y_mm = gum_y * y_scale
-    dentin_x_mm = dentin_x * x_scale
-    dentin_y_mm = dentin_y * y_scale
-    
-    # 計算距離 (毫米)
-    CEJ_ALC = np.sqrt((enamel_x_mm - gum_x_mm) ** 2 + (enamel_y_mm - gum_y_mm) ** 2)
-    CEJ_APEX = np.sqrt((enamel_x_mm - dentin_x_mm) ** 2 + (enamel_y_mm - dentin_y_mm) ** 2)
-    
-    # 計算 ABLD
-    ABLD = ((CEJ_ALC - 2) / (CEJ_APEX - 2)) * 100
-    
-    # 判定 predicted_stage
-    if ABLD <= 0:
-        stage = "0"
-    elif ABLD <= 15:
-        stage = "I"
-    elif ABLD <= 33.3:
-        stage = "II"
-    else:
-        stage = "III"
-    
-    return ABLD, stage
 
 
 # ---------- 影像處理與遮罩相關函式 ------------ #
@@ -758,69 +683,8 @@ def process_and_save_predictions(predictions, dir_path, target_dir, correct_df):
                         })
     df_merged.to_excel(os.path.join(dir_path, f"{target_dir}_comparison_results.xlsx"), index=False)
 
-def restructure_dataframe(df):
-    """重構 DataFrame 結構"""
-    df = df.drop(columns=['dentin_id'])
-    df['tooth_id'] = range(1, len(df) + 1)
-    df_left = df[['tooth_id', 'mid', 'enamel_left', 'gum_left', 'dentin_left']]
-    df_left.columns = ['tooth_id', 'mid', 'enamel', 'gum', 'dentin']
-    df_right = df[['tooth_id', 'mid', 'enamel_right', 'gum_right', 'dentin_right']]
-    df_right.columns = ['tooth_id', 'mid', 'enamel', 'gum', 'dentin']
-    return pd.concat([df_left, df_right]).sort_values(by=['tooth_id', 'enamel']).reset_index(drop=True)
 
-def combine_and_clean_dataframe(df_combined):
-    """合併 DataFrame 並清理資料"""
-    dentin_id = 1
-    dentin_ids = [dentin_id]
-    for i in range(1, len(df_combined)):
-        if df_combined.iloc[i]['dentin'] == df_combined.iloc[i - 1]['dentin']:
-            dentin_ids.append(dentin_id)
-        else:
-            dentin_id += 1
-            dentin_ids.append(dentin_id)
 
-    df_combined['dentin_id'] = dentin_ids
-    df_combined[['enamel_x', 'enamel_y']] = pd.DataFrame(df_combined['enamel'].tolist(), index=df_combined.index)
-    df_combined[['gum_x', 'gum_y']] = pd.DataFrame(df_combined['gum'].tolist(), index=df_combined.index)
-    df_combined[['dentin_x', 'dentin_y']] = pd.DataFrame(df_combined['dentin'].tolist(), index=df_combined.index)
-    return df_combined.drop(columns=['mid', 'enamel', 'gum', 'dentin'])
-
-def prepare_true_dataframe(correct_df):
-    """準備真實資料的 DataFrame"""
-    df_true_cleaned = correct_df
-    df_true_cleaned = correct_df.drop(columns=['長度', 'stage'])
-    #df_true_cleaned = correct_df.rename(columns={'珐瑯質跟象牙質交接點x':'enamel_x', "珐瑯質跟象牙質交接點y":"enamel_y"})
-    df_true_cleaned['true_stage'] = df_true_cleaned.apply(calculate_true_stage, axis=1)
-    return df_true_cleaned
-
-def merge_dataframes(df_cleaned, df_true_cleaned):
-    """合併預測資料與真實資料"""
-    df_merged_list = []
-    for index, row_true in df_true_cleaned.iterrows():
-        if df_cleaned.empty:
-            row_true_reset = df_true_cleaned.iloc[[index]].reset_index(drop=True)
-            #row_true_reset.loc[0, ['class', 'denture']] = np.nan
-            empty_predicted_columns = pd.DataFrame(np.nan, index=row_true_reset.index, columns=df_cleaned.columns)
-            merged_row = pd.concat([row_true_reset, empty_predicted_columns], axis=1)
-        else:
-            distances = df_cleaned.apply(lambda row_cleaned: calculate_distance(row_true, row_cleaned), axis=1)
-            closest_index = distances.idxmin()
-            min_distance = distances[closest_index]
-
-            if min_distance > DISTANCE_THRESHOLD:
-                row_true_reset = df_true_cleaned.iloc[[index]].reset_index(drop=True)
-                #row_true_reset.loc[0, ['class', 'denture']] = np.nan
-                print(row_true_reset)
-                empty_predicted_columns = pd.DataFrame(np.nan, index=row_true_reset.index, columns=df_cleaned.columns)
-                merged_row = pd.concat([row_true_reset, empty_predicted_columns], axis=1).reset_index(drop=True)
-            else:
-                row_true_reset = df_true_cleaned.iloc[[index]].reset_index(drop=True)
-                row_cleaned_reset = df_cleaned.loc[[closest_index]].reset_index(drop=True)
-                merged_row = pd.concat([row_true_reset, row_cleaned_reset], axis=1).reset_index(drop=True)
-                df_cleaned = df_cleaned.drop(closest_index)
-
-        df_merged_list.append(merged_row)
-    return pd.concat(df_merged_list, ignore_index=True)
 
 
 
