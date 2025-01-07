@@ -9,3 +9,4 @@ pytest-cov
 huggingface_hub
 tabulate
 scikit-learn
+openpyxl
