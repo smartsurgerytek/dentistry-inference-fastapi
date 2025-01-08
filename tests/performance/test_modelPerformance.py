@@ -175,7 +175,7 @@ def generate_model_report(model, model_path, yaml_path, save_val_path, full_name
         file.write('## Confusion matrix recall\n\n')   
         file.write(f'## ![image]({full_name}_confusion_matrix_recall.png) \n\n')  
     df.to_csv(save_val_path+'/'+f'{full_name}.csv', index=False)
-    print(f'save report in {save_val_path+'/'+full_name+'_report.md'}')
+    print(f"save report in {save_val_path}/{full_name}_report.md")
 
 def test_model_performance():
     model_path='./models/dentistry_yolov11x-seg-all_4.42.pt'

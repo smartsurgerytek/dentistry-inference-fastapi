@@ -1,5 +1,7 @@
 
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 import pandas as pd
 from sklearn.metrics import confusion_matrix, classification_report, roc_auc_score, roc_curve
 from sklearn.preprocessing import label_binarize
@@ -10,7 +12,8 @@ from src.allocation.domain.dental_measure.main import *
 
 def restructure_dataframe(df):
     """重構 DataFrame 結構"""
-    df = df.drop(columns=['dentin_id'])
+    if 'dentin_id' in df.columns:
+        df = df.drop(columns=['dentin_id'])
     df['tooth_id'] = range(1, len(df) + 1)
     df_left = df[['tooth_id', 'mid', 'enamel_left', 'gum_left', 'dentin_left']]
     df_left.columns = ['tooth_id', 'mid', 'enamel', 'gum', 'dentin']
@@ -37,8 +40,7 @@ def combine_and_clean_dataframe(df_combined):
 
 def prepare_true_dataframe(correct_df):
     """準備真實資料的 DataFrame"""
-    df_true_cleaned = correct_df
-    df_true_cleaned = correct_df.drop(columns=['length', 'stage'])
+    df_true_cleaned = correct_df.drop(columns=[col for col in ['length', 'stage'] if col in correct_df.columns])
     #df_true_cleaned = correct_df.rename(columns={'珐瑯質跟象牙質交接點x':'enamel_x', "珐瑯質跟象牙質交接點y":"enamel_y"})
     df_true_cleaned['true_stage'] = df_true_cleaned.apply(calculate_true_stage, axis=1)
     return df_true_cleaned
@@ -60,7 +62,6 @@ def merge_dataframes(df_cleaned, df_true_cleaned):
             if min_distance > DISTANCE_THRESHOLD:
                 row_true_reset = df_true_cleaned.iloc[[index]].reset_index(drop=True)
                 #row_true_reset.loc[0, ['class', 'denture']] = np.nan
-                print(row_true_reset)
                 empty_predicted_columns = pd.DataFrame(np.nan, index=row_true_reset.index, columns=df_cleaned.columns)
                 merged_row = pd.concat([row_true_reset, empty_predicted_columns], axis=1).reset_index(drop=True)
             else:
@@ -75,7 +76,6 @@ def merge_dataframes(df_cleaned, df_true_cleaned):
 
 # 計算基於 ['enamel_x'] 和 ['enamel_y'] 的距離函數
 def calculate_distance(row_true, row_cleaned):
-    #breakpoint()
     true_values = np.array([row_true['enamel_x'], row_true['enamel_y']])# enamel: 珐瑯質跟象牙質交接點
     cleaned_values = np.array([row_cleaned['enamel_x'], row_cleaned['enamel_y']])
     return np.linalg.norm(true_values - cleaned_values)
@@ -89,8 +89,8 @@ def calculate_true_stage(row):
     dentin_x, dentin_y = row['dentin_x'], row['dentin_y']
     
     # 圖片比例轉換 (像素轉毫米)
-    x_scale = 41 / 1280
-    y_scale = 31 / 960
+    x_scale = 40 / 1280
+    y_scale = 30 / 960
 
     # 將像素轉換為毫米座標
     enamel_x_mm = enamel_x * x_scale
@@ -125,8 +125,8 @@ def calculate_predicted_stage(row):
     dentin_x, dentin_y = row['dentin_x'], row['dentin_y']
     
     # 圖片比例轉換 (像素轉毫米)
-    x_scale = 41 / 1280
-    y_scale = 31 / 960
+    x_scale = 40 / 1280
+    y_scale = 30 / 960
 
     # 將像素轉換為毫米座標
     enamel_x_mm = enamel_x * x_scale
@@ -157,23 +157,26 @@ def calculate_predicted_stage(row):
 
 def process_and_save_predictions(predictions, correct_df):
     """處理並儲存預測結果"""
+    df_true_cleaned = prepare_true_dataframe(correct_df)
+    if not predictions:
+        df_pred=pd.DataFrame()
+        # col=pd.Series([np.nan] * len(df_true_cleaned['true_stage']))
+        # df_pred['predicted_stage']=col
+        return df_pred , df_true_cleaned
+        #pd.Series(np.zeros(len(df_true_cleaned['true_stage'])))
     sorted_predictions = sorted(predictions, key=lambda x: x['mid'][0])
+
     df = pd.DataFrame(sorted_predictions)
-    
-    # if len(df) == 0:
-    #     df = correct_df.drop(index=df.index)
-    #     df.to_excel(os.path.join(dir_path, f"{target_dir}_comparison_results.xlsx"), index=False)
-    #     return
-
     df = restructure_dataframe(df)
-
     df_combined = combine_and_clean_dataframe(df)
-
-    # 儲存合併結果
     df_cleaned = df_combined.dropna()
     if len(df_cleaned) != 0:
-        df_cleaned['percentage'], df_cleaned['predicted_stage'] = zip(*df_cleaned.apply(calculate_predicted_stage, axis=1)) # 計算 stage
-    df_true_cleaned = prepare_true_dataframe(correct_df)
+        percentage_predstage_tuple=df_cleaned.apply(calculate_predicted_stage, axis=1)
+        #df_cleaned['percentage'], df_cleaned['predicted_stage'] = zip(*percentage_predstage_tuple) # 計算 stage
+        df_cleaned_copy=df_cleaned.copy()
+        df_cleaned_copy['percentage'], df_cleaned_copy['predicted_stage'] = zip(*percentage_predstage_tuple)
+
+    
 
     #df_merged = merge_dataframes(df_cleaned, df_true_cleaned)
     # df_merged = df_merged.rename(columns={'牙齒ID（相對該張影像的順序ID即可、從左至右）':'tooth_id', 
@@ -183,14 +186,13 @@ def process_and_save_predictions(predictions, correct_df):
     #                     "牙本體尖端點x":"dentin_x" , "牙本體尖端點y":"dentin_y" ,
     #                     "長度":"length","stage":"true_stage"
     #                     })
-    return df_cleaned, df_true_cleaned
-    breakpoint()
+    return df_cleaned_copy, df_true_cleaned
+
 # 設定主資料夾路徑
 main_folder_path = './datasets/300'
 
-# 初始化空的 DataFrame 來儲存篩選後的結果
-filtered_data = pd.DataFrame()
-
+# # 初始化空的 DataFrame 來儲存篩選後的結果
+# filtered_data = pd.DataFrame()
 # 定義分期對應
 stage_mapping = {'0': 0, 'I': 1, 'II': 2, 'III': 3}
 reverse_stage_mapping = {v: k for k, v in stage_mapping.items()}
@@ -207,22 +209,59 @@ tooth_col_mapping={
     "長度":"length"
 }
 
-scale_x=31/960
-scale_y=41/1080
 
-# 遍歷所有子資料夾
-for folder_name in os.listdir(main_folder_path):
-    excel_path=os.path.join(main_folder_path, folder_name, f'analysis_{folder_name}.xlsx')
-    raw_image_path=os.path.join(main_folder_path, folder_name, f'raw_{folder_name}.png')
+def test_detntalMeasure_performance():
+    scale_x=30/960
+    scale_y=40/1080
 
-    if not os.path.isfile(excel_path) or not os.path.isfile(raw_image_path):
-        continue
+    # 遍歷所有子資料夾
+    df_pred_list=[]
+    df_true_list=[]
+    for folder_name in os.listdir(main_folder_path):
+        excel_path=os.path.join(main_folder_path, folder_name, f'analysis_{folder_name}.xlsx')
+        raw_image_path=os.path.join(main_folder_path, folder_name, f'raw_{folder_name}.png')
 
-    df = pd.read_excel(excel_path)
-    df = df.rename(columns=tooth_col_mapping)
+        if not os.path.isfile(excel_path) or not os.path.isfile(raw_image_path):
+            continue
 
-    image=cv2.imread(raw_image_path)
-    estimation_results=dental_estimation(image, scale=(scale_x, scale_y), return_type='dict')
-    df_cleaned, df_true_cleaned=process_and_save_predictions(estimation_results, df)
-    breakpoint()
+        df = pd.read_excel(excel_path)
+        df_true = df.rename(columns=tooth_col_mapping)
 
+        image=cv2.imread(raw_image_path)
+
+        estimation_results=dental_estimation(image, scale=(scale_x, scale_y), return_type='dict')
+        estimation_results = sorted(estimation_results, key=lambda x: x['mid'][0])
+
+        df_pred, df_true=process_and_save_predictions(estimation_results, df_true)
+        df_merged=merge_dataframes(df_pred, df_true)
+
+        if df_pred.empty:
+            col=pd.Series([np.nan] * len(df_true['true_stage']))
+            df_pred_list.append(col)
+            df_true_list.append(df_true['true_stage'])        
+        else:    
+            df_pred_list.append(df_merged['predicted_stage'])
+            df_true_list.append(df_merged['true_stage'])
+
+    value_mapping = {
+        "0": 0,
+        "I": 1,
+        "II": 2,
+        "III": 3
+    }
+
+    df_pred = pd.concat(df_pred_list, ignore_index=True)
+    df_pred=df_pred.fillna(-1)
+    df_pred=df_pred.replace(value_mapping)
+
+    df_true = pd.concat(df_true_list, ignore_index=True)
+    df_true=df_true.replace(value_mapping)
+
+    cm = confusion_matrix(df_true, df_pred)
+    classes = np.unique(df_true)
+    y_true_bin = label_binarize(df_true, classes=classes)
+    y_pred_bin = label_binarize(df_pred, classes=classes)
+    roc_auc = roc_auc_score(y_true_bin, y_pred_bin, multi_class='ovr')
+
+    print('confusion_matrix', cm)
+    print('roc_auc', roc_auc)

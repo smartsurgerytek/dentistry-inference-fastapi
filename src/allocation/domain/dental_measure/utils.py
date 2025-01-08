@@ -461,8 +461,11 @@ def locate_points_with_dentin(gum_bin, dilated_mask, mid_x, mid_y, angle ,short_
                 cv2.circle(c_image, (x, y), 5, (255, 0, 0), -1)
     
     # 將旋轉後的座標，轉回原角度
+    
     dentin_left_coord = [dentin_left_x, dentin_left_y]
     dentin_right_coord = [dentin_right_x, dentin_right_y]
+    if any([coord is None for coord in dentin_left_coord]) or any([coord is None for coord in dentin_left_coord]):
+        return dentin_left_x, dentin_left_y, dentin_right_x, dentin_right_y
     dentin_left_x, dentin_left_y = convert_coord_back(dentin_left_coord, angle, component_mask)
     dentin_right_x, dentin_right_y = convert_coord_back(dentin_right_coord, angle, component_mask)
     
@@ -654,34 +657,34 @@ def draw_image_and_print_information(prediction, image_for_drawing, line_image):
         print("None Detected. Not drawing line.")
 
 
-def process_and_save_predictions(predictions, dir_path, target_dir, correct_df):
-    """處理並儲存預測結果"""
-    sorted_predictions = sorted(predictions, key=lambda x: x['mid'][0])
-    df = pd.DataFrame(sorted_predictions)
+# def process_and_save_predictions(predictions, dir_path, target_dir, correct_df):
+#     """處理並儲存預測結果"""
+#     sorted_predictions = sorted(predictions, key=lambda x: x['mid'][0])
+#     df = pd.DataFrame(sorted_predictions)
     
-    if len(df) == 0:
-        df = correct_df.drop(index=df.index)
-        df.to_excel(os.path.join(dir_path, f"{target_dir}_comparison_results.xlsx"), index=False)
-        return
+#     if len(df) == 0:
+#         df = correct_df.drop(index=df.index)
+#         df.to_excel(os.path.join(dir_path, f"{target_dir}_comparison_results.xlsx"), index=False)
+#         return
 
-    df = restructure_dataframe(df)
-    df_combined = combine_and_clean_dataframe(df)
+#     df = restructure_dataframe(df)
+#     df_combined = combine_and_clean_dataframe(df)
 
-    # 儲存合併結果
-    df_cleaned = df_combined.dropna()
-    if len(df_cleaned) != 0:
-        df_cleaned['percentage'], df_cleaned['predicted_stage'] = zip(*df_cleaned.apply(calculate_predicted_stage, axis=1)) # 計算 stage
-    df_true_cleaned = prepare_true_dataframe(correct_df)
+#     # 儲存合併結果
+#     df_cleaned = df_combined.dropna()
+#     if len(df_cleaned) != 0:
+#         df_cleaned['percentage'], df_cleaned['predicted_stage'] = zip(*df_cleaned.apply(calculate_predicted_stage, axis=1)) # 計算 stage
+#     df_true_cleaned = prepare_true_dataframe(correct_df)
 
-    df_merged = merge_dataframes(df_cleaned, df_true_cleaned)
-    df_merged = df_merged.rename(columns={'牙齒ID（相對該張影像的順序ID即可、從左至右）':'tooth_id', 
-                        "牙尖ID（從左側至右側，看是連線到哪一個牙尖端）":"dentin_id",
-                        "珐瑯質跟象牙質交接點x":"enamel_x", "珐瑯質跟象牙質交接點y":"enamel_y",
-                        "牙齦交接點x":"gum_x" , "牙齦交接點y":"gum_y",
-                        "牙本體尖端點x":"dentin_x" , "牙本體尖端點y":"dentin_y" ,
-                        "長度":"length","stage":"true_stage"
-                        })
-    df_merged.to_excel(os.path.join(dir_path, f"{target_dir}_comparison_results.xlsx"), index=False)
+#     df_merged = merge_dataframes(df_cleaned, df_true_cleaned)
+#     df_merged = df_merged.rename(columns={'牙齒ID（相對該張影像的順序ID即可、從左至右）':'tooth_id', 
+#                         "牙尖ID（從左側至右側，看是連線到哪一個牙尖端）":"dentin_id",
+#                         "珐瑯質跟象牙質交接點x":"enamel_x", "珐瑯質跟象牙質交接點y":"enamel_y",
+#                         "牙齦交接點x":"gum_x" , "牙齦交接點y":"gum_y",
+#                         "牙本體尖端點x":"dentin_x" , "牙本體尖端點y":"dentin_y" ,
+#                         "長度":"length","stage":"true_stage"
+#                         })
+#     df_merged.to_excel(os.path.join(dir_path, f"{target_dir}_comparison_results.xlsx"), index=False)
 
 
 
