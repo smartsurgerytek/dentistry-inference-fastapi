@@ -78,7 +78,7 @@ def generate_dsc_scores(confusion_matrix, labels):
     
 def generate_model_report(model, model_path, yaml_path, save_val_path, full_name, remove_indexes=[], device=[0]):
 
-    if device=='cpu':
+    if device=='cpu' or not torch.cuda.is_available():
         device = torch.device('cpu')        
 
     result=model.val(data=yaml_path, device=device)
