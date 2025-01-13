@@ -10,7 +10,7 @@ import seaborn as sns
 import cv2
 from src.allocation.domain.dental_measure.main import *
 
-def restructure_dataframe(df):
+def retrieve_dataframe(df):
     """重構 DataFrame 結構"""
     if 'dentin_id' in df.columns:
         df = df.drop(columns=['dentin_id'])
@@ -28,54 +28,70 @@ def restructure_dataframe(df):
     return df_rename
     
 
-def combine_and_clean_dataframe(df_combined):
-    """合併 DataFrame 並清理資料"""
-    dentin_id = 1
-    dentin_ids = [dentin_id]
-    for i in range(1, len(df_combined)):
-        if df_combined.iloc[i]['dentin'] == df_combined.iloc[i - 1]['dentin']:
-            dentin_ids.append(dentin_id)
-        else:
-            dentin_id += 1
-            dentin_ids.append(dentin_id)
+def unpack_dataframe(df):
+    # early return empty df 
+    if df.empty:
+        return df
+        
+    # dentin_id = 1
+    # dentin_ids = [dentin_id]
+    # for i in range(1, len(df_combined)):
+    #     if df_combined.iloc[i]['dentin'] == df_combined.iloc[i - 1]['dentin']:
+    #         dentin_ids.append(dentin_id)
+    #     else:
+    #         dentin_id += 1
+    #         dentin_ids.append(dentin_id)
 
-    df_combined['dentin_id'] = dentin_ids
-    df_combined[['enamel_x', 'enamel_y']] = pd.DataFrame(df_combined['enamel'].tolist(), index=df_combined.index)
-    df_combined[['gum_x', 'gum_y']] = pd.DataFrame(df_combined['gum'].tolist(), index=df_combined.index)
-    df_combined[['dentin_x', 'dentin_y']] = pd.DataFrame(df_combined['dentin'].tolist(), index=df_combined.index)
-    return df_combined.drop(columns=['enamel', 'gum', 'dentin'])
+    # df_combined['dentin_id'] = dentin_ids
+    # df_combined[['enamel_x', 'enamel_y']] = pd.DataFrame(df_combined['enamel'].tolist(), index=df_combined.index)
+    # df_combined[['gum_x', 'gum_y']] = pd.DataFrame(df_combined['gum'].tolist(), index=df_combined.index)
+    # df_combined[['dentin_x', 'dentin_y']] = pd.DataFrame(df_combined['dentin'].tolist(), index=df_combined.index)
+    def setting_id(df_col):
+        return (df_col != df_col.shift()).cumsum()
+    def unpack_column(df, col_name, new_columns):
+        unpacked_df = pd.DataFrame(df[col_name].tolist(), index=df.index, columns=new_columns)
+        return df.join(unpacked_df)    
+    
+    df['dentin_id'] = setting_id(df['dentin']) #setting the id+1
+    # unpack enamel, gum, dentin
+    df = unpack_column(df, 'enamel', ['enamel_x', 'enamel_y'])
+    df = unpack_column(df, 'gum', ['gum_x', 'gum_y'])
+    df = unpack_column(df, 'dentin', ['dentin_x', 'dentin_y'])
+    # drop original enamel, gum, dentin
+    df = df.drop(columns=['enamel', 'gum', 'dentin'], errors='ignore')
+    df = df.dropna()
+    return df   
 
-def prepare_true_dataframe(correct_df):
+def prepare_true_dataframe(correct_df, x_scale=40/1280, y_scale=30/960):
     """準備真實資料的 DataFrame"""
     df_true_cleaned = correct_df.drop(columns=[col for col in ['length', 'stage'] if col in correct_df.columns])
-    #df_true_cleaned = correct_df.rename(columns={'珐瑯質跟象牙質交接點x':'enamel_x', "珐瑯質跟象牙質交接點y":"enamel_y"})
-    df_true_cleaned['true_stage'] = df_true_cleaned.apply(calculate_true_stage, axis=1)
+    df_true_cleaned['true_stage'] = df_true_cleaned.apply(lambda col:calculate_true_stage(col, x_scale, y_scale), axis=1)
     return df_true_cleaned
 
-def merge_dataframes(df_cleaned, df_true_cleaned):
+def merge_dataframes(df_pre, df_true):###這裡需要refactor 盡量要避免iloc operation
     """合併預測資料與真實資料"""
+
     df_merged_list = []
-    for index, row_true in df_true_cleaned.iterrows():
-        if df_cleaned.empty:
-            row_true_reset = df_true_cleaned.iloc[[index]].reset_index(drop=True)
+    for index, row_true in df_true.iterrows():
+        if df_pre.empty:
+            row_true_reset = df_true.iloc[[index]].reset_index(drop=True)
             #row_true_reset.loc[0, ['class', 'denture']] = np.nan
-            empty_predicted_columns = pd.DataFrame(np.nan, index=row_true_reset.index, columns=df_cleaned.columns)
-            merged_row = pd.concat([row_true_reset, empty_predicted_columns], axis=1)
+            nan_predicted_columns = pd.DataFrame(np.nan, index=row_true_reset.index, columns=df_pre.columns)
+            merged_row = pd.concat([row_true_reset, nan_predicted_columns], axis=1)
         else:
-            distances = df_cleaned.apply(lambda row_cleaned: calculate_distance(row_true, row_cleaned), axis=1)
+            distances = df_pre.apply(lambda row_cleaned: calculate_distance(row_true, row_cleaned), axis=1)
             closest_index = distances.idxmin()
             min_distance = distances[closest_index]
 
+            row_true_reset = df_true.iloc[[index]].reset_index(drop=True)
             if min_distance > DISTANCE_THRESHOLD:
-                row_true_reset = df_true_cleaned.iloc[[index]].reset_index(drop=True)
                 #row_true_reset.loc[0, ['class', 'denture']] = np.nan
-                empty_predicted_columns = pd.DataFrame(np.nan, index=row_true_reset.index, columns=df_cleaned.columns)
-                merged_row = pd.concat([row_true_reset, empty_predicted_columns], axis=1).reset_index(drop=True)
+                nan_predicted_columns = pd.DataFrame(np.nan, index=row_true_reset.index, columns=df_pre.columns)
+                merged_row = pd.concat([row_true_reset, nan_predicted_columns], axis=1).reset_index(drop=True)
             else:
-                row_true_reset = df_true_cleaned.iloc[[index]].reset_index(drop=True)
-                row_cleaned_reset = df_cleaned.loc[[closest_index]].reset_index(drop=True)
+                row_cleaned_reset = df_pre.loc[[closest_index]].reset_index(drop=True)
                 merged_row = pd.concat([row_true_reset, row_cleaned_reset], axis=1).reset_index(drop=True)
-                df_cleaned = df_cleaned.drop(closest_index)
+                df_pre = df_pre.drop(closest_index)
 
         df_merged_list.append(merged_row)
     return pd.concat(df_merged_list, ignore_index=True)
@@ -90,14 +106,14 @@ def calculate_distance(row_true, row_cleaned):
 
 
 # 計算 true_stage 並轉換為毫米
-def calculate_true_stage(row):
+def calculate_true_stage(row, x_scale=40/1280, y_scale=30/960):
     enamel_x, enamel_y = row['enamel_x'], row['enamel_y']
     gum_x, gum_y = row['gum_x'], row['gum_y']
     dentin_x, dentin_y = row['dentin_x'], row['dentin_y']
     
     # 圖片比例轉換 (像素轉毫米)
-    x_scale = 40 / 1280
-    y_scale = 30 / 960
+    # x_scale = 40 / 1280
+    # y_scale = 30 / 960
 
     # 將像素轉換為毫米座標
     enamel_x_mm = enamel_x * x_scale
@@ -126,14 +142,14 @@ def calculate_true_stage(row):
     
     return stage               
 # 計算 percentage 和期數，預測資料使用
-def calculate_predicted_stage(row):
-    enamel_x, enamel_y = row['enamel_x'], row['enamel_y']
-    gum_x, gum_y = row['gum_x'], row['gum_y']
-    dentin_x, dentin_y = row['dentin_x'], row['dentin_y']
+def calculate_predicted_stage(df, x_scale=40/1280, y_scale=30/960):
+    enamel_x, enamel_y = df['enamel_x'], df['enamel_y']
+    gum_x, gum_y = df['gum_x'], df['gum_y']
+    dentin_x, dentin_y = df['dentin_x'], df['dentin_y']
     
     # 圖片比例轉換 (像素轉毫米)
-    x_scale = 40 / 1280
-    y_scale = 30 / 960
+    # x_scale = 40 / 1280
+    # y_scale = 30 / 960
 
     # 將像素轉換為毫米座標
     enamel_x_mm = enamel_x * x_scale
@@ -162,38 +178,24 @@ def calculate_predicted_stage(row):
     
     return ABLD, stage
 
-def process_and_save_predictions(predictions, correct_df):
+def process_and_save_predictions(predictions, correct_df, x_scale=40/1280, y_scale=30/960):
     """處理並儲存預測結果"""
-
+    predictions = sorted(predictions, key=lambda x: x['mid'][0])
     df_true_cleaned = prepare_true_dataframe(correct_df)
+    #if no any result found, return empty df
     if not predictions:
         df_pred=pd.DataFrame()
-        # col=pd.Series([np.nan] * len(df_true_cleaned['true_stage']))
-        # df_pred['predicted_stage']=col
         return df_pred , df_true_cleaned
-        #pd.Series(np.zeros(len(df_true_cleaned['true_stage'])))
     sorted_predictions = sorted(predictions, key=lambda x: x['mid'][0])
     df = pd.DataFrame(sorted_predictions)
-    df_re = restructure_dataframe(df)
-    df_combined = combine_and_clean_dataframe(df_re)
-    df_cleaned = df_combined.dropna()
-    if len(df_cleaned) != 0:
-        percentage_predstage_tuple=df_cleaned.apply(calculate_predicted_stage, axis=1)
-        #df_cleaned['percentage'], df_cleaned['predicted_stage'] = zip(*percentage_predstage_tuple) # 計算 stage
-        df_cleaned_copy=df_cleaned.copy()
-        df_cleaned_copy['percentage'], df_cleaned_copy['predicted_stage'] = zip(*percentage_predstage_tuple)
 
-    
+    df_re = retrieve_dataframe(df)
+    df_unpacked = unpack_dataframe(df_re)
 
-    #df_merged = merge_dataframes(df_cleaned, df_true_cleaned)
-    # df_merged = df_merged.rename(columns={'牙齒ID（相對該張影像的順序ID即可、從左至右）':'tooth_id', 
-    #                     "牙尖ID（從左側至右側，看是連線到哪一個牙尖端）":"dentin_id",
-    #                     "珐瑯質跟象牙質交接點x":"enamel_x", "珐瑯質跟象牙質交接點y":"enamel_y",
-    #                     "牙齦交接點x":"gum_x" , "牙齦交接點y":"gum_y",
-    #                     "牙本體尖端點x":"dentin_x" , "牙本體尖端點y":"dentin_y" ,
-    #                     "長度":"length","stage":"true_stage"
-    #                     })
-    return df_cleaned_copy, df_true_cleaned
+    percentage_predstage_tuple=df_unpacked.apply(lambda df:calculate_predicted_stage(df, x_scale=40/1280, y_scale=30/960), axis=1)
+    df_unpacked_copy=df_unpacked.copy() #to avoid the df warning in this case use the copy
+    df_unpacked_copy['percentage'], df_unpacked_copy['predicted_stage'] = zip(*percentage_predstage_tuple)
+    return df_unpacked_copy, df_true_cleaned
 
 # 設定主資料夾路徑
 main_folder_path = './datasets/300'
@@ -218,8 +220,8 @@ tooth_col_mapping={
 
 
 def test_detntalMeasure_performance():
-    scale_x=30/960
-    scale_y=40/1080
+    x_scale=30/960
+    y_scale=40/1080
 
     # 遍歷所有子資料夾
     df_pred_list=[]
@@ -236,10 +238,10 @@ def test_detntalMeasure_performance():
 
         image=cv2.imread(raw_image_path)
 
-        estimation_results=dental_estimation(image, scale=(scale_x, scale_y), return_type='dict')
-        estimation_results = sorted(estimation_results, key=lambda x: x['mid'][0])
-
+        estimation_results=dental_estimation(image, scale=(x_scale, y_scale), return_type='dict')
+        
         df_pred, df_true=process_and_save_predictions(estimation_results, df_true)
+
         df_merged=merge_dataframes(df_pred, df_true)
 
         if df_pred.empty:
