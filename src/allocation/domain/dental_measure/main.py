@@ -49,6 +49,7 @@ def extract_features(masks_dict, original_img):
 
 
 def locate_points(image, component_mask, binary_images, idx, overlay):
+
     def less_than_area_threshold(component_mask, area_threshold):
         """根據指定面積大小，過濾過小的分割區域"""
         area = cv2.countNonZero(component_mask)
@@ -59,9 +60,9 @@ def locate_points(image, component_mask, binary_images, idx, overlay):
 
     
     prediction = {}
-    AREA_THRESHOLD=image.shape[0]*image.shape[1]*AREA_THRESHOLD_RATIO
-    if less_than_area_threshold(component_mask, AREA_THRESHOLD):
-        return prediction
+    # AREA_THRESHOLD=image.shape[0]*image.shape[1]*AREA_THRESHOLD_RATIO
+    # if less_than_area_threshold(component_mask, AREA_THRESHOLD):
+    #     return prediction
     # 以方框框住該 component_mask，整數化
     contours, _ = cv2.findContours(component_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     rect = cv2.minAreaRect(contours[0]) # 最小區域長方形
@@ -72,8 +73,9 @@ def locate_points(image, component_mask, binary_images, idx, overlay):
     short_side = min(width, height)  # 短邊
     long_side = max(width, height)
 
-    if short_side < SHORT_SIDE:
-       return prediction
+    # if short_side < SHORT_SIDE:
+    #    print('less than short side, return [] prediction')
+    #    return prediction
     
     # 判斷旋轉角度
     angle = get_rotation_angle(component_mask)
@@ -95,14 +97,17 @@ def locate_points(image, component_mask, binary_images, idx, overlay):
     ########### 處理與 dentin 的底端 ########### 
     dentin_left_x, dentin_left_y, dentin_right_x, dentin_right_y = locate_points_with_dentin(binary_images["gum"], dilated_mask, mid_x, mid_y, angle, short_side, image, component_mask)
     
+    
     prediction = {"mid": (mid_x, mid_y), 
                 "enamel_left": (enamel_left_x, enamel_left_y), "enamel_right":(enamel_right_x, enamel_right_y),
                 "gum_left":(gum_left_x, gum_left_y), "gum_right": (gum_right_x, gum_right_y),
                 "dentin_left":(dentin_left_x, dentin_left_y), "dentin_right":(dentin_right_x, dentin_right_y),
                 }
+    
     for key, (x, y) in prediction.items():
         # 對每一個座標進行 safe_int 處理
         prediction[key] = (int_processing(x), int_processing(y))
+
     return prediction
 
 def get_mask_dict_from_model(model, image, method='semantic'):
@@ -225,7 +230,7 @@ def dental_estimation(image, scale=(31/960,41/1080), return_type='image'):
     predictions = []
     image_for_drawing=image.copy()
     #for i in range(1, num_labels):  # 從1開始，0是背景
-    breakpoint()
+
     for i, component_mask in enumerate(contours_model_masks_dict['dental_contour']):
         # 取得分析後的點
         prediction = locate_points(image_for_drawing, component_mask, components_model_masks_dict, i+1, overlay)

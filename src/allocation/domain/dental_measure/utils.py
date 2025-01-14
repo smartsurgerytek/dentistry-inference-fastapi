@@ -4,15 +4,19 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import pandas as pd
-
 from typing import Tuple
-PIXEL_THRESHOLD = 2000  # 設定閾值，僅保留像素數大於該值的區域
-AREA_THRESHOLD = 500 # 設定閾值，避免過小的分割區域
-DISTANCE_THRESHOLD = 200 # 定義距離閾值（例如：設定 10 為最大可接受距離）
-SHORT_SIDE = 120 # 轉動短邊判斷閾值
-TWO_POINT_TEETH_THRESHOLD = 259 # 初判單雙牙尖使用
-RANGE_FOR_TOOTH_TIP_LEFT = 80 # 強迫判斷雙牙尖，中心區域定義使用(左)
-RANGE_FOR_TOOTH_TIP_RIGHT = 40 # 強迫判斷雙牙尖，中心區域定義使用(右)
+import json
+# PIXEL_THRESHOLD = 2000  # 設定閾值，僅保留像素數大於該值的區域
+# AREA_THRESHOLD = 500 # 設定閾值，避免過小的分割區域
+# DISTANCE_THRESHOLD = 200 # 定義距離閾值（例如：設定 10 為最大可接受距離）
+# SHORT_SIDE = 120 # 轉動短邊判斷閾值
+# TWO_POINT_TEETH_THRESHOLD = 259 # 初判單雙牙尖使用
+# RANGE_FOR_TOOTH_TIP_LEFT = 80 # 強迫判斷雙牙尖，中心區域定義使用(左)
+# RANGE_FOR_TOOTH_TIP_RIGHT = 40 # 強迫判斷雙牙尖，中心區域定義使用(右)
+with open('./conf/dental_measure_parameters.json', 'r') as file:
+    config = json.load(file)
+for key, value in config.items():
+    globals()[key] = value
 def show_two(img1, img2, title1="Image 1", title2="Image 2"):
     """
     顯示兩張圖像並設定標題
@@ -533,13 +537,14 @@ def draw_line(prediction, line_image, scale):
     thickness = 2  # Thickness of the text
     line_type = cv2.LINE_AA  # Anti-aliased line type for smooth text    
     
-    w, h = line_image.shape[:2]
-    w_threshold = w / 10
+    height, width = line_image.shape[:2]
+    #w_threshold = w / 10
+    w_threshold = 20
     # if w<h:
     #     scale_w, scale_h= (31/w, 41/h)
     # else:
     #     scale_w, scale_h= (41/w, 31/h)
-    scale_w, scale_h = scale
+    scale_h, scale_w = scale
     # Define line pairs and their corresponding colors
     line_pairs = [
         (("enamel_left", "dentin_left", (0, 0, 255)), ("enamel_left", "gum_left", (0, 255, 255))),
@@ -548,7 +553,7 @@ def draw_line(prediction, line_image, scale):
 
     def draw_line_and_text(line_image, p1, p2, color, text_position, show_text=True):
         cv2.line(line_image, p1, p2, color, 2)  # Draw enamel -> dentin line
-        length=calculate_distance_with_scale(p1, p2, scale_w, scale_h)
+        length=calculate_distance_with_scale(p1, p2, scale_h, scale_w)
         if show_text==True:
             cv2.putText(line_image, f'{length:.2f} mm', text_position, font, font_scale, color, thickness, line_type)
         return length
@@ -570,7 +575,7 @@ def draw_line(prediction, line_image, scale):
         # Fetch the coordinates from the prediction
         p1, p2, p3, p4 = (prediction.get(start), prediction.get(end),
                           prediction.get(start2), prediction.get(end2))
-        
+
         print(f"{start} -> {end}: {p1}, {p2}")
         print(f"{start2} -> {end2}: {p3}, {p4}")
         
@@ -579,11 +584,14 @@ def draw_line(prediction, line_image, scale):
             continue
         
         valid_point_check=all(pt is not None for pt in [p1, p2, p3, p4])
-        not_boundary_point_check=all(w_threshold < pt[0] < w - w_threshold for pt in [p1, p2, p3, p4])
+        #not_boundary_point_check=all(w_threshold < pt[0] < width - w_threshold for pt in [p1, p2, p3, p4])
+
         # Check if any of the points are None and skip this loop iteration if true
+        #print(valid_point_check, not_boundary_point_check)
 
         # Check if all points are valid and within the threshold range
-        if valid_point_check and not_boundary_point_check:
+
+        if valid_point_check:
             if i%2==1:
                 length2=draw_line_and_text(line_image, p3, p4, color2, text_position=p3, show_text=False) #CAL
                 right_plot_text_point=(p4[0]-70,p4[1]+30)
@@ -606,7 +614,9 @@ def draw_line(prediction, line_image, scale):
                 'ABLD': float(length2/length),
                 'stage': stage_text,
                 }
+
         )
+
 
     return line_image, dental_pair_list
 
