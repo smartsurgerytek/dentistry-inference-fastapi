@@ -265,3 +265,7 @@ def test_detntalMeasure_performance():
 
     print('confusion_matrix', cm)
     print('roc_auc', roc_auc)
+
+
+if __name__ == "__main__":
+    test_detntalMeasure_performance()
