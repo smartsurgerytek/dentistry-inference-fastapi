@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from typing import Tuple
 import json
+import yaml
 # PIXEL_THRESHOLD = 2000  # 設定閾值，僅保留像素數大於該值的區域
 # AREA_THRESHOLD = 500 # 設定閾值，避免過小的分割區域
 # DISTANCE_THRESHOLD = 200 # 定義距離閾值（例如：設定 10 為最大可接受距離）
@@ -13,8 +14,8 @@ import json
 # TWO_POINT_TEETH_THRESHOLD = 259 # 初判單雙牙尖使用
 # RANGE_FOR_TOOTH_TIP_LEFT = 80 # 強迫判斷雙牙尖，中心區域定義使用(左)
 # RANGE_FOR_TOOTH_TIP_RIGHT = 40 # 強迫判斷雙牙尖，中心區域定義使用(右)
-with open('./conf/dental_measure_parameters.json', 'r') as file:
-    config = json.load(file)
+with open('./conf/dental_measure_parameters.yaml', 'r') as file:
+    config = yaml.safe_load(file)
 for key, value in config.items():
     globals()[key] = value
 def show_two(img1, img2, title1="Image 1", title2="Image 2"):
@@ -192,15 +193,15 @@ def clean_mask(mask, kernel_size=(3, 3), iterations=5):
     return mask
 
 
-def filter_large_components(mask, pixel_threshold):
-    """過濾掉像素數量小於閾值的區域"""
-    num_labels, labels = cv2.connectedComponents(mask)
-    label_counts = np.bincount(labels.flatten())
-    filtered_image = np.zeros_like(mask)
-    for label in range(1, num_labels):
-        if label_counts[label] > pixel_threshold:
-            filtered_image[labels == label] = 255
-    return filtered_image
+# def filter_large_components(mask, pixel_threshold):
+#     """過濾掉像素數量小於閾值的區域"""
+#     num_labels, labels = cv2.connectedComponents(mask)
+#     label_counts = np.bincount(labels.flatten())
+#     filtered_image = np.zeros_like(mask)
+#     for label in range(1, num_labels):
+#         if label_counts[label] > pixel_threshold:
+#             filtered_image[labels == label] = 255
+#     return filtered_image
 # ---------- 影像分析與特徵提取相關函式 ------------ #
 def get_mid_point(image, dilated_mask, idx):
     """取得物件中點，並且繪製點及idx標籤於 image"""
@@ -348,6 +349,12 @@ def locate_points_with_dentin(gum_bin, dilated_mask, mid_x, mid_y, angle ,short_
     dentin_left_y = None
     dentin_right_x = None
     dentin_right_y = None
+    
+    height, width = image.shape[:2]
+    max_length = max(width, height)
+    TWO_POINT_TEETH_THRESHOLD=max_length*TWO_POINT_TEETH_THRESHOLD_RATIO
+    RANGE_FOR_TOOTH_TIP_LEFT=max_length*RANGE_FOR_TOOTH_TIP_LEFT_RATIO
+    RANGE_FOR_TOOTH_TIP_RIGHT=max_length*RANGE_FOR_TOOTH_TIP_RIGHT_RATIO
     # 根據短邊大小(寬度)，初步判斷單牙尖或雙牙尖
     if short_side > TWO_POINT_TEETH_THRESHOLD:
         # 較寬者，強迫判斷為雙牙尖

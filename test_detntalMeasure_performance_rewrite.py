@@ -268,6 +268,8 @@ def test_detntalMeasure_performance():
     df_true=df_true.replace(value_mapping)
 
     cm = confusion_matrix(df_true, df_pred)
+    
+    # to compute roc_auc
     classes = np.unique(df_true)
     y_true_bin = label_binarize(df_true, classes=classes)
     y_pred_bin = label_binarize(df_pred, classes=classes)
