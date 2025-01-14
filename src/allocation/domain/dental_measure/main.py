@@ -12,12 +12,14 @@ def extract_features(masks_dict, original_img):
     kernel = np.ones((3, 3), np.uint8)
 
     # 清理各個遮罩
+    
     masks_dict['dental_crown'] = clean_mask(masks_dict['dental_crown'])
+    
     masks_dict['dentin'] = clean_mask(masks_dict['dentin'], kernel_size=(30, 1), iterations=1)
     # binary_images['gum'] = clean_mask(binary_images['gum'], kernel_size=(30, 1), iterations=2)
 
     # 保留最大區域
-    masks_dict['gum'] = extract_largest_component(masks_dict['gum'])
+    #masks_dict['gum'] = extract_largest_component(masks_dict['gum'])
 
     # 膨脹處理後的 gum
     masks_dict['gum'] = cv2.dilate(masks_dict['gum'], kernel, iterations=10)
@@ -57,6 +59,7 @@ def locate_points(image, component_mask, binary_images, idx, overlay):
 
     
     prediction = {}
+    AREA_THRESHOLD=image.shape[0]*image.shape[1]*AREA_THRESHOLD_RATIO
     if less_than_area_threshold(component_mask, AREA_THRESHOLD):
         return prediction
     # 以方框框住該 component_mask，整數化
@@ -68,6 +71,7 @@ def locate_points(image, component_mask, binary_images, idx, overlay):
     height = rect[1][1]  # 高度
     short_side = min(width, height)  # 短邊
     long_side = max(width, height)
+
     if short_side < SHORT_SIDE:
        return prediction
     
@@ -116,6 +120,7 @@ def get_mask_dict_from_model(model, image, method='semantic'):
         return {}
     
     masks_dict={}
+    box_x_list=[]
     for mask, box in zip(masks.data, boxes):
         class_id = int(box.cls)# Get class ID and confidence
         #confidence = float(box.conf)=
@@ -136,8 +141,11 @@ def get_mask_dict_from_model(model, image, method='semantic'):
             if class_name not in masks_dict.keys():
                 masks_dict[class_name]=[mask_binary]
             else:
-                masks_dict[class_name].append(mask_binary)           
-            
+                masks_dict[class_name].append(mask_binary)
+            box_x_list.append(int(box.xyxy[0][0].numpy()))
+    if box_x_list:
+        sorted_indices = sorted(range(len(box_x_list)), key=lambda i: box_x_list[i])
+        masks_dict['dental_contour'] = [masks_dict['dental_contour'][i] for i in sorted_indices]
 
     return masks_dict
 
@@ -213,10 +221,11 @@ def dental_estimation(image, scale=(31/960,41/1080), return_type='image'):
 
     overlay, line_image, non_masked_area= extract_features(components_model_masks_dict, image) # 處理繪圖用圖片等特徵處理後圖片
 
+
     predictions = []
     image_for_drawing=image.copy()
     #for i in range(1, num_labels):  # 從1開始，0是背景
-
+    breakpoint()
     for i, component_mask in enumerate(contours_model_masks_dict['dental_contour']):
         # 取得分析後的點
         prediction = locate_points(image_for_drawing, component_mask, components_model_masks_dict, i+1, overlay)
