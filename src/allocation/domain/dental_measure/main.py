@@ -100,7 +100,7 @@ def locate_points(image, component_mask, binary_images, idx, overlay):
     return prediction
 
 def get_mask_dict_from_model(model, image, method='semantic', mask_threshold=0.5):
-    results=model.predict(image)
+    results=model.predict(image, verbose=False)
     result=results[0]
 
     detections=[]
@@ -231,7 +231,7 @@ def dental_estimation(image, scale=(31/960,41/1080), return_type='image'):
             continue
         prediction["teeth_id"] = i
         prediction["dentin_id"] = None
-        print(f"Tooth {i}")
+        #print(f"Tooth {i}")
         image_for_drawing=draw_point(prediction, image_for_drawing)
         image_for_drawing, dental_pair_list=draw_line(prediction, image_for_drawing, scale)
         prediction['pair_measurements']=dental_pair_list
