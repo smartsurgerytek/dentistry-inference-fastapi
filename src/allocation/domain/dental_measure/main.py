@@ -9,31 +9,20 @@ def extract_features(masks_dict, original_img):
     """從遮罩中提取特徵點與區域資訊"""
     overlay = original_img.copy()
     line_image = original_img.copy()
-    kernel = np.ones((3, 3), np.uint8)
 
     # 清理各個遮罩
     
-    masks_dict['dental_crown'] = clean_mask(masks_dict['dental_crown'])
+    masks_dict['dental_crown'] = clean_mask(masks_dict['dental_crown'], kernel_x=DENTAL_CROWN_KERNAL_X, kernel_y=DENTAL_CROWN_KERNAL_Y , iterations=DENTAL_CROWN_ITERATION)
     
-    masks_dict['dentin'] = clean_mask(masks_dict['dentin'], kernel_size=(30, 1), iterations=1)
-    # binary_images['gum'] = clean_mask(binary_images['gum'], kernel_size=(30, 1), iterations=2)
+    masks_dict['dentin'] = clean_mask(masks_dict['dentin'], kernel_x=DENTI_KERNAL_X, kernel_y=DENTI_KERNAL_Y, iterations=DENTI_ITERATION)
 
-    # 保留最大區域
-    #masks_dict['gum'] = extract_largest_component(masks_dict['gum'])
-
-    # 膨脹處理後的 gum
-    masks_dict['gum'] = cv2.dilate(masks_dict['gum'], kernel, iterations=10)
-
+    gum_kernel = np.ones((2*GUM_KERNAL_X+1, 2*GUM_KERNAL_Y+1), np.uint8)
+    masks_dict['gum'] = cv2.dilate(masks_dict['gum'], gum_kernel, iterations=GUM_ITERATION)
+    
     # 合併所有遮罩
-    #combined_mask = combine_masks(dilated_gum, binary_images)
     combined_mask = combine_masks(masks_dict)
     non_masked_area = cv2.bitwise_not(combined_mask)
 
-     # 繪製 overlay
-    # overlay[binary_images["dental_crown"] > 0] = (163, 118, 158)  # 將 dental_crown 顯示
-    # overlay[binary_images["dentin"] > 0] = (117, 122, 152)  # 將 dentin 顯示
-    # overlay[binary_images['gum'] > 0] = (0, 177, 177)  # 將 dentin 顯示
-    # overlay[binary_images['crown'] > 0] = (255, 0, 128) # 將 crown 顯示
      # 繪製 overlay
     key_color_mapping={
         'dental_crown': (163, 118, 158),
@@ -50,13 +39,13 @@ def extract_features(masks_dict, original_img):
 
 def locate_points(image, component_mask, binary_images, idx, overlay):
 
-    def less_than_area_threshold(component_mask, area_threshold):
-        """根據指定面積大小，過濾過小的分割區域"""
-        area = cv2.countNonZero(component_mask)
-        # 去除掉過小的分割區域
-        if area < area_threshold:
-            return True
-        return False
+    # def less_than_area_threshold(component_mask, area_threshold):
+    #     """根據指定面積大小，過濾過小的分割區域"""
+    #     area = cv2.countNonZero(component_mask)
+    #     # 去除掉過小的分割區域
+    #     if area < area_threshold:
+    #         return True
+    #     return False
 
     
     prediction = {}
@@ -80,12 +69,12 @@ def locate_points(image, component_mask, binary_images, idx, overlay):
     # 判斷旋轉角度
     angle = get_rotation_angle(component_mask)
     # 如果長短邊差距在 30 內 (接近正方形)，不轉動
-    if is_within_range(short_side, long_side, 30):
+    if is_within_range(short_side, long_side, ROTATION_ANGLE_THRESHOLD):
         angle = 0
         
     # 膨脹獨立 dentin 分割區域
-    kernel = np.ones((3, 3), np.uint8)
-    dilated_mask = cv2.dilate(component_mask, kernel, iterations=7)
+    kernel = np.ones((2*DENTAL_CONTOUR_KERNAL_X+1, 2*DENTAL_CONTOUR_KERNAL_Y+1), np.uint8)
+    dilated_mask = cv2.dilate(component_mask, kernel, iterations=DENTAL_CONTOUR_ITERATION)
  
     # 取得中點
     mid_y, mid_x = get_mid_point(image, dilated_mask, idx)

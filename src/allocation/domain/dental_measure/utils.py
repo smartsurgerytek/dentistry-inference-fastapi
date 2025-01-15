@@ -185,9 +185,10 @@ def threshold_images(images):
             binary_images[key] = binary_img
     return binary_images
 
-def clean_mask(mask, kernel_size=(3, 3), iterations=5):
-    """清理影像中的雜點"""
-    kernel = np.ones(kernel_size, np.uint8)
+def clean_mask(mask, kernel_x=1, kernel_y=1, iterations=5):
+    ###only odd number can allow for kneral size
+    kernel_tuple=(2*kernel_x+1, 2*kernel_y+1)
+    kernel = np.ones(kernel_tuple, np.uint8)
     mask = cv2.erode(mask, kernel, iterations=iterations)
     mask = cv2.dilate(mask, kernel, iterations=iterations)
     return mask
@@ -274,6 +275,7 @@ def locate_points_with_dental_crown(dental_crown_bin, dilated_mask, mid_x, mid_y
 def locate_points_with_gum(gum_bin, dilated_mask, mid_x, mid_y, overlay):
     """處理與 gum 之交點 (Alveolar_bone的頂端)"""
     # 獲取每個獨立 mask 與原始 mask 的交集區域
+    locate_gum_mid_x_threshold = gum_bin.shape[1]*LOCATE_GUM_MID_X_THRESHOLD_RATIO
     intersection = cv2.bitwise_and(gum_bin, dilated_mask)
     overlay[intersection > 0] = (0, 255, 0)  # 將 dentin 顯示
     # 取得交集區域的 contour 作為交點
@@ -296,7 +298,7 @@ def locate_points_with_gum(gum_bin, dilated_mask, mid_x, mid_y, overlay):
             # 取得交點座標
             x, y = corner.ravel()
             # 如果該交點超出中心點太多，就過濾掉
-            if x >= mid_x-40 and x <= mid_x+40:
+            if x >= mid_x-locate_gum_mid_x_threshold and x <= mid_x+locate_gum_mid_x_threshold:
                 continue
             # 判斷左右
             if x < mid_x:
@@ -355,6 +357,8 @@ def locate_points_with_dentin(gum_bin, dilated_mask, mid_x, mid_y, angle ,short_
     TWO_POINT_TEETH_THRESHOLD=max_length*TWO_POINT_TEETH_THRESHOLD_RATIO
     RANGE_FOR_TOOTH_TIP_LEFT=max_length*RANGE_FOR_TOOTH_TIP_LEFT_RATIO
     RANGE_FOR_TOOTH_TIP_RIGHT=max_length*RANGE_FOR_TOOTH_TIP_RIGHT_RATIO
+    RANGE_Y_LEFT_RIGHT_DENTIN=height*RANGE_Y_LEFT_RIGHT_DENTIN_RATIO
+    RANGE_X_LEFT_RIGHT_DENTIN=width*RANGE_X_LEFT_RIGHT_DENTIN_RATIO
     # 根據短邊大小(寬度)，初步判斷單牙尖或雙牙尖
     if short_side > TWO_POINT_TEETH_THRESHOLD:
         # 較寬者，強迫判斷為雙牙尖
@@ -417,7 +421,7 @@ def locate_points_with_dentin(gum_bin, dilated_mask, mid_x, mid_y, angle ,short_
         if all(v is None for v in [dentin_left_x, dentin_left_y, dentin_right_x, dentin_right_y]):
             print("All variables are None.")
         else:
-            if not is_within_range(dentin_left_y, dentin_right_y, 200):
+            if not is_within_range(dentin_left_y, dentin_right_y, RANGE_Y_LEFT_RIGHT_DENTIN):
                 if dentin_right_y > dentin_left_y:
                     dentin_left_y = dentin_right_y
                     dentin_left_x = dentin_right_x
@@ -461,7 +465,7 @@ def locate_points_with_dentin(gum_bin, dilated_mask, mid_x, mid_y, angle ,short_
          # 避免 None 存在，因有可能在上述流程誤判為雙牙尖
         dentin_left_x, dentin_left_y, dentin_right_x, dentin_right_y = assign_non_none_values(dentin_left_x, dentin_left_y, dentin_right_x, dentin_right_y)
         # 如果判斷出來的雙邊牙尖過於接近，確定應為單牙尖狀況，故指定最小者為牙尖
-        if is_within_range(dentin_left_x, dentin_right_x, 80):
+        if is_within_range(dentin_left_x, dentin_right_x, RANGE_X_LEFT_RIGHT_DENTIN):
             bottom_corner = bottom_corners[:1]
             for corner in bottom_corner:
                 x, y = corner.ravel()
