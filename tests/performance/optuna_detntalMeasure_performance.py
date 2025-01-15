@@ -51,6 +51,8 @@ def save_best_config(study, trial):
         with open('./conf/best_dental_measure_parameters.yaml', 'w') as yaml_file:
             yaml.dump(best_params, yaml_file, default_flow_style=False)
         print("Best hyperparameters saved to best_hyperparameters.yaml")
+        fig = plot_param_importances(study)
+        fig.write_image("./docs/detental_measure_parameters_searching_correlations.png")
 
 if __name__=='__main__':
     # Create a study to maximize the performance
@@ -65,5 +67,5 @@ if __name__=='__main__':
     print("Best hyperparameters:", best_params)
     fig = plot_param_importances(study)
     fig.show(config=plotly_config)
-    fig.write_image("./docs/detental_measure_parameters_searching_correlations.png")
+    fig.write_image("./docs/detental_measure_parameters_searching_correlations.png")    
 
