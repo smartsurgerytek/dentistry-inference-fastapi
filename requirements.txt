@@ -10,3 +10,4 @@ huggingface_hub
 tabulate
 scikit-learn
 openpyxl
+optuna
