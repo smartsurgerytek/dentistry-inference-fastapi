@@ -209,7 +209,14 @@ tooth_col_mapping={
     "長度":"length"
 }
 
-
+# Function to apply value_mapping based on the type (Series or DataFrame)
+def apply_value_mapping(df, value_mapping):
+    if isinstance(df, pd.Series):
+        # Apply value_mapping to each element of the Series
+        return df.apply(lambda x: value_mapping.get(x, x))
+    elif isinstance(df, pd.DataFrame):
+        # Apply value_mapping to each element of the DataFrame
+        return df.applymap(lambda x: value_mapping.get(x, x))
 def test_detntalMeasure_performance():
     scale_x=30/960
     scale_y=40/1080
@@ -250,12 +257,17 @@ def test_detntalMeasure_performance():
         "III": 3
     }
 
+    # Concatenate lists of DataFrames into single DataFrames for df_pred and df_true
     df_pred = pd.concat(df_pred_list, ignore_index=True)
-    df_pred=df_pred.fillna(-1)
-    df_pred=df_pred.replace(value_mapping)
-
     df_true = pd.concat(df_true_list, ignore_index=True)
-    df_true=df_true.replace(value_mapping)
+
+    # Fill NaN values with -1
+    df_pred = df_pred.fillna(-1)
+    df_true = df_true.fillna(-1)
+
+    # Apply value_mapping to both df_pred and df_true
+    df_pred = apply_value_mapping(df_pred, value_mapping)
+    df_true = apply_value_mapping(df_true, value_mapping)
 
     cm = confusion_matrix(df_true, df_pred)
     classes = np.unique(df_true)

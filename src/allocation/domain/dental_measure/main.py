@@ -110,7 +110,7 @@ def locate_points(image, component_mask, binary_images, idx, overlay):
 
     return prediction
 
-def get_mask_dict_from_model(model, image, method='semantic'):
+def get_mask_dict_from_model(model, image, method='semantic', mask_threshold=0.5):
     results=model.predict(image)
     result=results[0]
 
@@ -132,7 +132,7 @@ def get_mask_dict_from_model(model, image, method='semantic'):
         class_name = class_names[class_id] # Get class name
         mask_np = mask.cpu().numpy() # Convert mask to numpy array and resize to match original image
         mask_np = cv2.resize(mask_np, (image.shape[1], image.shape[0]))
-        mask_binary = (mask_np > 0.5).astype(np.uint8) * 255 # Convert mask to binary image
+        mask_binary = (mask_np > mask_threshold).astype(np.uint8) * 255 # Convert mask to binary image
 
         if np.sum(mask_binary) == 0: #error handling
             continue
@@ -182,8 +182,8 @@ def generate_error_image(text):
 
 def dental_estimation(image, scale=(31/960,41/1080), return_type='image'):
 
-    components_model_masks_dict=get_mask_dict_from_model(components_model, image, method='semantic')
-    contours_model_masks_dict=get_mask_dict_from_model(contour_model, image, method='instance')
+    components_model_masks_dict=get_mask_dict_from_model(components_model, image, method='semantic', mask_threshold=DENTAL_MODEL_THRESHOLD)
+    contours_model_masks_dict=get_mask_dict_from_model(contour_model, image, method='instance', mask_threshold=DENTAL_CONTOUR_MODEL_THRESHOLD)
 
     denti_measure_names_map={
         'Alveolar_bone': 'gum',
