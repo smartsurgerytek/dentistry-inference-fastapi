@@ -2,6 +2,7 @@ import optuna
 import numpy as np
 from test_detntalMeasure_performance import test_detntalMeasure_performance
 import yaml
+from optuna.visualization import plot_param_importances
 # Define the objective function
 def objective(trial):
     # Define the hyperparameters search space
@@ -53,6 +54,7 @@ def save_best_config(study, trial):
 
 if __name__=='__main__':
     # Create a study to maximize the performance
+    plotly_config = {"staticPlot": True}
     study = optuna.create_study(direction='maximize')
 
     # Start the optimization
@@ -61,10 +63,7 @@ if __name__=='__main__':
     # Get the best hyperparameters
     best_params = study.best_params
     print("Best hyperparameters:", best_params)
-
-    # # Save the best hyperparameters to a YAML file
-    # with open('./config/best_hyperparameters.yaml', 'w') as yaml_file:
-    #     yaml.dump(best_params, yaml_file, default_flow_style=False)
-
-    # print("Best hyperparameters saved to best_hyperparameters.yaml")
+    fig = plot_param_importances(study)
+    fig.show(config=plotly_config)
+    fig.write_image("./docs/detental_measure_parameters_searching_correlations.png")
 
