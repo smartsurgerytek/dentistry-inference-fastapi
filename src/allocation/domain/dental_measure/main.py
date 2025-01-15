@@ -147,7 +147,10 @@ def get_mask_dict_from_model(model, image, method='semantic'):
                 masks_dict[class_name]=[mask_binary]
             else:
                 masks_dict[class_name].append(mask_binary)
-            box_x_list.append(int(box.xyxy[0][0].numpy()))
+            if box.xyxy.type()=='torch.cuda.FloatTensor':
+                box_x_list.append(int(box.xyxy[0][0].cpu().numpy()))
+            else:
+                box_x_list.append(int(box.xyxy[0][0].numpy()))
     if box_x_list:
         sorted_indices = sorted(range(len(box_x_list)), key=lambda i: box_x_list[i])
         masks_dict['dental_contour'] = [masks_dict['dental_contour'][i] for i in sorted_indices]
