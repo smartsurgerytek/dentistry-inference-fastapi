@@ -217,7 +217,10 @@ def apply_value_mapping(df, value_mapping):
     elif isinstance(df, pd.DataFrame):
         # Apply value_mapping to each element of the DataFrame
         return df.applymap(lambda x: value_mapping.get(x, x))
-def test_detntalMeasure_performance():
+def test_detntalMeasure_performance(config=None):
+    if config is not None:
+        for key, value in config.items():
+            globals()[key] = value        
     scale_x=30/960
     scale_y=40/1080
 
@@ -277,7 +280,7 @@ def test_detntalMeasure_performance():
 
     print('confusion_matrix', cm)
     print('roc_auc', roc_auc)
-
+    return roc_auc
 
 if __name__ == "__main__":
     test_detntalMeasure_performance()

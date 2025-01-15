@@ -417,9 +417,9 @@ def locate_points_with_dentin(gum_bin, dilated_mask, mid_x, mid_y, angle ,short_
         # 避免 None 存在，因有可能在上述流程誤判為雙牙尖
         dentin_left_x, dentin_left_y, dentin_right_x, dentin_right_y = assign_non_none_values(dentin_left_x, dentin_left_y, dentin_right_x, dentin_right_y)
         #---- 例外狀況 ---- 左右牙尖高度落差較大
-        print("Debugging ::")
+        #print("Debugging ::")
         if all(v is None for v in [dentin_left_x, dentin_left_y, dentin_right_x, dentin_right_y]):
-            print("All variables are None.")
+            print("All variables are None in locate_points_with_dentin.")
         else:
             if not is_within_range(dentin_left_y, dentin_right_y, RANGE_Y_LEFT_RIGHT_DENTIN):
                 if dentin_right_y > dentin_left_y:
@@ -533,7 +533,7 @@ def draw_point(prediction, image_for_drawing):
     
     # 印出所有點資訊
     for key, color in points.items():
-        print(f"{key} : ", prediction[key])
+        #print(f"{key} : ", prediction[key])
         cv2.circle(image_for_drawing, prediction[key], 5, color, -1)
     
     # 印出 Mid Points
@@ -571,7 +571,7 @@ def draw_line(prediction, line_image, scale):
     def determine_stage_text(length, length2):
         stage_text="III"
         ratio=length/length2
-        print(ratio)
+        #print(ratio)
         if ratio < 0.15 and length < 2:
             stage_text = "0"
         elif ratio < 0.15:
@@ -587,8 +587,8 @@ def draw_line(prediction, line_image, scale):
         p1, p2, p3, p4 = (prediction.get(start), prediction.get(end),
                           prediction.get(start2), prediction.get(end2))
 
-        print(f"{start} -> {end}: {p1}, {p2}")
-        print(f"{start2} -> {end2}: {p3}, {p4}")
+        # print(f"{start} -> {end}: {p1}, {p2}")
+        # print(f"{start2} -> {end2}: {p3}, {p4}")
         
 
         if any(pt is None or None in pt for pt in [p1, p2, p3, p4]):
@@ -639,13 +639,13 @@ def int_processing(val):
 
 def draw_image_and_print_information(prediction, image_for_drawing, line_image):
     # 繪圖及印出資訊
-    print("Mid Points : ", prediction["mid"])
-    print("enamel_left : ", prediction["enamel_left"])
-    print("enamel_right : ", prediction["enamel_right"])
-    print("gum_left : ", prediction["gum_left"])
-    print("gum_right : ", prediction["gum_right"])
-    print("dentin_left : ", prediction["dentin_left"])
-    print("dentin_right : ", prediction["dentin_right"])
+    # print("Mid Points : ", prediction["mid"])
+    # print("enamel_left : ", prediction["enamel_left"])
+    # print("enamel_right : ", prediction["enamel_right"])
+    # print("gum_left : ", prediction["gum_left"])
+    # print("gum_right : ", prediction["gum_right"])
+    # print("dentin_left : ", prediction["dentin_left"])
+    # print("dentin_right : ", prediction["dentin_right"])
     cv2.circle(image_for_drawing, prediction["enamel_left"], 5, (0, 0, 255), -1)
     cv2.circle(image_for_drawing, prediction["enamel_right"], 5, (0, 0, 255), -1)
     cv2.circle(image_for_drawing, prediction["gum_left"], 5, (0, 255, 0), -1)
@@ -653,25 +653,25 @@ def draw_image_and_print_information(prediction, image_for_drawing, line_image):
     cv2.circle(image_for_drawing, prediction["dentin_left"], 5, (255, 0, 0), -1)
     cv2.circle(image_for_drawing, prediction["dentin_right"], 5, (255, 0, 0), -1)
     # Draw lines between points
-    print("e_l -> d_l : ", prediction["enamel_left"], prediction["dentin_left"])
+    #print("e_l -> d_l : ", prediction["enamel_left"], prediction["dentin_left"])
     if (prediction["enamel_left"][0] is not None) and (prediction["dentin_left"] is not None):
         cv2.line(line_image, prediction["enamel_left"], prediction["dentin_left"], (0, 0, 255), 2)
     else:
         print("None Detected. Not drawing line.")
         
-    print("e_l -> g_l : ", prediction["enamel_left"], prediction["gum_left"])
+    #print("e_l -> g_l : ", prediction["enamel_left"], prediction["gum_left"])
     if (prediction["enamel_left"][0] is not None) and (prediction["gum_left"][0] is not None):
         cv2.line(line_image, prediction["enamel_left"], prediction["gum_left"], (0, 255, 255), 2)
     else:
         print("None Detected. Not drawing line.")
         
-    print("e_r -> d_r : ", prediction["enamel_right"], prediction["dentin_right"])
+    #print("e_r -> d_r : ", prediction["enamel_right"], prediction["dentin_right"])
     if (prediction["enamel_right"][0] is not None) and (prediction["dentin_right"] is not None):
         cv2.line(line_image, prediction["enamel_right"], prediction["dentin_right"], (0, 0, 255), 2)
     else:
         print("None Detected. Not drawing line.")
     
-    print("e_r -> g_r : ", prediction["enamel_right"], prediction["gum_right"])
+    #print("e_r -> g_r : ", prediction["enamel_right"], prediction["gum_right"])
     if (prediction["enamel_right"][0] is not None) and (prediction["gum_right"][0] is not None):
         cv2.line(line_image, prediction["enamel_right"], prediction["gum_right"], (0, 255, 255), 2)
     else:
