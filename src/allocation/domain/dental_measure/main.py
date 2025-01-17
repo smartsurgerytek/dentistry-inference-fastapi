@@ -3,7 +3,7 @@ from ultralytics import YOLO
 import numpy as np
 from src.allocation.domain.dental_measure.utils import *
 components_model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
-contour_model=YOLO('./models/dentistryContour_yolov11n_4.46.pt')
+contour_model=YOLO('./models/dentistryContour_yolov11n-seg_4.46.pt')
 
 def extract_features(masks_dict, original_img):
     """從遮罩中提取特徵點與區域資訊"""
