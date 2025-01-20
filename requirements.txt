@@ -12,3 +12,4 @@ scikit-learn
 openpyxl
 optuna
 poltly
+kaleido
