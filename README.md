@@ -72,6 +72,12 @@ pytest -vv --cov src/
 
 ## CVAT-nuclio deploy
 
+cvat docker compose up
+
+```
+docker compose -f docker-compose.yml -f docker-compose.dev.yml -f components/serverless/docker-compose.serverless.yml up -d
+```
+
 clone the repo in CVAT folder
 ```
 git clone https://github.com/smartsurgerytek/dentistry-inference-core.git
@@ -100,8 +106,3 @@ check functions aviability in nuclio
 nuctl get functions
 ```
 
-docker compose up
-
-```
-docker compose -f docker-compose.yml -f docker-compose.dev.yml -f components/serverless/docker-compose.serverless.yml up -d
-```
