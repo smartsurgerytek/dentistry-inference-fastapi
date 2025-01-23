@@ -47,19 +47,18 @@ def get_yolov8_label(mask_binary,tolerance=0.5):
         points.extend(merged)
     return points
 
-def yolo_transform(image, return_type='dict', config=None):
+def yolo_transform(image, return_type='dict', config=None, tolerance=0.5):
     if return_type == 'image' and config is None:
         raise ValueError("Provide a config for segmentation colors when return_type is 'image")
 
-    # 定義文本參數
-    color_list=config['color_list']
-    #color_list=[[color[2],color[1],color[0]] for color in color_list]
+    # get the color list from config
+    if config is not None:
+        color_list=config['color_list']
+        color_list=[[color[2],color[1],color[0]] for color in color_list]
+        color_dict = {i: color for i, color in enumerate(color_list)}
+    
     plot_image=image.copy()
-    color_dict = {i: color for i, color in enumerate(color_list)}
-
     results = model(image)
-
-    # 獲取類別名稱
     class_names = model.names
     yolov8_contents=[]
     # 處理結果
@@ -84,7 +83,7 @@ def yolo_transform(image, return_type='dict', config=None):
             
             # Convert mask to binary image
             mask_binary = (mask_np > 0.5).astype(np.uint8) * 255
-            yolov8_points=get_yolov8_label(mask_binary, tolerance=0.5)
+            yolov8_points=get_yolov8_label(mask_binary, tolerance=tolerance)
             yolov8_line=[class_id]
             yolov8_line.extend(yolov8_points)
             if yolov8_points:
@@ -112,7 +111,6 @@ def yolo_transform(image, return_type='dict', config=None):
     
     else:
         result_dict={
-            'color_dict': color_dict,
             'class_names': class_names,
             'yolov8_contents':yolov8_contents,
         }
