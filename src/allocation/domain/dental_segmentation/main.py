@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../.
 from src.allocation.domain.dental_segmentation.utils import *
 import yaml
 
-model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
+
 def find_center_mask(mask_binary):
     moments = cv2.moments(mask_binary)
 
@@ -47,7 +47,7 @@ def get_yolov8_label(mask_binary,tolerance=0.5):
         points.extend(merged)
     return points
 
-def yolo_transform(image, return_type='dict', config=None, tolerance=0.5):
+def yolo_transform(image, model, return_type='dict', config=None, tolerance=0.5):
     if return_type == 'image' and config is None:
         raise ValueError("Provide a config for segmentation colors when return_type is 'image")
 
@@ -83,22 +83,46 @@ def yolo_transform(image, return_type='dict', config=None, tolerance=0.5):
             
             # Convert mask to binary image
             mask_binary = (mask_np > 0.5).astype(np.uint8) * 255
-            yolov8_points=get_yolov8_label(mask_binary, tolerance=tolerance)
-            yolov8_line=[class_id]
-            yolov8_line.extend(yolov8_points)
-            if yolov8_points:
-                yolov8_contents.append(yolov8_line)
-            #breakpoint()
-            # Check if the mask is valid
-            if np.sum(mask_binary) == 0:
-                continue
-            
-            # Apply mask to the original image
-            mask_colored = np.zeros((mask_binary.shape[0], mask_binary.shape[1], 3), dtype=np.uint8)
-            if class_name != 'Background' and return_type=='image':
-                mask_colored[mask_binary == 255] = color_dict[class_id]
-                # Overlay the colored mask
-                plot_image = cv2.addWeighted(plot_image, 1, mask_colored, 0.8, 0)
+            if return_type=='cvat':
+                contours = find_contours(mask_binary, 0.5)
+                if len(contours)==0:
+                    continue
+                contour = contours[0]
+                contour = np.flip(contour, axis=1)
+                polygons = approximate_polygon(contour, tolerance=0.5)
+
+                xyxy = box.xyxy.tolist()
+                xtl = int(xyxy[0][0])
+                ytl = int(xyxy[0][1])
+                xbr = int(xyxy[0][2])
+                ybr = int(xyxy[0][3])
+
+                cvat_mask = to_cvat_mask((xtl, ytl, xbr, ybr), mask_binary)
+
+                yolov8_contents.append({
+                    "confidence": confidence,
+                    "label": class_names[int(box.cls)],
+                    "type": "mask",
+                    "points": polygons.ravel().tolist(),
+                    "mask": cvat_mask
+                })                
+            else:
+                yolov8_points=get_yolov8_label(mask_binary, tolerance=tolerance)
+                yolov8_line=[class_id]
+                yolov8_line.extend(yolov8_points)
+                if yolov8_points:
+                    yolov8_contents.append(yolov8_line)
+                #breakpoint()
+                # Check if the mask is valid
+                if np.sum(mask_binary) == 0:
+                    continue
+                
+                # Apply mask to the original image
+                mask_colored = np.zeros((mask_binary.shape[0], mask_binary.shape[1], 3), dtype=np.uint8)
+                if class_name != 'Background' and return_type=='image':
+                    mask_colored[mask_binary == 255] = color_dict[class_id]
+                    # Overlay the colored mask
+                    plot_image = cv2.addWeighted(plot_image, 1, mask_colored, 0.8, 0)
                 
                 
     if return_type=='image':
@@ -115,6 +139,7 @@ def yolo_transform(image, return_type='dict', config=None, tolerance=0.5):
             'yolov8_contents':yolov8_contents,
         }
         return result_dict
+
 def show_plot(image):
     #cv2.imshow("OpenCV Image", image)
     # 使用 matplotlib 绘制图形
@@ -124,8 +149,12 @@ def show_plot(image):
 
 
 if __name__=='__main__':
+    model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
     image=cv2.imread('./tests/files/nomal-x-ray-0.8510638-270-740_0_2022011008.png')
     with open('./conf/dentistry_PA.yaml', 'r') as file:
         config=yaml.safe_load(file)
-    tests=yolo_transform(image, return_type='image', config=config)
+    test1=yolo_transform(image, model, return_type='image', config=config)
+    test2=yolo_transform(image, model, return_type='cvat')
+    test3=yolo_transform(image, model, return_type='dict')
+
     #show_plot(result)

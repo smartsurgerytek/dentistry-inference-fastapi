@@ -2,7 +2,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 
-
+def to_cvat_mask(box: list, mask):
+    xtl, ytl, xbr, ybr = box
+    flattened = mask[ytl:ybr + 1, xtl:xbr + 1].flat[:].tolist()
+    flattened.extend([xtl, ytl, xbr, ybr])
+    return flattened
+    
 def get_label_text_img(pred_index_labels, width, color_dict, text_dict):
     unique_list = np.unique(pred_index_labels).tolist()
     if 13 in unique_list:

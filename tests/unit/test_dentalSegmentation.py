@@ -10,13 +10,17 @@ def test_dentalSegmentation_normalImage():
     if image is None:
         raise ValueError("Image not found, check test image path (or utf8 problems) or cv2 package")
     results_dict=yolo_transform(image, model, return_type='dict')
+    if not results_dict.get('yolov8_contents'):
+        raise ValueError("When input normal image, the result should be found, plz check dental_segmentation function dict option")
+    results_dict=yolo_transform(image, model, return_type='cvat')
+    if not results_dict.get('yolov8_contents'):
+        raise ValueError("When input normal image, the result should be found, plz check dental_segmentation function cvat option")
 
     with open('./conf/dentistry_PA.yaml', 'r') as file:
         config=yaml.safe_load(file)
     image=yolo_transform(image, model, return_type='image', config=config)
     
-    if not results_dict.get('yolov8_contents'):
-        raise ValueError("When input normal image, the result should be found, plz check dental_segmentation function")
+
     #show_plot(image)
     #print(results_dict)
 def test_dentalSegmentation_blackimage():
