@@ -30,6 +30,11 @@ The function created for segmentation task and outputs yolov8 annotation format
 ```
 huggingface-cli login
 ```
+or
+
+```
+huggingface-cli login --token <your token> --add-to-git-credential
+```
 
 After loggin with token, run the download scipt
 
@@ -63,4 +68,34 @@ See the coverage
 
 ```
 pytest -vv --cov src/
+```
+
+## CVAT-nuclio deploy
+
+clone the repo in CVAT folder
+```
+git clone https://github.com/smartsurgerytek/dentistry-inference-core.git
+```
+
+Install nuclio
+```
+curl -s https://api.github.com/repos/nuclio/nuclio/releases/latest \
+			| grep -i "browser_download_url.*nuctl.*$(uname)" \
+			| cut -d : -f 2,3 \
+			| tr -d \" \
+			| wget -O nuctl -qi - && chmod +x nuctl
+```
+
+Deploy the functions in nuclio
+```
+nuctl deploy --project-name cvat --path "./dentistry-inference-core/src/allocation/service_layer/cvat_nuclio/segmentation_PA" --platform local
+```
+
+```
+nuctl deploy --project-name cvat --path "./dentistry-inference-core/src/allocation/service_layer/cvat_nuclio/segmentation_PANO" --platform local
+```
+
+check functions aviability in nuclio
+```
+nuctl get functions
 ```
