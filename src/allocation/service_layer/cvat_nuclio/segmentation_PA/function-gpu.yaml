@@ -1,0 +1,73 @@
+metadata:
+  name: dentistry-pa-segmentation-yolov11x
+  namespace: cvat
+  annotations:
+    name: dentistry-pa-segmentation-yolov11x
+    type: detector
+    spec: |
+      [
+        { "id": 0, "name": "Alveolar_bone", "type": "mask", "color": "#00f0ff" },
+        { "id": 1, "name": "Caries", "type": "mask", "color": "#417f00" },
+        { "id": 2, "name": "Crown", "type": "mask", "color": "#0000ff" },
+        { "id": 3, "name": "Dentin", "type": "mask", "color": "#71291d" },
+        { "id": 4, "name": "Enamel", "type": "mask", "color": "#7a1590" },
+        { "id": 5, "name": "Implant", "type": "mask", "color": "#0094f2" },
+        { "id": 6, "name": "Mandibular_alveolar_nerve", "type": "mask", "color": "#0454ea" },
+        { "id": 7, "name": "Maxillary_sinus", "type": "mask", "color": "#00d0b2" },
+        { "id": 8, "name": "Periapical_lesion", "type": "mask", "color": "#346194" },
+        { "id": 9, "name": "Post_and_core", "type": "mask", "color": "#797979" },
+        { "id": 10, "name": "Pulp", "type": "mask", "color": "#d4931b" },
+        { "id": 11, "name": "Restoration", "type": "mask", "color": "#ceabff" },
+        { "id": 12, "name": "Root_canal_filling", "type": "mask", "color": "#6e1cd8" }
+      ]
+
+spec:
+  description: Yolo v11x from sst
+  runtime: 'python:3.9'
+  handler: main:handler
+  eventTimeout: 30s
+
+  build:
+    image: dentistry-pa-segmentation-yolov11x:latest-gpu
+    baseImage: python:3.9
+
+    directives:
+      preCopy:
+        - kind: ENV
+          value: DEBIAN_FRONTEND=noninteractive
+        - kind: WORKDIR
+          value: /opt/nuclio
+        - kind: RUN
+          value: apt-get update && apt-get install -y libgl1-mesa-glx
+        - kind: RUN
+          value: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+        - kind: RUN
+          value: pip install -U "huggingface_hub[cli]" ultralytics scikit-image
+        - kind: RUN
+          value: git config --global credential.helper store && huggingface-cli login --token please write the token here --add-to-git-credential
+        - kind: RUN
+          value: huggingface-cli download smartsurgery/dentistry-models all_category/dentistry_yolov11x-seg-all_4.42.pt --local-dir /tmp
+        - kind: RUN
+          value: mkdir -p /opt/nuclio && mv /tmp/all_category/dentistry_yolov11x-seg-all_4.42.pt /opt/nuclio/model.pt && rm /tmp/* -rf
+
+
+  triggers:
+    myHttpTrigger:
+      maxWorkers: 1
+      kind: 'http'
+      workerAvailabilityTimeoutMilliseconds: 10000
+      attributes:
+        maxRequestBodySize: 33554432 # 32MB
+
+  resources:
+    limits:
+      nvidia.com/gpu: 1  resources:
+    limits:
+      nvidia.com/gpu: 1
+
+  platform:
+    attributes:
+      restartPolicy:
+        name: always
+        maximumRetryCount: 3
+      mountMode: volume
