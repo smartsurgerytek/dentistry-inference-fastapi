@@ -89,7 +89,7 @@ def yolo_transform(image, model, return_type='dict', config=None, tolerance=0.5)
                     continue
                 contour = contours[0]
                 contour = np.flip(contour, axis=1)
-                polygons = approximate_polygon(contour, tolerance=0.5)
+                polygons = approximate_polygon(contour, tolerance=tolerance)
 
                 xyxy = box.xyxy.tolist()
                 xtl = int(xyxy[0][0])
