@@ -48,6 +48,7 @@ def save_best_config(study, trial):
     if study.best_trial == trial:
         # Save the best hyperparameters to a YAML file
         best_params = study.best_params
+        best_params['best_score'] = study.best_value
         with open('./conf/best_dental_measure_parameters.yaml', 'w') as yaml_file:
             yaml.dump(best_params, yaml_file, default_flow_style=False)
         print("Best hyperparameters saved to best_hyperparameters.yaml")
