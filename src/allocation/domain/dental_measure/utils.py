@@ -215,16 +215,41 @@ def get_mid_point(image, dilated_mask, idx):
         cv2.circle(image, (mid_x, mid_y), 5, (255, 255, 0), -1)  # 黃色圓點
     return mid_y, mid_x
 
-def locate_points_with_dental_crown(dental_crown_bin, dilated_mask, mid_x, mid_y, overlay):
+def locate_points_with_dental_crown(dental_crown_bin, dilated_mask, mid_x, mid_y, overlay, crown_mask=None):
+
     """處理與 dental_crown 之交點 (Enamel的底端)"""
     # 獲取每個獨立 mask 與原始 mask 的交集區域
-    intersection = cv2.bitwise_and(dental_crown_bin, dilated_mask)
+    crown_bool=False
+    intersection=np.zeros_like(dilated_mask)
+    if dental_crown_bin is not None:
+        intersection = cv2.bitwise_and(dental_crown_bin, dilated_mask)
+    if crown_mask is not None and np.all(intersection==0):
+        intersection = cv2.bitwise_and(crown_mask, dilated_mask)
+        if not np.all(intersection==0):
+            crown_bool=True
+
     overlay[intersection > 0] = (255, 0, 0)  # 將 dentin 顯示
     # 取得交集區域的 contour 作為交點
     contours, _ = cv2.findContours(intersection, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if len(contours) == 0:
         return None, None, None, None
     # 將交點進行排序
+    if crown_bool:
+        leftmost = None
+        rightmost = None
+        for contour in contours:
+            for point in contour:
+                x, y = point[0]
+
+                # 更新最左邊的座標
+                if leftmost is None or x < leftmost[0]:
+                    leftmost = (x, y)
+
+                # 更新最右邊的座標
+                if rightmost is None or x > rightmost[0]:
+                    rightmost = (x, y)
+        return leftmost[0], leftmost[1], rightmost[0], rightmost[1]
+
     corners = get_top_points(contours, reverse=True)
     # 確認排序成功成功
     if corners is not None:
@@ -270,6 +295,7 @@ def locate_points_with_dental_crown(dental_crown_bin, dilated_mask, mid_x, mid_y
                 else:
                     enamel_right_x = x
                     enamel_right_y = y
+
     return enamel_left_x, enamel_left_y, enamel_right_x, enamel_right_y
 
 def locate_points_with_gum(gum_bin, dilated_mask, mid_x, mid_y, overlay):

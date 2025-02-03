@@ -11,8 +11,8 @@ def extract_features(masks_dict, original_img):
     line_image = original_img.copy()
 
     # 清理各個遮罩
-    
-    masks_dict['dental_crown'] = clean_mask(masks_dict['dental_crown'], kernel_x=DENTAL_CROWN_KERNAL_X, kernel_y=DENTAL_CROWN_KERNAL_Y , iterations=DENTAL_CROWN_ITERATION)
+    if masks_dict.get('dental_crown') is not None:
+        masks_dict['dental_crown'] = clean_mask(masks_dict['dental_crown'], kernel_x=DENTAL_CROWN_KERNAL_X, kernel_y=DENTAL_CROWN_KERNAL_Y , iterations=DENTAL_CROWN_ITERATION)
     
     masks_dict['dentin'] = clean_mask(masks_dict['dentin'], kernel_x=DENTI_KERNAL_X, kernel_y=DENTI_KERNAL_Y, iterations=DENTI_ITERATION)
 
@@ -78,14 +78,19 @@ def locate_points(image, component_mask, binary_images, idx, overlay):
  
     # 取得中點
     mid_y, mid_x = get_mid_point(image, dilated_mask, idx)
+    
 
-    ########### 處理與 dental_crown 之交點 (Enamel的底端) ########### 
-    enamel_left_x, enamel_left_y, enamel_right_x, enamel_right_y = locate_points_with_dental_crown(binary_images["dental_crown"], dilated_mask, mid_x, mid_y, overlay)
+    ########### 處理與 dental_crown 之交點 (Enamel的底端) ###########
+    # if binary_images.get('crown') is not None:
+    #     binary_images["dental_crown"]=cv2.bitwise_or(binary_images["dental_crown"], binary_images["crown"])
+    
+    enamel_left_x, enamel_left_y, enamel_right_x, enamel_right_y = locate_points_with_dental_crown(binary_images.get("dental_crown"), dilated_mask, mid_x, mid_y, overlay, binary_images.get('crown'))
+
     ########### 處理與 gum 之交點 (Alveolar_bone的頂端) ########### 
     gum_left_x, gum_left_y, gum_right_x, gum_right_y = locate_points_with_gum(binary_images["gum"], dilated_mask, mid_x, mid_y, overlay)
     ########### 處理與 dentin 的底端 ########### 
     dentin_left_x, dentin_left_y, dentin_right_x, dentin_right_y = locate_points_with_dentin(binary_images["gum"], dilated_mask, mid_x, mid_y, angle, short_side, image, component_mask)
-    
+
     
     prediction = {"mid": (mid_x, mid_y), 
                 "enamel_left": (enamel_left_x, enamel_left_y), "enamel_right":(enamel_right_x, enamel_right_y),
@@ -183,47 +188,51 @@ def dental_estimation(image, scale=(31/960,41/1080), return_type='image'):
     components_model_masks_dict = {denti_measure_names_map.get(k, k): v for k, v in components_model_masks_dict.items()}
 
     # Error handling
-
     required_components = {
         'dentin': "No dental instance detected",
-        'dental_crown': "No dental_crown detected",
         'gum': "No gum detected"
     }
+
+    # check 'dentin' and 'gum' existed
     for component, error_message in required_components.items():
         if components_model_masks_dict.get(component) is None:
-            if return_type=='image':
-                return generate_error_image(error_message)
-            else:
-                return []
-        
+            return generate_error_image(error_message) if return_type == 'image' else []
+    # check 'dental_crown', 'crown' existed
+    if (components_model_masks_dict.get('dental_crown') is None and components_model_masks_dict.get('crown') is None):
+        return generate_error_image("No dental_crown detected") if return_type == 'image' else []     
+    
+    # contour model check
     if contours_model_masks_dict.get('dental_contour') is None:
-        generate_error_image("No dental instance detected")
-        if return_type=='image':
-            return generate_error_image(error_message)
-        else:
-            return []
+        error_message = "No dental instance detected"
+        return generate_error_image(error_message) if return_type == 'image' else []
         
     # dentin is compensated by dental contour model
-    for mask in contours_model_masks_dict['dental_contour']:
-        if not 'dental_contour' in components_model_masks_dict.keys():
-            components_model_masks_dict['dental_contour']=mask
-        else:
-            components_model_masks_dict['dental_contour']=cv2.bitwise_or(components_model_masks_dict['dental_contour'], mask) # find the union
-    crown_or_enamal_mask=np.zeros_like(components_model_masks_dict['dentin'])
-    for key in ['dental_crown','crown']:
-        if components_model_masks_dict.get(key) is not None:
-            crown_or_enamal_mask=cv2.bitwise_or(crown_or_enamal_mask, components_model_masks_dict[key])
-    components_model_masks_dict['dentin']=components_model_masks_dict['dental_contour']-cv2.bitwise_and(components_model_masks_dict['dental_contour'], crown_or_enamal_mask)
+    components_model_masks_dict['dental_contour'] = components_model_masks_dict.get('dental_contour', None)
+    for dental_contour in contours_model_masks_dict['dental_contour']:
+        components_model_masks_dict['dental_contour'] = cv2.bitwise_or(components_model_masks_dict['dental_contour'], dental_contour) if components_model_masks_dict['dental_contour'] is not None else dental_contour
 
+
+    crown_or_enamal_mask = np.zeros_like(components_model_masks_dict['dentin'])
+    for key in ['dental_crown', 'crown']:
+        mask = components_model_masks_dict.get(key)
+        if mask is not None:
+            crown_or_enamal_mask = cv2.bitwise_or(crown_or_enamal_mask, mask)
+
+    components_model_masks_dict['dentin']=components_model_masks_dict['dental_contour']-cv2.bitwise_and(components_model_masks_dict['dental_contour'], crown_or_enamal_mask)
+    
 
     overlay, line_image, non_masked_area= extract_features(components_model_masks_dict, image) # 處理繪圖用圖片等特徵處理後圖片
 
-
+    #breakpoint()
     predictions = []
     image_for_drawing=image.copy()
     #for i in range(1, num_labels):  # 從1開始，0是背景
+    num_labels, labels = cv2.connectedComponents(components_model_masks_dict['dentin'])
 
-    for i, component_mask in enumerate(contours_model_masks_dict['dental_contour']):
+    #for i, component_mask in enumerate(contours_model_masks_dict['dental_contour']):
+    for i in range(1, num_labels):
+        component_mask = np.uint8(labels == i) * 255
+
         # 取得分析後的點
         prediction = locate_points(image_for_drawing, component_mask, components_model_masks_dict, i+1, overlay)
         # 如果無法判斷點，會回傳空字典
@@ -237,6 +246,7 @@ def dental_estimation(image, scale=(31/960,41/1080), return_type='image'):
         prediction['pair_measurements']=dental_pair_list
         if dental_pair_list:
             predictions.append(prediction)
+
 
     if return_type=='image':
         return image_for_drawing
