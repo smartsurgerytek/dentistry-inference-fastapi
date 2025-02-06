@@ -156,6 +156,7 @@ def get_top_points(contours, reverse=True):
         all_points.extend(top_points)
     # 排序
     all_points = sorted(all_points, key=lambda x: x[0][1], reverse=reverse)
+    all_points = np.int32(all_points)
     return all_points
 
 
@@ -215,87 +216,107 @@ def get_mid_point(image, dilated_mask, idx):
         cv2.circle(image, (mid_x, mid_y), 5, (255, 255, 0), -1)  # 黃色圓點
     return mid_y, mid_x
 
-def locate_points_with_dental_crown(dental_crown_bin, dilated_mask, mid_x, mid_y, overlay, crown_mask=None):
+def find_brightest_pixel(image, x, y, bright_threshold=50, search_range=50):
+    # 如果當前像素的亮度小於 threshold，就開始搜尋
+    if len(image.shape)==3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    if image[y, x] < bright_threshold:
+        max_brightness = -1  # 記錄最亮像素的亮度
+        brightest_pixel = (x, y)  # 記錄最亮像素的位置
+
+        # 遍歷範圍內的像素，尋找亮度最高的像素
+        for i in range(max(0, y - search_range), min(image.shape[0], y + search_range)):
+            for j in range(max(0, x - search_range), min(image.shape[1], x + search_range)):
+                if image[i, j] > max_brightness:
+                    max_brightness = image[i, j]
+                    brightest_pixel = (j, i)  # 更新最亮像素的位置
+
+        return brightest_pixel
+
+    # 如果當前像素本身足夠亮，返回該像素
+    return (x, y)
+
+
+def locate_points_with_dental_crown(image, dental_crown_bin, dilated_mask, mid_x, mid_y, overlay, crown_mask=None):
 
     """處理與 dental_crown 之交點 (Enamel的底端)"""
     # 獲取每個獨立 mask 與原始 mask 的交集區域
     crown_bool=False
+    if dilated_mask is None:
+        return None, None, None, None
     intersection=np.zeros_like(dilated_mask)
+    ENAMEL_SKIP_PIXEL=int(ENAMEL_SKIP_PIXEL_RATIO*dilated_mask.shape[1])
+    # 初始化取得座標，預設左右兩邊皆有
+    enamel_left_x = enamel_left_y = enamel_right_x = enamel_right_y = 0
+    leftmost = None
+    rightmost = None
+    area_ratio=np.inf
+    #膨脹後的crown跟膨脹後的denti取交集
     if dental_crown_bin is not None:
         intersection = cv2.bitwise_and(dental_crown_bin, dilated_mask)
-    if crown_mask is not None and np.all(intersection==0):
+        area_ratio = cv2.countNonZero(intersection)/dilated_mask.shape[0]*dilated_mask.shape[1]
+
+    #如果交集為0，則找尋跟假牙的交點 (如果假牙太近會誤判)
+    if crown_mask is not None and area_ratio<ENAMEL_INTERSECTION_THRESHOLD_RATIO:
         intersection = cv2.bitwise_and(crown_mask, dilated_mask)
-        if not np.all(intersection==0):
+        area_ratio = cv2.countNonZero(intersection)/dilated_mask.shape[0]*dilated_mask.shape[1]
+        if not np.all(area_ratio==0):
             crown_bool=True
 
+    #如果真的再沒有就直接從dilated mask上面拿
+    if dilated_mask is not None and area_ratio==0:
+        contours, _ = cv2.findContours(dilated_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        largest_contour = max(contours, key=cv2.contourArea)
+        x, y, w, h = cv2.boundingRect(largest_contour)
+        height = int(h * NONE_CROWN_REPLACED_HEIGHT_RATIO)
+        intersection[y:y+height, x:x+w] = dilated_mask[y:y+height, x:x+w]
+        
+    #show_plot(intersection)
     overlay[intersection > 0] = (255, 0, 0)  # 將 dentin 顯示
     # 取得交集區域的 contour 作為交點
     contours, _ = cv2.findContours(intersection, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if len(contours) == 0:
         return None, None, None, None
     # 將交點進行排序
-    if crown_bool:
-        leftmost = None
-        rightmost = None
+    if crown_bool:#假牙邏輯
         for contour in contours:
             for point in contour:
                 x, y = point[0]
-
                 # 更新最左邊的座標
                 if leftmost is None or x < leftmost[0]:
                     leftmost = (x, y)
-
                 # 更新最右邊的座標
                 if rightmost is None or x > rightmost[0]:
                     rightmost = (x, y)
         return leftmost[0], leftmost[1], rightmost[0], rightmost[1]
 
+    #如果不是假牙就繼續
     corners = get_top_points(contours, reverse=True)
-    # 確認排序成功成功
-    if corners is not None:
-        # 整數化
-        corners = np.int32(corners)
-        # 初始化取得座標，預設左右兩邊皆有
-        enamel_left_x = None
-        enamel_left_y = None
-        enamel_right_x = None
-        enamel_right_y = None
-        # 針對每個點進行處理
-        for corner in corners:
-            # 取得交點座標
-            x, y = corner.ravel()
-            # 判斷左右
-            if x < mid_x:
-                # 後續判斷
-                if enamel_left_x is not None:
-                    # 找到 y 最大者
-                    if y > enamel_left_y:
-                        enamel_left_x = x
-                        enamel_left_y = y
-                        continue
-                    # 因以排序，看到 x 座標過接近的交點就不要重複看
-                    elif is_within_range(x, enamel_left_x):
-                        continue
-                # 初判
-                else:
-                    enamel_left_x = x
-                    enamel_left_y = y
-            elif x > mid_x:
-                # 後續判斷
-                if enamel_right_x is not None:
-                    # 找到 y 最大者
-                    if y > enamel_right_y:
-                        enamel_right_x = x
-                        enamel_right_y = y
-                        continue
-                    # 因以排序，看到 x 座標過接近的交點就不要重複看
-                    elif is_within_range(x, enamel_right_x):
-                        continue
-                # 初判
-                else:
-                    enamel_right_x = x
-                    enamel_right_y = y
+    if corners is None:
+        return None, None, None, None 
+    # # 針對每個點進行處理
+    for corner in corners:
+        x, y = corner.ravel()
+        if x < mid_x and y > enamel_left_y and not is_within_range(x, enamel_left_x, ENAMEL_SKIP_PIXEL):
+            enamel_left_x = x
+            enamel_left_y = y
+        elif x > mid_x and y > enamel_right_y and not is_within_range(x, enamel_right_x, ENAMEL_SKIP_PIXEL):
+            enamel_right_x = x
+            enamel_right_y = y
 
+    if enamel_left_x!=0 and enamel_left_y!=0:
+        enamel_left_x, enamel_left_y=find_brightest_pixel(image, enamel_left_x, enamel_left_y, bright_threshold=50, search_range=30)
+    if enamel_right_x==0 and enamel_right_y==0:
+        enamel_right_x, enamel_right_y=find_brightest_pixel(image, enamel_right_x, enamel_right_y, bright_threshold=50, search_range=30)
+
+    #依舊是0的就返回none
+    if enamel_left_x==0 and enamel_left_y==0:
+        enamel_left_x = enamel_left_y = None
+    if enamel_right_x==0 and enamel_right_y==0:
+        enamel_right_x = enamel_right_y = None
+
+    #breakpoint()
     return enamel_left_x, enamel_left_y, enamel_right_x, enamel_right_y
 
 def locate_points_with_gum(gum_bin, dilated_mask, mid_x, mid_y, overlay):
