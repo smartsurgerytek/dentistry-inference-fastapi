@@ -206,20 +206,37 @@ def dental_estimation(image, scale=(31/960,41/1080), return_type='image'):
         error_message = "No dental instance detected"
         return generate_error_image(error_message) if return_type == 'image' else []
         
-    # dentin is compensated by dental contour model
-    components_model_masks_dict['dental_contour'] = components_model_masks_dict.get('dental_contour', None)
+    # Retrive the dental_contour from contour_model
+
+    components_model_masks_dict['dental_contour']=np.zeros(image.shape[:2], dtype=np.uint8)
     for dental_contour in contours_model_masks_dict['dental_contour']:
-        components_model_masks_dict['dental_contour'] = cv2.bitwise_or(components_model_masks_dict['dental_contour'], dental_contour) if components_model_masks_dict['dental_contour'] is not None else dental_contour
+        components_model_masks_dict['dental_contour'] = cv2.bitwise_or(components_model_masks_dict['dental_contour'], dental_contour)
+    
+    # # Retrive the dental_contour from components_model
+    # contour_elements=['dentin','Caries','dental_crown','crown','Implant','Restoration','Pulp','Post_and_core']
+    # contours_from_component_model=np.zeros(image.shape[:2], dtype=np.uint8)
+    # for key in contour_elements:
+    #     if components_model_masks_dict.get(key) is not None:
+    #         contours_from_component_model = cv2.bitwise_or(contours_from_component_model, components_model_masks_dict[key])
+    # # combine two model contours
+    # components_model_masks_dict['dental_contour']=cv2.bitwise_or(components_model_masks_dict['dental_contour'], contours_from_component_model)
 
-
-    crown_or_enamal_mask = np.zeros_like(components_model_masks_dict['dentin'])
+    #retrive the crown or enamal mask
+    crown_or_enamal_mask = np.zeros(image.shape[:2], dtype=np.uint8)
     for key in ['dental_crown', 'crown']:
         mask = components_model_masks_dict.get(key)
         if mask is not None:
             crown_or_enamal_mask = cv2.bitwise_or(crown_or_enamal_mask, mask)
-
-    components_model_masks_dict['dentin']=components_model_masks_dict['dental_contour']-cv2.bitwise_and(components_model_masks_dict['dental_contour'], crown_or_enamal_mask)
+        
+    # retrive the dentin mask (dental_contours- crown_or_enamal_mask)
+    denti_from_contour=components_model_masks_dict['dental_contour']-cv2.bitwise_and(components_model_masks_dict['dental_contour'], crown_or_enamal_mask)
+    components_model_masks_dict['dentin']=denti_from_contour
+    ## retrive the dentin mask (dental_contours- crown_or_enamal_mask) or (denti_from_contour)
+    # components_model_masks_dict['dentin']=cv2.bitwise_or(components_model_masks_dict['dentin'], denti_from_contour)
+    # if components_model_masks_dict.get('Pulp') is not None:
+    #     components_model_masks_dict['dentin']=cv2.bitwise_or(components_model_masks_dict['dentin'], components_model_masks_dict['Pulp'])
     
+    # clean crown mask
     if components_model_masks_dict.get('crown') is not None and components_model_masks_dict.get('dental_crown') is not None:
         components_model_masks_dict["dental_crown"]=components_model_masks_dict["dental_crown"]-cv2.bitwise_and(components_model_masks_dict["dental_crown"], components_model_masks_dict["crown"])
 
