@@ -83,8 +83,8 @@ def locate_points(image, component_mask, binary_images, idx, overlay):
     ########### 處理與 dental_crown 之交點 (Enamel的底端) ###########
     # if binary_images.get('crown') is not None:
     #     binary_images["dental_crown"]=cv2.bitwise_or(binary_images["dental_crown"], binary_images["crown"])
-    
-    enamel_left_x, enamel_left_y, enamel_right_x, enamel_right_y = locate_points_with_dental_crown(binary_images.get("dental_crown"), dilated_mask, mid_x, mid_y, overlay, binary_images.get('crown'))
+
+    enamel_left_x, enamel_left_y, enamel_right_x, enamel_right_y = locate_points_with_dental_crown(image, binary_images.get("dental_crown"), dilated_mask, mid_x, mid_y, overlay, binary_images.get('crown'))
 
     ########### 處理與 gum 之交點 (Alveolar_bone的頂端) ########### 
     gum_left_x, gum_left_y, gum_right_x, gum_right_y = locate_points_with_gum(binary_images["gum"], dilated_mask, mid_x, mid_y, overlay)
@@ -220,15 +220,18 @@ def dental_estimation(image, scale=(31/960,41/1080), return_type='image'):
 
     components_model_masks_dict['dentin']=components_model_masks_dict['dental_contour']-cv2.bitwise_and(components_model_masks_dict['dental_contour'], crown_or_enamal_mask)
     
+    if components_model_masks_dict.get('crown') is not None and components_model_masks_dict.get('dental_crown') is not None:
+        components_model_masks_dict["dental_crown"]=components_model_masks_dict["dental_crown"]-cv2.bitwise_and(components_model_masks_dict["dental_crown"], components_model_masks_dict["crown"])
 
     overlay, line_image, non_masked_area= extract_features(components_model_masks_dict, image) # 處理繪圖用圖片等特徵處理後圖片
 
-    #breakpoint()
+    
+
     predictions = []
     image_for_drawing=image.copy()
     #for i in range(1, num_labels):  # 從1開始，0是背景
     num_labels, labels = cv2.connectedComponents(components_model_masks_dict['dentin'])
-
+    
     #for i, component_mask in enumerate(contours_model_masks_dict['dental_contour']):
     for i in range(1, num_labels):
         component_mask = np.uint8(labels == i) * 255
