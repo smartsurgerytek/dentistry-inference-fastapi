@@ -5,7 +5,8 @@ from src.allocation.domain.dental_measure.utils import *
 components_model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
 contour_model=YOLO('./models/dentistryContour_yolov11n-seg_4.46.pt')
 
-def extract_features(masks_dict, original_img):
+def extract_features(masks_dict, original_img, config=None):
+
     """從遮罩中提取特徵點與區域資訊"""
     overlay = original_img.copy()
     line_image = original_img.copy()
@@ -37,8 +38,10 @@ def extract_features(masks_dict, original_img):
     return overlay, line_image, non_masked_area
 
 
-def locate_points(image, component_mask, binary_images, idx, overlay):
-
+def locate_points(image, component_mask, binary_images, idx, overlay, config=None):
+    if config is not None:
+        for key, value in config.items():
+            globals()[key] = value
     # def less_than_area_threshold(component_mask, area_threshold):
     #     """根據指定面積大小，過濾過小的分割區域"""
     #     area = cv2.countNonZero(component_mask)
@@ -84,12 +87,12 @@ def locate_points(image, component_mask, binary_images, idx, overlay):
     # if binary_images.get('crown') is not None:
     #     binary_images["dental_crown"]=cv2.bitwise_or(binary_images["dental_crown"], binary_images["crown"])
 
-    enamel_left_x, enamel_left_y, enamel_right_x, enamel_right_y = locate_points_with_dental_crown(image, binary_images.get("dental_crown"), dilated_mask, mid_x, mid_y, overlay, binary_images.get('crown'))
+    enamel_left_x, enamel_left_y, enamel_right_x, enamel_right_y = locate_points_with_dental_crown(image, binary_images.get("dental_crown"), dilated_mask, mid_x, mid_y, overlay, binary_images.get('crown'), config)
 
     ########### 處理與 gum 之交點 (Alveolar_bone的頂端) ########### 
-    gum_left_x, gum_left_y, gum_right_x, gum_right_y = locate_points_with_gum(binary_images["gum"], dilated_mask, mid_x, mid_y, overlay)
+    gum_left_x, gum_left_y, gum_right_x, gum_right_y = locate_points_with_gum(binary_images["gum"], dilated_mask, mid_x, mid_y, overlay, config)
     ########### 處理與 dentin 的底端 ########### 
-    dentin_left_x, dentin_left_y, dentin_right_x, dentin_right_y = locate_points_with_dentin(binary_images["gum"], dilated_mask, mid_x, mid_y, angle, short_side, image, component_mask)
+    dentin_left_x, dentin_left_y, dentin_right_x, dentin_right_y = locate_points_with_dentin(binary_images["gum"], dilated_mask, mid_x, mid_y, angle, short_side, image, component_mask, config)
 
     
     prediction = {"mid": (mid_x, mid_y), 
@@ -197,7 +200,11 @@ def generate_error_image(text):
     cv2.putText(image, text, (text_x, text_y), font, font_scale, color, thickness)
     return image
 
-def dental_estimation(image, scale=(31/960,41/1080), return_type='image'):
+def dental_estimation(image, scale=(31 / 960, 41 / 1080), return_type='image', config=None):
+    
+    if config is not None:
+        for key, value in config.items():
+            globals()[key] = value
 
     components_model_masks_dict=get_mask_dict_from_model(components_model, image, method='semantic', mask_threshold=DENTAL_MODEL_THRESHOLD)
     contours_model_masks_dict=get_mask_dict_from_model(contour_model, image, method='instance', mask_threshold=DENTAL_CONTOUR_MODEL_THRESHOLD)
@@ -277,7 +284,7 @@ def dental_estimation(image, scale=(31/960,41/1080), return_type='image'):
         component_mask = np.uint8(labels == i) * 255
 
         # 取得分析後的點
-        prediction = locate_points(image_for_drawing, component_mask, components_model_masks_dict, i+1, overlay)
+        prediction = locate_points(image_for_drawing, component_mask, components_model_masks_dict, i+1, overlay, config)
         # 如果無法判斷點，會回傳空字典
         if len(prediction) == 0:
             continue

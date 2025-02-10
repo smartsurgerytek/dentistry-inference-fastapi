@@ -66,7 +66,7 @@ if __name__=='__main__':
     study = optuna.create_study(direction='maximize')
 
     # Start the optimization
-    study.optimize(objective, n_trials=200, callbacks=[save_best_config])  # Number of trials to run
+    study.optimize(objective, n_trials=1000, n_jobs=6) #callbacks=[save_best_config])  # Number of trials to run
 
     # Get the best hyperparameters
     best_params = study.best_params

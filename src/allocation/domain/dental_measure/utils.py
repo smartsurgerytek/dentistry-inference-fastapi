@@ -16,10 +16,10 @@ from scipy.spatial import KDTree
 # TWO_POINT_TEETH_THRESHOLD = 259 # 初判單雙牙尖使用
 # RANGE_FOR_TOOTH_TIP_LEFT = 80 # 強迫判斷雙牙尖，中心區域定義使用(左)
 # RANGE_FOR_TOOTH_TIP_RIGHT = 40 # 強迫判斷雙牙尖，中心區域定義使用(右)
-with open('./conf/dental_measure_parameters.yaml', 'r') as file:
-    config = yaml.safe_load(file)
-for key, value in config.items():
-    globals()[key] = value
+# with open('./conf/dental_measure_parameters.yaml', 'r') as file:
+#     config = yaml.safe_load(file)
+# for key, value in config.items():
+#     globals()[key] = value
 def show_two(img1, img2, title1="Image 1", title2="Image 2"):
     """
     顯示兩張圖像並設定標題
@@ -240,14 +240,18 @@ def find_brightest_pixel(image, x, y, bright_threshold=50, search_range=50):
     return (x, y)
 
 
-def locate_points_with_dental_crown(image, dental_crown_bin, dilated_mask, mid_x, mid_y, overlay, crown_mask=None):
+def locate_points_with_dental_crown(image, dental_crown_bin, dilated_mask, mid_x, mid_y, overlay, crown_mask=None, config=None):
 
+    if config is not None:
+        for key, value in config.items():
+            globals()[key] = value
     """處理與 dental_crown 之交點 (Enamel的底端)"""
     # 獲取每個獨立 mask 與原始 mask 的交集區域
     crown_bool=False
     if dilated_mask is None:
         return None, None, None, None
     intersection=np.zeros_like(dilated_mask)
+    
     ENAMEL_SKIP_PIXEL=int(ENAMEL_SKIP_PIXEL_RATIO*dilated_mask.shape[1])
     # 初始化取得座標，預設左右兩邊皆有
     enamel_left_x = enamel_left_y = enamel_right_x = enamel_right_y = 0
@@ -321,7 +325,10 @@ def locate_points_with_dental_crown(image, dental_crown_bin, dilated_mask, mid_x
     #breakpoint()
     return enamel_left_x, enamel_left_y, enamel_right_x, enamel_right_y
 
-def locate_points_with_gum(gum_bin, dilated_mask, mid_x, mid_y, overlay):
+def locate_points_with_gum(gum_bin, dilated_mask, mid_x, mid_y, overlay, config=None):
+    if config is not None:
+        for key, value in config.items():
+            globals()[key] = value
     """處理與 gum 之交點 (Alveolar_bone的頂端)"""
     # 獲取每個獨立 mask 與原始 mask 的交集區域
     locate_gum_mid_x_threshold = gum_bin.shape[1]*GUM_LOCATE_GUM_MID_X_THRESHOLD_RATIO
@@ -382,7 +389,10 @@ def locate_points_with_gum(gum_bin, dilated_mask, mid_x, mid_y, overlay):
                     gum_right_y = y
     return gum_left_x, gum_left_y, gum_right_x, gum_right_y
 
-def locate_points_with_dentin(gum_bin, dilated_mask, mid_x, mid_y, angle ,short_side, image, component_mask):
+def locate_points_with_dentin(gum_bin, dilated_mask, mid_x, mid_y, angle, short_side, image, component_mask, config=None):
+    if config is not None:
+        for key, value in config.items():
+            globals()[key] = value
     # 取得 dentin 與 gum 交集
     intersection = cv2.bitwise_and(gum_bin, dilated_mask)
     # 由於希望取得 dentin 與 gum 交集的底部，所以需要轉正
