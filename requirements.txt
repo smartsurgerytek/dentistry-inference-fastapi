@@ -11,5 +11,5 @@ tabulate
 scikit-learn
 openpyxl
 optuna
-poltly
+plotly
 kaleido
