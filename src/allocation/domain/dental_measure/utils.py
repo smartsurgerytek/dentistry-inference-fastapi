@@ -404,8 +404,8 @@ def locate_points_with_dentin(gum_bin, dilated_mask, mid_x, mid_y, angle ,short_
     height, width = image.shape[:2]
     max_length = max(width, height)
     DENTI_TWO_POINT_TEETH_THRESHOLD=max_length*DENTI_TWO_POINT_TEETH_THRESHOLD_RATIO
-    DENTI_RANGE_FOR_TOOTH_TIP_LEFT=max_length*DENTI_RANGE_FOR_TOOTH_TIP_LEFT_RATIO
-    DENTI_RANGE_FOR_TOOTH_TIP_RIGHT=max_length*DENTI_RANGE_FOR_TOOTH_TIP_RIGHT_RATIO
+    DENTI_RANGE_FOR_TOOTH_TIP=max_length*DENTI_RANGE_FOR_TOOTH_TIP_RATIO
+    #DENTI_RANGE_FOR_TOOTH_TIP_RIGHT=max_length*DENTI_RANGE_FOR_TOOTH_TIP_RIGHT_RATIO
     DENTI_RANGE_Y_LEFT_RIGHT_DENTIN=height*DENTI_RANGE_Y_LEFT_RIGHT_DENTIN_RATIO
     DENTI_RANGE_X_LEFT_RIGHT_DENTIN=width*DENTI_RANGE_X_LEFT_RIGHT_DENTIN_RATIO
 
@@ -424,10 +424,10 @@ def locate_points_with_dentin(gum_bin, dilated_mask, mid_x, mid_y, angle ,short_
         # 根據 c_mid_x 分配點到左右兩邊
         for point in bottom_corners:
             x, y = point.ravel() # 取得左右兩邊
-            if x < c_mid_x-DENTI_RANGE_FOR_TOOTH_TIP_LEFT:
+            if x < c_mid_x-DENTI_RANGE_FOR_TOOTH_TIP:
                 left_corners.append(point)
             # 雙牙尖，太中間的點不可能是牙尖
-            elif x >= c_mid_x-DENTI_RANGE_FOR_TOOTH_TIP_LEFT and x <= c_mid_x+DENTI_RANGE_FOR_TOOTH_TIP_RIGHT:
+            elif x >= c_mid_x-DENTI_RANGE_FOR_TOOTH_TIP and x <= c_mid_x+DENTI_RANGE_FOR_TOOTH_TIP:
                 continue
             else:
                 right_corners.append(point)

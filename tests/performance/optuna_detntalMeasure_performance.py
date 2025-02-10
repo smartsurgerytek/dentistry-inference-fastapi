@@ -7,8 +7,8 @@ from optuna.visualization import plot_param_importances
 def objective(trial):
     # Define the hyperparameters search space
     config = {
-        'DENTAL_MODEL_THRESHOLD': trial.suggest_float('DENTAL_MODEL_THRESHOLD', 0.4, 0.6),
-        'DENTAL_CONTOUR_MODEL_THRESHOLD': trial.suggest_float('DENTAL_CONTOUR_MODEL_THRESHOLD', 0.4, 0.6),
+        'DENTAL_MODEL_THRESHOLD': trial.suggest_float('DENTAL_MODEL_THRESHOLD', 0.3, 0.7),
+        'DENTAL_CONTOUR_MODEL_THRESHOLD': trial.suggest_float('DENTAL_CONTOUR_MODEL_THRESHOLD', 0.3, 0.7),
         
         # Mask cleaning parameters
         'DENTAL_CROWN_KERNAL_X': trial.suggest_int('DENTAL_CROWN_KERNAL_X', 1, 5),
@@ -16,7 +16,7 @@ def objective(trial):
         'DENTAL_CROWN_ITERATION': trial.suggest_int('DENTAL_CROWN_ITERATION', 1, 10),
 
         'DENTI_KERNAL_X': trial.suggest_int('DENTI_KERNAL_X', 10, 20),
-        'DENTI_KERNAL_Y': trial.suggest_int('DENTI_KERNAL_Y', 0, 10),
+        'DENTI_KERNAL_Y': trial.suggest_int('DENTI_KERNAL_Y', 1, 10),
         'DENTI_ITERATION': trial.suggest_int('DENTI_ITERATION', 1, 10),
 
         'GUM_KERNAL_X': trial.suggest_int('GUM_KERNAL_X', 1, 5),
@@ -26,18 +26,23 @@ def objective(trial):
         'DENTAL_CONTOUR_KERNAL_X': trial.suggest_int('DENTAL_CONTOUR_KERNAL_X', 1, 5),
         'DENTAL_CONTOUR_KERNAL_Y': trial.suggest_int('DENTAL_CONTOUR_KERNAL_Y', 1, 5),
         'DENTAL_CONTOUR_ITERATION': trial.suggest_int('DENTAL_CONTOUR_ITERATION', 1, 10),
-        
+
+        'ENAMEL_SKIP_PIXEL_RATIO':trial.suggest_float('ENAMEL_SKIP_PIXEL_RATIO', 0.03, 0.05),
+        'ENAMEL_INTERSECTION_THRESHOLD_RATIO':trial.suggest_float('ENAMEL_INTERSECTION_THRESHOLD_RATIO', 0.0005, 0.0015),
+        'ENAMEL_NONE_CROWN_REPLACED_HEIGHT_RATIO': trial.suggest_float('ENAMEL_NONE_CROWN_REPLACED_HEIGHT_RATIO', 0.05, 0.15),
+
+        'GUM_LOCATE_GUM_MID_X_THRESHOLD_RATIO': trial.suggest_float('GUM_LOCATE_GUM_MID_X_THRESHOLD_RATIO', 0.03, 0.05),
+
         # Dental measure algorithm thresholds
         'ROTATION_ANGLE_THRESHOLD': trial.suggest_int('ROTATION_ANGLE_THRESHOLD', 10, 60),
-        'LOCATE_GUM_MID_X_THRESHOLD_RATIO': trial.suggest_float('LOCATE_GUM_MID_X_THRESHOLD_RATIO', 0.02, 0.04),
-        'TWO_POINT_TEETH_THRESHOLD_RATIO': trial.suggest_float('TWO_POINT_TEETH_THRESHOLD_RATIO', 0.1, 0.3),
-        'RANGE_FOR_TOOTH_TIP_LEFT_RATIO': trial.suggest_float('RANGE_FOR_TOOTH_TIP_LEFT_RATIO', 0.04, 0.08),
-        'RANGE_FOR_TOOTH_TIP_RIGHT_RATIO': trial.suggest_float('RANGE_FOR_TOOTH_TIP_RIGHT_RATIO', 0.02, 0.04),
-        'RANGE_Y_LEFT_RIGHT_DENTIN_RATIO': trial.suggest_float('RANGE_Y_LEFT_RIGHT_DENTIN_RATIO', 0.1, 0.3),
-        'RANGE_X_LEFT_RIGHT_DENTIN_RATIO': trial.suggest_float('RANGE_X_LEFT_RIGHT_DENTIN_RATIO', 0.04, 0.08),
+        
+        'DENTI_TWO_POINT_TEETH_THRESHOLD_RATIO': trial.suggest_float('DENTI_TWO_POINT_TEETH_THRESHOLD_RATIO', 0.1, 0.3),
+        'DENTI_RANGE_FOR_TOOTH_TIP_RATIO': trial.suggest_float('DENTI_RANGE_FOR_TOOTH_TIP_RATIO', 0.04, 0.08),
+        'DENTI_RANGE_Y_LEFT_RIGHT_DENTIN_RATIO': trial.suggest_float('DENTI_RANGE_Y_LEFT_RIGHT_DENTIN_RATIO', 0.1, 0.3),
+        'DENTI_RANGE_X_LEFT_RIGHT_DENTIN_RATIO': trial.suggest_float('DENTI_RANGE_X_LEFT_RIGHT_DENTIN_RATIO', 0.04, 0.08),
         
         # Validation threshold
-        'DISTANCE_THRESHOLD': trial.suggest_int('DISTANCE_THRESHOLD', 100, 300)
+        'DISTANCE_THRESHOLD': 300
     }
     
     # Call the evaluation function (replace this with your actual function to evaluate the model)
