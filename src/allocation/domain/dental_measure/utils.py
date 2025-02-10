@@ -7,6 +7,8 @@ import pandas as pd
 from typing import Tuple
 import json
 import yaml
+from sklearn.decomposition import PCA
+from scipy.spatial import KDTree
 # PIXEL_THRESHOLD = 2000  # 設定閾值，僅保留像素數大於該值的區域
 # AREA_THRESHOLD = 500 # 設定閾值，避免過小的分割區域
 # DISTANCE_THRESHOLD = 200 # 定義距離閾值（例如：設定 10 為最大可接受距離）
@@ -269,7 +271,7 @@ def locate_points_with_dental_crown(image, dental_crown_bin, dilated_mask, mid_x
         contours, _ = cv2.findContours(dilated_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         largest_contour = max(contours, key=cv2.contourArea)
         x, y, w, h = cv2.boundingRect(largest_contour)
-        height = int(h * NONE_CROWN_REPLACED_HEIGHT_RATIO)
+        height = int(h * ENAMEL_NONE_CROWN_REPLACED_HEIGHT_RATIO)
         intersection[y:y+height, x:x+w] = dilated_mask[y:y+height, x:x+w]
         
     #show_plot(intersection)
@@ -322,7 +324,7 @@ def locate_points_with_dental_crown(image, dental_crown_bin, dilated_mask, mid_x
 def locate_points_with_gum(gum_bin, dilated_mask, mid_x, mid_y, overlay):
     """處理與 gum 之交點 (Alveolar_bone的頂端)"""
     # 獲取每個獨立 mask 與原始 mask 的交集區域
-    locate_gum_mid_x_threshold = gum_bin.shape[1]*LOCATE_GUM_MID_X_THRESHOLD_RATIO
+    locate_gum_mid_x_threshold = gum_bin.shape[1]*GUM_LOCATE_GUM_MID_X_THRESHOLD_RATIO
     intersection = cv2.bitwise_and(gum_bin, dilated_mask)
     overlay[intersection > 0] = (0, 255, 0)  # 將 dentin 顯示
     # 取得交集區域的 contour 作為交點
@@ -401,13 +403,15 @@ def locate_points_with_dentin(gum_bin, dilated_mask, mid_x, mid_y, angle ,short_
     
     height, width = image.shape[:2]
     max_length = max(width, height)
-    TWO_POINT_TEETH_THRESHOLD=max_length*TWO_POINT_TEETH_THRESHOLD_RATIO
-    RANGE_FOR_TOOTH_TIP_LEFT=max_length*RANGE_FOR_TOOTH_TIP_LEFT_RATIO
-    RANGE_FOR_TOOTH_TIP_RIGHT=max_length*RANGE_FOR_TOOTH_TIP_RIGHT_RATIO
-    RANGE_Y_LEFT_RIGHT_DENTIN=height*RANGE_Y_LEFT_RIGHT_DENTIN_RATIO
-    RANGE_X_LEFT_RIGHT_DENTIN=width*RANGE_X_LEFT_RIGHT_DENTIN_RATIO
+    DENTI_TWO_POINT_TEETH_THRESHOLD=max_length*DENTI_TWO_POINT_TEETH_THRESHOLD_RATIO
+    DENTI_RANGE_FOR_TOOTH_TIP_LEFT=max_length*DENTI_RANGE_FOR_TOOTH_TIP_LEFT_RATIO
+    DENTI_RANGE_FOR_TOOTH_TIP_RIGHT=max_length*DENTI_RANGE_FOR_TOOTH_TIP_RIGHT_RATIO
+    DENTI_RANGE_Y_LEFT_RIGHT_DENTIN=height*DENTI_RANGE_Y_LEFT_RIGHT_DENTIN_RATIO
+    DENTI_RANGE_X_LEFT_RIGHT_DENTIN=width*DENTI_RANGE_X_LEFT_RIGHT_DENTIN_RATIO
+
     # 根據短邊大小(寬度)，初步判斷單牙尖或雙牙尖
-    if short_side > TWO_POINT_TEETH_THRESHOLD:
+    #print('short_side', short_side, TWO_POINT_TEETH_THRESHOLD)
+    if short_side > DENTI_TWO_POINT_TEETH_THRESHOLD:
         # 較寬者，強迫判斷為雙牙尖
         contours, _ = cv2.findContours(c_intersection, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if len(contours) == 0:
@@ -420,10 +424,10 @@ def locate_points_with_dentin(gum_bin, dilated_mask, mid_x, mid_y, angle ,short_
         # 根據 c_mid_x 分配點到左右兩邊
         for point in bottom_corners:
             x, y = point.ravel() # 取得左右兩邊
-            if x < c_mid_x-RANGE_FOR_TOOTH_TIP_LEFT:
+            if x < c_mid_x-DENTI_RANGE_FOR_TOOTH_TIP_LEFT:
                 left_corners.append(point)
             # 雙牙尖，太中間的點不可能是牙尖
-            elif x >= c_mid_x-RANGE_FOR_TOOTH_TIP_LEFT and x <= c_mid_x+RANGE_FOR_TOOTH_TIP_RIGHT:
+            elif x >= c_mid_x-DENTI_RANGE_FOR_TOOTH_TIP_LEFT and x <= c_mid_x+DENTI_RANGE_FOR_TOOTH_TIP_RIGHT:
                 continue
             else:
                 right_corners.append(point)
@@ -468,7 +472,7 @@ def locate_points_with_dentin(gum_bin, dilated_mask, mid_x, mid_y, angle ,short_
         if all(v is None for v in [dentin_left_x, dentin_left_y, dentin_right_x, dentin_right_y]):
             print("All variables are None in locate_points_with_dentin.")
         else:
-            if not is_within_range(dentin_left_y, dentin_right_y, RANGE_Y_LEFT_RIGHT_DENTIN):
+            if not is_within_range(dentin_left_y, dentin_right_y, DENTI_RANGE_Y_LEFT_RIGHT_DENTIN):
                 if dentin_right_y > dentin_left_y:
                     dentin_left_y = dentin_right_y
                     dentin_left_x = dentin_right_x
@@ -512,7 +516,7 @@ def locate_points_with_dentin(gum_bin, dilated_mask, mid_x, mid_y, angle ,short_
          # 避免 None 存在，因有可能在上述流程誤判為雙牙尖
         dentin_left_x, dentin_left_y, dentin_right_x, dentin_right_y = assign_non_none_values(dentin_left_x, dentin_left_y, dentin_right_x, dentin_right_y)
         # 如果判斷出來的雙邊牙尖過於接近，確定應為單牙尖狀況，故指定最小者為牙尖
-        if is_within_range(dentin_left_x, dentin_right_x, RANGE_X_LEFT_RIGHT_DENTIN):
+        if is_within_range(dentin_left_x, dentin_right_x, DENTI_RANGE_X_LEFT_RIGHT_DENTIN):
             bottom_corner = bottom_corners[:1]
             for corner in bottom_corner:
                 x, y = corner.ravel()
@@ -759,3 +763,152 @@ def draw_image_and_print_information(prediction, image_for_drawing, line_image):
 
 
 
+def find_symmetry_axis(mask):
+    # 计算质心
+    moments = cv2.moments(mask)
+    cX = int(moments['m10'] / moments['m00'])
+    cY = int(moments['m01'] / moments['m00'])
+    
+    # 初步假设对称轴是垂直于质心的方向
+    # 可以根据实际情况调整对称轴的选择方式
+    return cX, cY
+
+def map_point_to_symmetry_axis(cX, cY, point):
+    # 将给定的点映射到对称轴的另一侧
+    # 假设对称轴是垂直方向的，即 x = cX
+    mapped_point = (2 * cX - point[0], point[1])
+    return mapped_point
+
+def find_closest_contour_point(contours, point):
+    # 计算给定点和每个轮廓点的距离，找到最近的一个
+    min_dist = float('inf')
+    closest_point = None
+    for contour in contours:
+        for p in contour:
+            dist = np.linalg.norm(np.array(p[0]) - np.array(point))
+            if dist < min_dist:
+                min_dist = dist
+                closest_point = p[0]
+    return closest_point
+
+
+def find_symmetry_axis(mask):
+    # 找到mask的所有非零點
+    points = np.column_stack(np.where(mask > 0))
+    
+    # 使用 PCA 找到主方向
+    pca = PCA(n_components=2)
+    pca.fit(points)
+    
+    # 主軸方向
+    direction = pca.components_[0]
+    center = pca.mean_
+    
+    # 計算對稱軸（過中心並垂直於主軸方向）
+    normal = np.array([-direction[1], direction[0]])  # 垂直方向
+    # Plot mask with symmetry axis
+    # plt.imshow(mask, cmap='gray')
+    # plt.scatter(points[:, 1], points[:, 0], marker='.', color='blue', alpha=0.3)
+    # plt.arrow(center[1], center[0], direction[1] * 50, direction[0] * 50, color='red', head_width=5)
+    # plt.title("Symmetry Axis")
+    # plt.show()    
+    return (center[1],center[0]), (normal[1],normal[0])
+
+def reflect_point(p, center, normal):
+    # 計算點 p 關於對稱軸的鏡像點 p'
+    p = np.array(p)
+    center = np.array(center)
+    normal = np.array(normal)
+    
+    v = p - center
+    d = np.dot(v, normal)
+    p_prime = p - 2 * d * normal
+
+    # plt.scatter([p[1], p_prime[1]], [p[0], p_prime[0]], color=['green', 'red'])
+    # plt.plot([p[1], p_prime[1]], [p[0], p_prime[0]], 'r--')
+    # plt.title("Point Reflection")
+    # plt.show()
+
+    return p_prime
+
+def find_edge_points(contour, image_shape, threshold):
+    edge_points = []
+    
+    for point in contour:
+        if is_point_near_edge(point[0], image_shape, threshold):
+            edge_points.append(point[0])
+    
+    return edge_points
+def connect_points(edge_points):
+    # 使用 convex hull 來連接邊界點
+    edge_points = sorted(edge_points, key=lambda p: p[0], reverse=True)  # 按照 x排序
+    edge_points = edge_points[:len(edge_points)//5]
+    p1 = max(edge_points, key=lambda p: p[1])  # y 最大
+    p2 = min(edge_points, key=lambda p: p[1])  # y 最小 
+    num_points=20
+    x_values = np.linspace(p1[0], p2[0], num_points + 2)  # 包含兩端點
+    y_values = np.linspace(p1[1], p2[1], num_points + 2)  # 包含兩端點
+    return np.array(list(zip(x_values[1:-1], y_values[1:-1])))  # 返回中間的點    
+    # if len(edge_points) > 2:
+    #     hull = cv2.convexHull(np.array(edge_points))
+    #     return hull
+    #return np.array(edge_points)
+
+def find_closest_contour_point(mask, p_prime):
+    # def pad_mask(mask, pad=60):
+    #     return cv2.copyMakeBorder(mask, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=0)    
+    # # 找到輪廓點
+    # mask = pad_mask(mask)
+    #mask = cv2.inpaint(mask, mask, inpaintRadius=3, flags=cv2.INPAINT_TELEA)
+    # kernel = np.ones((5, 5), np.uint8)
+    # mask = cv2.dilate(mask, kernel, iterations=1)
+
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    #add_edges_to_contour(contours[0], mask.shape, mask.shape/10)
+    edge_points = find_edge_points(contours[0], mask.shape[:2], mask.shape[0]/10)
+    contour_points = np.vstack(contours[0])
+    if len(edge_points)>=5:
+        connected_edge_points = connect_points(edge_points).reshape(-1, 2)    
+        contour_points= np.concatenate([contour_points,connected_edge_points],axis=0)
+    # 使用 KDTree 找最近點
+    tree = KDTree(contour_points)
+    _, idx = tree.query(p_prime)
+    closest_point = contour_points[idx]
+
+    # Plot contour and closest point
+    # plt.imshow(mask, cmap='gray')
+    # plt.scatter(contour_points[:, 0], contour_points[:, 1], marker='.', color='blue', alpha=0.5)
+    # plt.scatter(p_prime[0], p_prime[1], color='red', label='Reflected Point')
+    # plt.scatter(closest_point[0], closest_point[1], color='yellow', label='Closest Contour Point')
+    # plt.legend()
+    # plt.title("Closest Contour Point")
+    # plt.show()
+    #breakpoint()
+    return closest_point
+
+def is_point_near_edge(point, image_shape, threshold):
+    """
+    檢查一個點是否靠近圖片邊緣。
+
+    :param point: tuple，點的坐標 (x, y)
+    :param image_shape: tuple，圖片的形狀 (height, width)
+    :param threshold: int，定義靠近邊緣的距離閾值
+    :return: bool，True 如果點靠近邊緣，否則 False
+    """
+    height, width = image_shape
+    x, y = point
+    
+    # 檢查點距離四個邊的距離
+    distance_to_left = x
+    distance_to_right = width - x
+    distance_to_top = y
+    distance_to_bottom = height - y
+    
+    # 判斷是否有任何一個距離小於閾值
+    if (distance_to_left < threshold or
+        distance_to_right < threshold or
+        distance_to_top < threshold or
+        distance_to_bottom < threshold):
+        return True
+    
+    return False

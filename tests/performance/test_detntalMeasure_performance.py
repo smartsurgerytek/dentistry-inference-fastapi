@@ -228,6 +228,8 @@ def test_detntalMeasure_performance(config=None):
     df_pred_list=[]
     df_true_list=[]
     for folder_name in os.listdir(main_folder_path):
+        # folder_name='195'
+        # print(folder_name)
         excel_path=os.path.join(main_folder_path, folder_name, f'analysis_{folder_name}.xlsx')
         raw_image_path=os.path.join(main_folder_path, folder_name, f'raw_{folder_name}.png')
 
@@ -252,6 +254,15 @@ def test_detntalMeasure_performance(config=None):
         else:    
             df_pred_list.append(df_merged['predicted_stage'])
             df_true_list.append(df_merged['true_stage'])
+
+            # #debug用
+            # ratio=(df_merged['predicted_stage'] == df_merged['true_stage']).sum()/df_merged['predicted_stage'].shape[0]
+            # if ratio<0.5:
+            #     true_img_path=os.path.join(main_folder_path, folder_name, f'redmark_{folder_name}.png')
+            #     true_img=cv2.imread(true_img_path)
+            #     estimation_img=dental_estimation(image, scale=(scale_x, scale_y), return_type='image')
+            #     show_two(estimation_img, true_img)
+            #     breakpoint()
 
     value_mapping = {
         "0": 0,

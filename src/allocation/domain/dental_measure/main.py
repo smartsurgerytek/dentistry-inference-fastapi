@@ -98,6 +98,29 @@ def locate_points(image, component_mask, binary_images, idx, overlay):
                 "dentin_left":(dentin_left_x, dentin_left_y), "dentin_right":(dentin_right_x, dentin_right_y),
                 }
     
+    # symmetry patched for missing side
+    def fill_missing_side(missing_side, available_side, component_mask):
+        if missing_side[0] is None:  # 如果某一侧缺少点
+            center, normal = find_symmetry_axis(component_mask)  # 获取对称轴
+            p_prime = reflect_point(available_side, center, normal)  # 对称反射
+            closest_point = find_closest_contour_point(component_mask, p_prime)  # 找到最近的轮廓点
+            missing_side = closest_point  # 填充缺失的点
+        return missing_side    
+    
+    for side in ['left', 'right']:  # 遍历左右两个方向
+        left_keys = [f"{comp}_left" for comp in ['enamel', 'gum', 'dentin']]
+        right_keys = [f"{comp}_right" for comp in ['enamel', 'gum', 'dentin']]
+        
+        # 如果左边有缺失且右边有数据，填充左边
+        if side == 'left' and all(prediction[key][0] is not None for key in right_keys) and any(prediction[key][0] is None for key in left_keys):
+            for key in ['enamel', 'gum', 'dentin']:
+                prediction[f"{key}_left"] = fill_missing_side(prediction[f"{key}_left"], prediction[f"{key}_right"], component_mask)
+        
+        # 如果右边有缺失且左边有数据，填充右边
+        elif side == 'right' and all(prediction[key][0] is not None for key in left_keys) and any(prediction[key][0] is None for key in right_keys):
+            for key in ['enamel', 'gum', 'dentin']:
+                prediction[f"{key}_right"] = fill_missing_side(prediction[f"{key}_right"], prediction[f"{key}_left"], component_mask)         
+
     for key, (x, y) in prediction.items():
         # 對每一個座標進行 safe_int 處理
         prediction[key] = (int_processing(x), int_processing(y))
