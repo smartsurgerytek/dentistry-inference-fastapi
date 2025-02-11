@@ -66,11 +66,14 @@ if __name__=='__main__':
     study = optuna.create_study(direction='maximize')
 
     # Start the optimization
-    study.optimize(objective, n_trials=1000, n_jobs=6) #callbacks=[save_best_config])  # Number of trials to run
+    study.optimize(objective, n_trials=1000, n_jobs=6) #callbacks=[save_best_config])  # if setting n_job, comment call back
 
     # Get the best hyperparameters
     best_params = study.best_params
+    best_params['best_score'] = study.best_value
     print("Best hyperparameters:", best_params)
+    with open('./conf/best_dental_measure_parameters.yaml', 'w') as yaml_file:
+        yaml.dump(best_params, yaml_file, default_flow_style=False)
     fig = plot_param_importances(study)
     fig.show(config=plotly_config)
     fig.write_image("./docs/detental_measure_parameters_searching_correlations.png")    
