@@ -192,6 +192,7 @@ def test_model_performance():
                         yaml_path=yaml_path, 
                         save_val_path='./docs', 
                         full_name=full_name,
+                        remove_indexes=[13]
                         )
 
 if __name__=='__main__':

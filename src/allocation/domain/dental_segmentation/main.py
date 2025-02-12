@@ -58,9 +58,10 @@ def yolo_transform(image, model, return_type='dict', config=None, tolerance=0.5)
         color_dict = {i: color for i, color in enumerate(color_list)}
     
     plot_image=image.copy()
-    results = model(image)
+    results = model(image, verbose=False)
     class_names = model.names
     yolov8_contents=[]
+    mask_dict={}
     # 處理結果
     for result in results:
         boxes = result.boxes  # Boxes object for bbox outputs
@@ -106,7 +107,7 @@ def yolo_transform(image, model, return_type='dict', config=None, tolerance=0.5)
                     "points": polygons.ravel().tolist(),
                     "mask": cvat_mask
                 })                
-            else:
+            elif return_type=='yolov8':
                 yolov8_points=get_yolov8_label(mask_binary, tolerance=tolerance)
                 yolov8_line=[class_id]
                 yolov8_line.extend(yolov8_points)
@@ -119,10 +120,21 @@ def yolo_transform(image, model, return_type='dict', config=None, tolerance=0.5)
                 
                 # Apply mask to the original image
                 mask_colored = np.zeros((mask_binary.shape[0], mask_binary.shape[1], 3), dtype=np.uint8)
-                if class_name != 'Background' and return_type=='image':
-                    mask_colored[mask_binary == 255] = color_dict[class_id]
-                    # Overlay the colored mask
-                    plot_image = cv2.addWeighted(plot_image, 1, mask_colored, 0.8, 0)
+            elif return_type=='dict':
+                label=class_names[int(box.cls)]
+                if mask_dict.get(label) is None:
+                    mask_dict[label]=mask_binary
+                else:
+                    mask_dict[label]=cv2.bitwise_or(mask_dict[label], mask_binary) 
+                
+
+            if class_name != 'Background' and return_type=='image':
+                mask_colored[mask_binary == 255] = color_dict[class_id]
+                # Overlay the colored mask
+                plot_image = cv2.addWeighted(plot_image, 1, mask_colored, 0.8, 0)
+
+    if return_type=="dict":
+        return mask_dict
                 
                 
     if return_type=='image':
