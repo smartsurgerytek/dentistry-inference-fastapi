@@ -7,11 +7,11 @@ from pydantic import ValidationError
 from fastapi.responses import JSONResponse
 from typing import Annotated
 from typing import Any
+from typing import Optional
 import uvicorn
 from src.allocation.service_layer.services import InferenceService
-from src.allocation.domain.dental_measure.schemas import InferenceResponse
-from src.allocation.domain.dental_measure.validator import ScaleValidator
-from src.allocation.domain.dental_segmentation.schemas import YoloSegmentationResponse
+from src.allocation.domain.dental_measure.schemas import PaMeasureDictResponse, ImageResponse
+from src.allocation.domain.dental_segmentation.schemas import PaSegmentationYoloV8Response
 
 
 app = FastAPI(
@@ -25,8 +25,15 @@ async def validation_exception_handler(request: Request, exc: ValidationError):
     return JSONResponse(
         status_code=400,
         content={
-            "message": "padantic model validation failed!",
-            "details": exc.errors()
+            "message": "pydantic model validation failed!",
+            "details": [
+                {
+                    "loc": err["loc"],
+                    "msg": err["msg"],
+                    "type": err["type"]
+                }
+                for err in exc.errors()
+            ]
         }
     )
 
@@ -34,19 +41,31 @@ async def validation_exception_handler(request: Request, exc: ValidationError):
 async def read_root() -> str:
     return "Welcome to Smart Surgery Dentistry APIs!"
 
-@app.post("/periodontal_measure", response_model=InferenceResponse)
-async def infer_dental_xray(
+@app.post("/pa_measure_dict", response_model=PaMeasureDictResponse)
+async def generate_periapical_film_measure_dict(
     image: Annotated[bytes, File()],
-    scale: Any, #: expected Annotated[str, Form()] or array
-) -> InferenceResponse:
-    scale_obj=ScaleValidator(scale=scale)
-    return InferenceService.process_xray(image, scale_obj.scale)
+    #scale: Any, #: expected Annotated[str, Form()] or array
+    scale_x: float,
+    scale_y: float,  
+) -> PaMeasureDictResponse:
+    #scale_obj=ScaleValidator(scale=scale)
+    return InferenceService.pa_measure_dict(image, scale_x, scale_y)
 
-@app.post("/Dental_segmentation", response_model=YoloSegmentationResponse)
-async def inference(
+@app.post("/pa_measure_image", response_model=ImageResponse)#, response_model=DentalMeasureDictResponse)
+async def generate_periapical_film_measure_image_base64(
     image: Annotated[bytes, File()],
-) -> YoloSegmentationResponse:
-    return InferenceService.inference(image)
+    #scale: Any, #: expected Annotated[str, Form()] or array
+    scale_x: float,
+    scale_y: float,  
+) -> ImageResponse:
+    #scale_obj=ScaleValidator(scale=scale)
+    return InferenceService.pa_measure_image_base64(image, scale_x, scale_y)
+
+@app.post("/pa_segmentation_yolov8", response_model=PaSegmentationYoloV8Response)
+async def generate_periapical_film_segmentations_yolov8(
+    image: Annotated[bytes, File()],
+) -> PaSegmentationYoloV8Response:
+    return InferenceService.pa_segmentation_yolov8(image)
 
 if __name__ == "__main__":
     uvicorn.run(app)

@@ -2,6 +2,7 @@ import cv2
 from ultralytics import YOLO
 import numpy as np
 from src.allocation.domain.dental_measure.utils import *
+import yaml
 components_model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
 contour_model=YOLO('./models/dentistryContour_yolov11n-seg_4.46.pt')
 
@@ -200,15 +201,19 @@ def generate_error_image(text):
     cv2.putText(image, text, (text_x, text_y), font, font_scale, color, thickness)
     return image
 
-def dental_estimation(image, scale=(31 / 960, 41 / 1080), return_type='image', config=None):
-    
+def dental_estimation(image, scale_x=31/960, scale_y=41 / 1080, return_type='dict', config=None):
+    if config is None:
+        with open('./conf/best_dental_measure_parameters.yaml', 'r') as file:
+            config = yaml.safe_load(file)
     if config is not None:
         for key, value in config.items():
             globals()[key] = value
 
+    scale=(scale_x,scale_y)
     components_model_masks_dict=get_mask_dict_from_model(components_model, image, method='semantic', mask_threshold=DENTAL_MODEL_THRESHOLD)
     contours_model_masks_dict=get_mask_dict_from_model(contour_model, image, method='instance', mask_threshold=DENTAL_CONTOUR_MODEL_THRESHOLD)
 
+    error_messages=''
     denti_measure_names_map={
         'Alveolar_bone': 'gum',
         'Dentin': 'dentin',
@@ -226,15 +231,17 @@ def dental_estimation(image, scale=(31 / 960, 41 / 1080), return_type='image', c
     # check 'dentin' and 'gum' existed
     for component, error_message in required_components.items():
         if components_model_masks_dict.get(component) is None:
-            return generate_error_image(error_message) if return_type == 'image' else []
+            error_messages=error_message
+            return generate_error_image(error_messages), error_messages if 'image' in return_type else []
     # check 'dental_crown', 'crown' existed
     if (components_model_masks_dict.get('dental_crown') is None and components_model_masks_dict.get('crown') is None):
-        return generate_error_image("No dental_crown detected") if return_type == 'image' else []     
+        error_messages="No dental_crown detected"
+        return generate_error_image(error_messages), error_messages if 'image' in return_type else [] 
     
     # contour model check
     if contours_model_masks_dict.get('dental_contour') is None:
-        error_message = "No dental instance detected"
-        return generate_error_image(error_message) if return_type == 'image' else []
+        error_messages = "No dental instance detected"
+        return generate_error_image(error_messages), error_messages if 'image' in return_type else []
         
     # Retrive the dental_contour from contour_model
 
@@ -294,13 +301,15 @@ def dental_estimation(image, scale=(31 / 960, 41 / 1080), return_type='image', c
         image_for_drawing=draw_point(prediction, image_for_drawing)
         image_for_drawing, dental_pair_list=draw_line(prediction, image_for_drawing, scale)
         prediction['pair_measurements']=dental_pair_list
+        prediction['teeth_center']=prediction['mid']
         if dental_pair_list:
             predictions.append(prediction)
 
 
-    if return_type=='image':
-        return image_for_drawing
+    if return_type=='image_array':
+        return image_for_drawing, error_messages
+    # elif return_type=='image_base64':
+    #     return numpy_to_base64(image_for_drawing, image_format='PNG'), error_messages
     else:
-
         return predictions
 

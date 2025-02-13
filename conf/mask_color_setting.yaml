@@ -1,0 +1,18 @@
+color_dict: #BGR
+  Alveolar_bone: [0, 240, 255]
+  Caries: [65, 127, 0]
+  Crown: [0, 0, 255]
+  Dentin: [113, 41, 29]
+  Enamel: [122, 21, 135]
+  Implant: [0, 148, 242]
+  Mandibular_alveolar_nerve: [4, 84, 234]
+  Maxillary_sinus: [0, 208, 178]
+  Periapical_lesion: [52, 97, 148]
+  Post_and_core: [121, 121, 121]
+  Pulp: [212, 149, 27]
+  Restoration: [206, 171, 255]
+  Root_canal_filling: [110, 28, 216]
+font_face: 0
+font_scale: 1
+thickness: 3
+line_type: 16

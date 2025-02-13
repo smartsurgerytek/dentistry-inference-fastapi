@@ -3,10 +3,10 @@ import cv2
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-import pandas as pd
-from typing import Tuple
-import json
-import yaml
+import io
+from PIL import Image
+from io import BytesIO
+import base64
 from sklearn.decomposition import PCA
 from scipy.spatial import KDTree
 # PIXEL_THRESHOLD = 2000  # 設定閾值，僅保留像素數大於該值的區域
@@ -922,3 +922,48 @@ def is_point_near_edge(point, image_shape, threshold):
         return True
     
     return False
+
+def numpy_to_bytes(array: np.ndarray, image_format: str = 'PNG') -> bytes:
+    """
+    將 numpy 陣列轉換為圖片的 bytes。
+
+    :param array: numpy 陣列，通常是影像資料
+    :param image_format: 輸出圖片的格式，預設為 'PNG'
+    :return: 圖片的二進位資料 (bytes)
+    """
+    # 使用 PIL (Pillow) 將 numpy 陣列轉換為圖片
+    image = Image.fromarray(array)
+
+    # 使用 BytesIO 保存圖片為二進位資料
+    img_byte_arr = io.BytesIO()
+    image.save(img_byte_arr, format=image_format)
+
+    # 取得圖片的 bytes 資料
+    img_bytes = img_byte_arr.getvalue()
+
+    return img_bytes
+
+def numpy_to_base64(image_np: np.ndarray, image_format='PNG') -> str:
+    """
+    将 NumPy 数组图像转换为 base64 编码字符串。
+    
+    :param image_np: 输入的 NumPy 图像数组
+    :param image_format: 输出图像的格式（如 'PNG', 'JPEG' 等）
+    :return: base64 编码的图像字符串
+    """
+    # 将 NumPy 数组转换为 PIL 图像
+    img = Image.fromarray(image_np)
+    
+    # 使用 BytesIO 创建一个内存中的文件对象
+    buffered = BytesIO()
+    
+    # 将图像保存到内存中的文件对象
+    img.save(buffered, format=image_format)
+    
+    # 获取图像字节流
+    img_bytes = buffered.getvalue()
+    
+    # 将字节流编码为 base64 字符串
+    img_base64 = base64.b64encode(img_bytes).decode("utf-8")
+    
+    return img_base64
