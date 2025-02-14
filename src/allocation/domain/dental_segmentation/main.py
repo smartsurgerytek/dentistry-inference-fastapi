@@ -104,14 +104,14 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, tolerance
                 xbr = int(xyxy[0][2])
                 ybr = int(xyxy[0][3])
 
-                cvat_mask = to_cvat_mask((xtl, ytl, xbr, ybr), mask_binary)
+                #cvat_mask = to_cvat_mask((xtl, ytl, xbr, ybr), mask_binary)
 
                 yolov8_contents.append({
                     "confidence": confidence,
                     "label": class_names[int(box.cls)],
                     "type": "mask",
                     "points": polygons.ravel().tolist(),
-                    "mask": cvat_mask
+                    #"mask": cvat_mask
                 })                
             elif return_type=='yolov8':
                 yolov8_points=get_yolov8_label(mask_binary, tolerance=tolerance)

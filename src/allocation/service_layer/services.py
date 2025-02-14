@@ -81,9 +81,9 @@ class InferenceService:
         image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
         cvat_result_dict=yolo_transform(image=image_np, model= model, return_type='cvat')
         #drop the mask cols in cvat_result_dict
-        for sublist in cvat_result_dict['yolov8_contents']:
-            if 'mask' in sublist:
-                del sublist['mask']  # 或者用 pop() 方法: sublist.pop('mask', None)
+        # for sublist in cvat_result_dict['yolov8_contents']:
+        #     if 'mask' in sublist:
+        #         del sublist['mask']  # 或者用 pop() 方法: sublist.pop('mask', None)
 
         if not cvat_result_dict.get('yolov8_contents'):
             return PaSegmentationCvatResponse(
