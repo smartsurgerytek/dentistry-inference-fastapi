@@ -91,7 +91,7 @@ async def generate_periapical_film_segmentations_cvat(
 ) -> PaSegmentationCvatResponse:
     return InferenceService.pa_segmentation_cvat(image, component_model)
 
-@app.post("/pa_segmentation_image_base64", response_model=ImageResponse)
+@app.post("/pa_segmentation_image", response_model=ImageResponse)
 async def generate_periapical_film_segmentations_image_base64(
     image: Annotated[bytes, File()],
 ) -> PaSegmentationCvatResponse:
