@@ -75,3 +75,47 @@ class InferenceService:
             yolo_results=yolov8_result_dict,
             message="Inference completed successfully"
         )
+    
+    @staticmethod
+    def pa_segmentation_cvat(image: bytes, model:YOLO) -> PaSegmentationCvatResponse:
+        image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
+        cvat_result_dict=yolo_transform(image=image_np, model= model, return_type='cvat')
+        #drop the mask cols in cvat_result_dict
+        for sublist in cvat_result_dict['yolov8_contents']:
+            if 'mask' in sublist:
+                del sublist['mask']  # 或者用 pop() 方法: sublist.pop('mask', None)
+
+        if not cvat_result_dict.get('yolov8_contents'):
+            return PaSegmentationCvatResponse(
+                request_id=0,
+                yolo_results=cvat_result_dict,
+                message="Nothing detected for the image"
+            )
+        return PaSegmentationCvatResponse(
+            request_id=0,
+            yolo_results=cvat_result_dict,
+            message="Inference completed successfully"
+        )    
+
+    @staticmethod
+    def pa_segmentation_image_base64(image: bytes, model:YOLO) -> ImageResponse:
+        image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
+        output_image_array, error_message=yolo_transform(image=image_np, model= model, return_type='image_array')
+        #drop the mask cols in cvat_result_dict
+        #show_plot(output_image_array)
+        output_image_base64= numpy_to_base64(output_image_array, image_format='PNG')
+
+        if error_message:
+            return ImageResponse(
+            request_id=0,
+            image=output_image_base64,
+            content_type='image/png',
+            messages=error_message
+        )
+
+        return ImageResponse(
+            request_id=0,
+            image=output_image_base64,
+            content_type='image/png',
+            messages="Inference completed successfully"
+        )

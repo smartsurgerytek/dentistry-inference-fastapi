@@ -65,11 +65,13 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, tolerance
     class_names = model.names
     yolov8_contents=[]
     mask_dict={}
+    error_message=''
     # 處理結果
     for result in results:
         boxes = result.boxes  # Boxes object for bbox outputs
         masks = result.masks  # Masks object for segmentation masks outputs
         if masks is None:
+            error_message='No segmenation masks detected'
             continue
         predict_label=[]
         for i, (mask, box) in enumerate(zip(masks.data, boxes)):
@@ -87,6 +89,7 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, tolerance
             
             # Convert mask to binary image
             mask_binary = (mask_np > 0.5).astype(np.uint8) * 255
+            mask_colored = np.zeros((mask_binary.shape[0], mask_binary.shape[1], 3), dtype=np.uint8)
             if return_type=='cvat':
                 contours = find_contours(mask_binary, 0.5)
                 if len(contours)==0:
@@ -122,7 +125,7 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, tolerance
                     continue
                 
                 # Apply mask to the original image
-                mask_colored = np.zeros((mask_binary.shape[0], mask_binary.shape[1], 3), dtype=np.uint8)
+                #mask_colored = np.zeros((mask_binary.shape[0], mask_binary.shape[1], 3), dtype=np.uint8)
             elif return_type=='dict':
                 label=class_names[int(box.cls)]
                 if mask_dict.get(label) is None:
@@ -131,7 +134,7 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, tolerance
                     mask_dict[label]=cv2.bitwise_or(mask_dict[label], mask_binary) 
                 
 
-            if class_name != 'Background' and return_type=='image':
+            if class_name != 'Background' and return_type=='image_array':
                 mask_colored[mask_binary == 255] = color_dict[class_name]
                 # Overlay the colored mask
                 plot_image = cv2.addWeighted(plot_image, 1, mask_colored, 0.8, 0)
@@ -146,7 +149,7 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, tolerance
         plot_image=np.concatenate((plot_image, label_image), axis=0)
 
         plot_image = cv2.resize(plot_image, (image.shape[1], image.shape[0]))
-        return plot_image
+        return plot_image, error_message
     
     else:
         result_dict={

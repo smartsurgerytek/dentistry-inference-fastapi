@@ -11,7 +11,7 @@ from typing import Optional
 import uvicorn
 from src.allocation.service_layer.services import InferenceService
 from src.allocation.domain.dental_measure.schemas import PaMeasureDictResponse, ImageResponse
-from src.allocation.domain.dental_segmentation.schemas import PaSegmentationYoloV8Response
+from src.allocation.domain.dental_segmentation.schemas import PaSegmentationYoloV8Response, PaSegmentationCvatResponse
 from contextlib import asynccontextmanager
 from ultralytics import YOLO
 
@@ -84,6 +84,18 @@ async def generate_periapical_film_segmentations_yolov8(
     image: Annotated[bytes, File()],
 ) -> PaSegmentationYoloV8Response:
     return InferenceService.pa_segmentation_yolov8(image, component_model)
+
+@app.post("/pa_segmentation_cvat", response_model=PaSegmentationCvatResponse)
+async def generate_periapical_film_segmentations_cvat(
+    image: Annotated[bytes, File()],
+) -> PaSegmentationCvatResponse:
+    return InferenceService.pa_segmentation_cvat(image, component_model)
+
+@app.post("/pa_segmentation_image_base64", response_model=ImageResponse)
+async def generate_periapical_film_segmentations_image_base64(
+    image: Annotated[bytes, File()],
+) -> PaSegmentationCvatResponse:
+    return InferenceService.pa_segmentation_image_base64(image, component_model)
 
 if __name__ == "__main__":
     uvicorn.run(app)

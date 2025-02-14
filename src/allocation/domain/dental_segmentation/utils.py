@@ -26,11 +26,11 @@ def get_label_text_img(pred_index_labels, width, color_dict, text_dict):
     label_img = np.zeros((height, width, 3), np.uint8)
     
     if label_list_len >= 1:
-        print("顏色輸出label_list_len")   #1117 表示有找到顏色輸出
-        print('label number', label_list_len)   #1117 表示有找到顏色輸出
+        #print("顏色輸出label_list_len")   #1117 表示有找到顏色輸出
+        #print('label number', label_list_len)   #1117 表示有找到顏色輸出
         for i in range(label_list_len):
             label_num = unique_list[i]
-            print(label_num, text_dict[label_num]) #1117 表示有找到顏色輸出的代號 charley
+            #print(label_num, text_dict[label_num]) #1117 表示有找到顏色輸出的代號 charley
 
             #     print(' this is not Caries no: {0} '.format(label_num)) # 帶數字編號
             #     self.caries_flag='false'
@@ -40,7 +40,8 @@ def get_label_text_img(pred_index_labels, width, color_dict, text_dict):
             rectangle_ed = (x_offset+70 + (col_idx-1)*300, 30 + (row_idx-1) * 30)
             text_pos = (rectangle_ed[0]+5, rectangle_ed[1]-5)
             #print(color_dict[label_num]) #1117 表示有找到顏色輸出charley 
-            cv2.rectangle(label_img, rectangle_st, rectangle_ed, color_dict[label_num], -1)
+            
+            cv2.rectangle(label_img, rectangle_st, rectangle_ed, color_dict[text_dict[label_num]], -1)
             cv2.putText(label_img, text_dict[label_num], text_pos, cv2.FONT_HERSHEY_COMPLEX_SMALL,
                         1, (255,255,255), 1, cv2.LINE_AA)
             #print(label_img) #1117

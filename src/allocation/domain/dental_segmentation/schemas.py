@@ -3,7 +3,7 @@ from typing import List, Dict, Union
 from pydantic import BaseModel, model_validator
 
 # define yolo segmentation model
-class YoloV8SegmentationResponse(BaseModel):
+class YoloV8Segmentation(BaseModel):
     class_names: Dict[int, str] # class ID and class name
     yolov8_contents: List[List[Union[int, float]]] # List can contain both int and float
     @model_validator(mode="before")
@@ -15,5 +15,22 @@ class YoloV8SegmentationResponse(BaseModel):
 # define yolo response
 class PaSegmentationYoloV8Response(BaseModel):
     request_id: int  # 圖像的唯一標識符
-    yolo_results: YoloV8SegmentationResponse  # 多個物體檢測結果
+    yolo_results: YoloV8Segmentation  # 多個物體檢測結果
+    message: str
+
+
+class CvatSegmentation(BaseModel):
+    confidence: float
+    label: str
+    type: str
+    points: List[float]
+    #mask: List[int]
+
+class CvatSegmentations(BaseModel):
+    class_names: Dict[int, str] # class ID and class name
+    yolov8_contents: List[CvatSegmentation]
+
+class PaSegmentationCvatResponse(BaseModel):
+    request_id: int  # 圖像的唯一標識符
+    yolo_results: CvatSegmentations  # 多個物體檢測結果
     message: str
