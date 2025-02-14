@@ -12,13 +12,31 @@ import uvicorn
 from src.allocation.service_layer.services import InferenceService
 from src.allocation.domain.dental_measure.schemas import PaMeasureDictResponse, ImageResponse
 from src.allocation.domain.dental_segmentation.schemas import PaSegmentationYoloV8Response
+from contextlib import asynccontextmanager
+from ultralytics import YOLO
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Load the ML model
+    global component_model
+    component_model = YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
+    
+    global contour_model
+    contour_model = YOLO('./models/dentistryContour_yolov11n-seg_4.46.pt')
+
+    yield  
+    # Cleanup on shutdown
+    component_model = None
+    contour_model = None
 
 app = FastAPI(
     title="Dental X-ray Inference API",
     version="1.0.0",
-    description="API to infer information from dental X-ray images."
+    description="API to infer information from dental X-ray images.",
+    lifespan=lifespan
 )
+
+
 
 @app.exception_handler(ValidationError)
 async def validation_exception_handler(request: Request, exc: ValidationError):
@@ -49,7 +67,7 @@ async def generate_periapical_film_measure_dict(
     scale_y: float,  
 ) -> PaMeasureDictResponse:
     #scale_obj=ScaleValidator(scale=scale)
-    return InferenceService.pa_measure_dict(image, scale_x, scale_y)
+    return InferenceService.pa_measure_dict(image, component_model, contour_model, scale_x, scale_y)
 
 @app.post("/pa_measure_image", response_model=ImageResponse)#, response_model=DentalMeasureDictResponse)
 async def generate_periapical_film_measure_image_base64(
@@ -59,13 +77,13 @@ async def generate_periapical_film_measure_image_base64(
     scale_y: float,  
 ) -> ImageResponse:
     #scale_obj=ScaleValidator(scale=scale)
-    return InferenceService.pa_measure_image_base64(image, scale_x, scale_y)
+    return InferenceService.pa_measure_image_base64(image, component_model, contour_model, scale_x, scale_y)
 
 @app.post("/pa_segmentation_yolov8", response_model=PaSegmentationYoloV8Response)
 async def generate_periapical_film_segmentations_yolov8(
     image: Annotated[bytes, File()],
 ) -> PaSegmentationYoloV8Response:
-    return InferenceService.pa_segmentation_yolov8(image)
+    return InferenceService.pa_segmentation_yolov8(image, component_model)
 
 if __name__ == "__main__":
     uvicorn.run(app)

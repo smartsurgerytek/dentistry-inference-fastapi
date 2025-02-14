@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../.
 from src.allocation.domain.dental_segmentation.utils import *
 import yaml
 
-model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
+#model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
 def find_center_mask(mask_binary):
     moments = cv2.moments(mask_binary)
 
@@ -47,7 +47,7 @@ def get_yolov8_label(mask_binary,tolerance=0.5):
         points.extend(merged)
     return points
 
-def yolo_transform(image, return_type='dict', plot_config=None, tolerance=0.5):
+def yolo_transform(image, model, return_type='dict', plot_config=None, tolerance=0.5):
     # if return_type == 'image_array' and plot_config is None:
     #     raise ValueError("Provide a config for segmentation colors when return_type is 'image")
     if plot_config is None:

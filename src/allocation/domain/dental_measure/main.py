@@ -3,8 +3,8 @@ from ultralytics import YOLO
 import numpy as np
 from src.allocation.domain.dental_measure.utils import *
 import yaml
-components_model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
-contour_model=YOLO('./models/dentistryContour_yolov11n-seg_4.46.pt')
+# components_model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
+# contour_model=YOLO('./models/dentistryContour_yolov11n-seg_4.46.pt')
 
 def extract_features(masks_dict, original_img, config=None):
 
@@ -201,7 +201,7 @@ def generate_error_image(text):
     cv2.putText(image, text, (text_x, text_y), font, font_scale, color, thickness)
     return image
 
-def dental_estimation(image, scale_x=31/960, scale_y=41 / 1080, return_type='dict', config=None):
+def dental_estimation(image, component_model, contour_model, scale_x=31/960, scale_y=41 / 1080, return_type='dict', config=None):
     if config is None:
         with open('./conf/best_dental_measure_parameters.yaml', 'r') as file:
             config = yaml.safe_load(file)
@@ -210,7 +210,7 @@ def dental_estimation(image, scale_x=31/960, scale_y=41 / 1080, return_type='dic
             globals()[key] = value
 
     scale=(scale_x,scale_y)
-    components_model_masks_dict=get_mask_dict_from_model(components_model, image, method='semantic', mask_threshold=DENTAL_MODEL_THRESHOLD)
+    components_model_masks_dict=get_mask_dict_from_model(component_model, image, method='semantic', mask_threshold=DENTAL_MODEL_THRESHOLD)
     contours_model_masks_dict=get_mask_dict_from_model(contour_model, image, method='instance', mask_threshold=DENTAL_CONTOUR_MODEL_THRESHOLD)
 
     error_messages=''

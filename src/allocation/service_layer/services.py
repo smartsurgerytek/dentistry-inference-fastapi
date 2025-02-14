@@ -4,15 +4,21 @@ from src.allocation.domain.dental_measure.main import *
 from src.allocation.domain.dental_segmentation.main import *
 import numpy as np
 import cv2
-
+from ultralytics import YOLO
 class InferenceService:
 
     @staticmethod
-    def pa_measure_dict(image: bytes, scale_x: float, scale_y: float) -> PaMeasureDictResponse:
+    def pa_measure_dict(image: bytes, 
+                        component_model:YOLO , 
+                        contour_model:YOLO, 
+                        scale_x: float, 
+                        scale_y: float) -> PaMeasureDictResponse:
+        
         validator=DentalMeasureDictValidator(image=image, scale_x=scale_x, scale_y=scale_y)
 
         image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
-        measurements_list=dental_estimation(image=image_np, scale_x=scale_x, scale_y=scale_y, return_type='dict')
+
+        measurements_list=dental_estimation(image=image_np, component_model=component_model, contour_model=contour_model, scale_x=scale_x, scale_y=scale_y, return_type='dict')
 
         if not measurements_list:
             return PaMeasureDictResponse(
@@ -28,10 +34,15 @@ class InferenceService:
         )
     
     @staticmethod
-    def pa_measure_image_base64(image: bytes, scale_x: float, scale_y: float) -> ImageResponse:
+    def pa_measure_image_base64(image: bytes, 
+                                component_model:YOLO, 
+                                contour_model:YOLO, 
+                                scale_x: float, 
+                                scale_y: float) -> ImageResponse:
+        
         validator=DentalMeasureDictValidator(image=image, scale_x=scale_x, scale_y=scale_y)
         image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
-        output_image_array, error_message=dental_estimation(image=image_np, scale_x=scale_x, scale_y=scale_y, return_type='image_array')
+        output_image_array, error_message=dental_estimation(image=image_np, component_model=component_model, contour_model=contour_model, scale_x=scale_x, scale_y=scale_y, return_type='image_array')
         output_image_base64= numpy_to_base64(output_image_array, image_format='PNG')
 
         if error_message:
@@ -50,9 +61,9 @@ class InferenceService:
         )
     
     @staticmethod
-    def pa_segmentation_yolov8(image: bytes) -> PaSegmentationYoloV8Response:
+    def pa_segmentation_yolov8(image: bytes, model:YOLO) -> PaSegmentationYoloV8Response:
         image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
-        yolov8_result_dict=yolo_transform(image_np, return_type='yolov8')
+        yolov8_result_dict=yolo_transform(image=image_np, model= model, return_type='yolov8')
         if not yolov8_result_dict.get('yolov8_contents'):
             return PaSegmentationYoloV8Response(
                 request_id=0,
