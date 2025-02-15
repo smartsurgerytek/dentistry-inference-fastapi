@@ -306,6 +306,8 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
             predictions.append(prediction)
 
     if return_type=='cvat':
+        if not predictions:
+            return []
         cvat_results=[]
         points_label=['CEJ','APEX','ALC']
         polyline_label=['CAL','TRL']
