@@ -218,6 +218,8 @@ def apply_value_mapping(df, value_mapping):
         # Apply value_mapping to each element of the DataFrame
         return df.applymap(lambda x: value_mapping.get(x, x))
 def test_detntalMeasure_performance(config=None):
+    component_model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
+    contour_model=YOLO('./models/dentistryContour_yolov11n-seg_4.46.pt')
     if config is None:
         with open('./conf/dental_measure_parameters.yaml', 'r') as file:
             config = yaml.safe_load(file)
@@ -243,7 +245,12 @@ def test_detntalMeasure_performance(config=None):
 
         image=cv2.imread(raw_image_path)
 
-        estimation_results=dental_estimation(image, scale=(scale_x, scale_y), return_type='dict', config=config)
+        estimation_results=dental_estimation(image=image, 
+                                             contour_model=contour_model, 
+                                             component_model=component_model, 
+                                             scale_x=scale_x, scale_y=scale_y, 
+                                             return_type='dict', 
+                                             config=config)
         estimation_results = sorted(estimation_results, key=lambda x: x['mid'][0])
 
         df_pred, df_true=process_and_save_predictions(estimation_results, df_true)
