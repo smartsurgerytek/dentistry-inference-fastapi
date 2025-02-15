@@ -14,6 +14,13 @@ from src.allocation.domain.dental_measure.schemas import PaMeasureDictResponse, 
 from src.allocation.domain.dental_segmentation.schemas import PaSegmentationYoloV8Response, PaSegmentationCvatResponse
 from contextlib import asynccontextmanager
 from ultralytics import YOLO
+import base64
+def base64_to_bytes(base64_str):
+    # 解碼 base64 字符串為 bytes
+    return base64.b64decode(base64_str)
+def bytes_to_base64(byte_data):
+    # 編碼 bytes 為 base64 字符串
+    return base64.b64encode(byte_data).decode('utf-8')
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -61,49 +68,55 @@ async def read_root() -> str:
 
 @app.post("/pa_measure_dict", response_model=PaMeasureDictResponse)
 async def generate_periapical_film_measure_dict(
-    image: Annotated[bytes, File()],
+    image: str,
     #scale: Any, #: expected Annotated[str, Form()] or array
     scale_x: float,
     scale_y: float,  
 ) -> PaMeasureDictResponse:
     #scale_obj=ScaleValidator(scale=scale)
+    image=base64_to_bytes(image)
     return InferenceService.pa_measure_dict(image, component_model, contour_model, scale_x, scale_y)
 
 @app.post("/pa_measure_cvat", response_model=PaMeasureCvatResponse)
 async def generate_periapical_film_measure_dict(
-    image: Annotated[bytes, File()],
+    image: str,
     #scale: Any, #: expected Annotated[str, Form()] or array
     scale_x: float,
     scale_y: float,  
 ) -> PaMeasureDictResponse:
     #scale_obj=ScaleValidator(scale=scale)
+    image=base64_to_bytes(image)
     return InferenceService.pa_measure_cvat(image, component_model, contour_model, scale_x, scale_y)
 @app.post("/pa_measure_image", response_model=ImageResponse)#, response_model=DentalMeasureDictResponse)
 async def generate_periapical_film_measure_image_base64(
-    image: Annotated[bytes, File()],
+    image: str,
     #scale: Any, #: expected Annotated[str, Form()] or array
     scale_x: float,
     scale_y: float,  
 ) -> ImageResponse:
     #scale_obj=ScaleValidator(scale=scale)
+    image=base64_to_bytes(image)
     return InferenceService.pa_measure_image_base64(image, component_model, contour_model, scale_x, scale_y)
 
 @app.post("/pa_segmentation_yolov8", response_model=PaSegmentationYoloV8Response)
 async def generate_periapical_film_segmentations_yolov8(
-    image: Annotated[bytes, File()],
+    image: str,
 ) -> PaSegmentationYoloV8Response:
+    image=base64_to_bytes(image)
     return InferenceService.pa_segmentation_yolov8(image, component_model)
 
 @app.post("/pa_segmentation_cvat", response_model=PaSegmentationCvatResponse)
 async def generate_periapical_film_segmentations_cvat(
-    image: Annotated[bytes, File()],
+    image: str,
 ) -> PaSegmentationCvatResponse:
+    image=base64_to_bytes(image)
     return InferenceService.pa_segmentation_cvat(image, component_model)
 
 @app.post("/pa_segmentation_image", response_model=ImageResponse)
 async def generate_periapical_film_segmentations_image_base64(
-    image: Annotated[bytes, File()],
+    image: str,
 ) -> PaSegmentationCvatResponse:
+    image=base64_to_bytes(image)
     return InferenceService.pa_segmentation_image_base64(image, component_model)
 
 if __name__ == "__main__":
