@@ -1,4 +1,4 @@
-from src.allocation.domain.dental_measure.schemas import PaMeasureDictResponse, DentalMeasureDictValidator, ImageResponse
+from src.allocation.domain.dental_measure.schemas import PaMeasureDictResponse, DentalMeasureDictValidator, ImageResponse, PaMeasureCvatResponse
 from src.allocation.domain.dental_segmentation.schemas import *
 from src.allocation.domain.dental_measure.main import *
 from src.allocation.domain.dental_segmentation.main import *
@@ -32,7 +32,30 @@ class InferenceService:
             measurements=measurements_list,
             message="Inference completed successfully"
         )
-    
+    @staticmethod
+    def pa_measure_cvat(image: bytes, 
+                        component_model:YOLO , 
+                        contour_model:YOLO, 
+                        scale_x: float, 
+                        scale_y: float):
+        
+        validator=DentalMeasureDictValidator(image=image, scale_x=scale_x, scale_y=scale_y)
+        image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
+
+        measurements_list=dental_estimation(image=image_np, component_model=component_model, contour_model=contour_model, scale_x=scale_x, scale_y=scale_y, return_type='cvat')
+
+        if not measurements_list:
+            return PaMeasureCvatResponse(
+                request_id=0,
+                measurements=[],
+                message="Nothing detected for the image"
+            )
+        
+        return PaMeasureCvatResponse(
+            request_id=0,
+            measurements=measurements_list,
+            message="Inference completed successfully"
+        )    
     @staticmethod
     def pa_measure_image_base64(image: bytes, 
                                 component_model:YOLO, 

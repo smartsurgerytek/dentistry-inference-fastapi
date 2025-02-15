@@ -10,7 +10,7 @@ from typing import Any
 from typing import Optional
 import uvicorn
 from src.allocation.service_layer.services import InferenceService
-from src.allocation.domain.dental_measure.schemas import PaMeasureDictResponse, ImageResponse
+from src.allocation.domain.dental_measure.schemas import PaMeasureDictResponse, ImageResponse, PaMeasureCvatResponse
 from src.allocation.domain.dental_segmentation.schemas import PaSegmentationYoloV8Response, PaSegmentationCvatResponse
 from contextlib import asynccontextmanager
 from ultralytics import YOLO
@@ -69,6 +69,15 @@ async def generate_periapical_film_measure_dict(
     #scale_obj=ScaleValidator(scale=scale)
     return InferenceService.pa_measure_dict(image, component_model, contour_model, scale_x, scale_y)
 
+@app.post("/pa_measure_cvat", response_model=PaMeasureCvatResponse)
+async def generate_periapical_film_measure_dict(
+    image: Annotated[bytes, File()],
+    #scale: Any, #: expected Annotated[str, Form()] or array
+    scale_x: float,
+    scale_y: float,  
+) -> PaMeasureDictResponse:
+    #scale_obj=ScaleValidator(scale=scale)
+    return InferenceService.pa_measure_cvat(image, component_model, contour_model, scale_x, scale_y)
 @app.post("/pa_measure_image", response_model=ImageResponse)#, response_model=DentalMeasureDictResponse)
 async def generate_periapical_film_measure_image_base64(
     image: Annotated[bytes, File()],

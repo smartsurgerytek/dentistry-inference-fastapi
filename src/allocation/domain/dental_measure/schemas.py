@@ -28,6 +28,11 @@ class PaMeasureDictResponse(BaseModel):
     measurements: List[Measurements]
     message: str
 
+class PaMeasureCvatResponse(BaseModel):
+    request_id: int
+    measurements: List[dict]
+    message: str
+
 #DentalMeasureDictResponse
 
 class DentalMeasureDictValidator(BaseModel):
