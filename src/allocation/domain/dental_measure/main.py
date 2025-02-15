@@ -206,8 +206,8 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
         with open('./conf/best_dental_measure_parameters.yaml', 'r') as file:
             config = yaml.safe_load(file)
     if config is not None:
-        for key, value in config.items():
-            globals()[key] = value
+        for label, values in config.items():
+            globals()[label] = values
 
     scale=(scale_x,scale_y)
     components_model_masks_dict=get_mask_dict_from_model(component_model, image, method='semantic', mask_threshold=DENTAL_MODEL_THRESHOLD)
@@ -260,8 +260,8 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
 
     #retrive the crown or enamal mask
     crown_or_enamal_mask = np.zeros(image.shape[:2], dtype=np.uint8)
-    for key in ['dental_crown', 'crown']:
-        mask = components_model_masks_dict.get(key)
+    for label in ['dental_crown', 'crown']:
+        mask = components_model_masks_dict.get(label)
         if mask is not None:
             crown_or_enamal_mask = cv2.bitwise_or(crown_or_enamal_mask, mask)
         
@@ -305,6 +305,51 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
         if dental_pair_list:
             predictions.append(prediction)
 
+    if return_type=='cvat':
+        cvat_results=[]
+        points_label=['CEJ','APEX','ALC']
+        polyline_label=['CAL','TRL']
+        tag_label=['ABLD','stage']
+        polyline_mapping={
+            'CAL': ['enamel','gum'],
+            'TRL': ['enamel','dentin']
+        }
+        left_right=['left','right']
+        for prediction in predictions:
+            teeth_id=prediction['teeth_id']
+            for pair_measurement in prediction['pair_measurements']:
+                side_id=pair_measurement['side_id']
+                for label, values in pair_measurement.items():
+                    if label in points_label:
+                        cvat_results.append({'label':label,
+                                            'type':'point',
+                                            'points':list(values), 
+                                            'teeth_id':teeth_id, 
+                                            'side_id':side_id})
+                    elif label in polyline_label:
+                        side=left_right[side_id]
+                        enamel_key=polyline_mapping[label][0]+"_"+side
+                        gum_or_dentin_key=polyline_mapping[label][1]+"_"+side
+                        points=list(prediction[enamel_key]+prediction[gum_or_dentin_key])                    
+                        cvat_results.append({'label':label,
+                                            'type':'polyline',
+                                            'points':points, 
+                                            'attributes':[{
+                                                'name':'length',
+                                                'input_type':'number',
+                                                'value': values,
+                                            }],
+                                            'teeth_id':teeth_id, 
+                                            'side_id':side_id})
+                meta_data_atrributes=[{'name': key,
+                                        'input_type': 'number',
+                                        'value': pair_measurement[key],} for key in tag_label]
+                cvat_results.append({'label':'metadata',
+                                    'type':'tag',
+                                    'attributes': meta_data_atrributes,
+                                    'teeth_id':teeth_id, 
+                                    'side_id':side_id})     
+        return cvat_results           
 
     if return_type=='image_array':
         return image_for_drawing, error_messages
