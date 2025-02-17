@@ -232,16 +232,16 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
     for component, error_message in required_components.items():
         if components_model_masks_dict.get(component) is None:
             error_messages=error_message
-            return generate_error_image(error_messages), error_messages if 'image' in return_type else []
+            return (generate_error_image(error_messages), error_messages) if 'image' in return_type else []
     # check 'dental_crown', 'crown' existed
     if (components_model_masks_dict.get('dental_crown') is None and components_model_masks_dict.get('crown') is None):
         error_messages="No dental_crown detected"
-        return generate_error_image(error_messages), error_messages if 'image' in return_type else [] 
+        return (generate_error_image(error_messages), error_messages) if 'image' in return_type else [] 
     
     # contour model check
     if contours_model_masks_dict.get('dental_contour') is None:
         error_messages = "No dental instance detected"
-        return generate_error_image(error_messages), error_messages if 'image' in return_type else []
+        return (generate_error_image(error_messages), error_messages) if 'image' in return_type else []
         
     # Retrive the dental_contour from contour_model
 
