@@ -69,6 +69,7 @@ async def generate_periapical_film_measure_dict(
 ) -> PaMeasureDictResponse:
     #scale_obj=ScaleValidator(scale=scale)
     image=base64_to_bytes(image)
+    breakpoint()
     return InferenceService.pa_measure_dict(image, component_model, contour_model, scale_x, scale_y)
 
 @app.post("/pa_measure_cvat", response_model=PaMeasureCvatResponse)
