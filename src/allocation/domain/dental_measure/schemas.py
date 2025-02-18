@@ -57,3 +57,11 @@ class ImageResponse(BaseModel):
     content_type: str
     image: str# Base64 encoded string
     messages: str
+
+class PaMeasureRequest(BaseModel):
+    image: str = Field(..., min_length=1, max_length=10_000_000)  # 增加最大長度限制
+    scale_x: float = Field(default=1.0)
+    scale_y: float = Field(default=1.0)
+
+class PaSegmentationRequest(BaseModel):
+    image: str = Field(..., min_length=1, max_length=10_000_000)  # 增加最大長度限制

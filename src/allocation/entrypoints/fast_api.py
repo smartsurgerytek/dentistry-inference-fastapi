@@ -10,12 +10,13 @@ from typing import Any
 from typing import Optional
 import uvicorn
 from src.allocation.service_layer.services import InferenceService
-from src.allocation.domain.dental_measure.schemas import PaMeasureDictResponse, ImageResponse, PaMeasureCvatResponse
+from src.allocation.domain.dental_measure.schemas import PaMeasureDictResponse, ImageResponse, PaMeasureCvatResponse, PaMeasureRequest, PaSegmentationRequest
 from src.allocation.domain.dental_segmentation.schemas import PaSegmentationYoloV8Response, PaSegmentationCvatResponse
 from contextlib import asynccontextmanager
 from ultralytics import YOLO
 from src.allocation.adapters.utils import base64_to_bytes
-
+from fastapi_swagger2 import FastAPISwagger2
+import yaml
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Load the ML model
@@ -36,7 +37,7 @@ app = FastAPI(
     description="API to infer information from dental X-ray images.",
     lifespan=lifespan
 )
-
+FastAPISwagger2(app)
 
 
 @app.exception_handler(ValidationError)
@@ -62,56 +63,62 @@ async def read_root() -> str:
 
 @app.post("/pa_measure_dict", response_model=PaMeasureDictResponse)
 async def generate_periapical_film_measure_dict(
-    image: str,
-    #scale: Any, #: expected Annotated[str, Form()] or array
-    scale_x: float,
-    scale_y: float,  
+    # image: str,
+    # #scale: Any, #: expected Annotated[str, Form()] or array
+    # scale_x: float,
+    # scale_y: float,  
+    request: PaMeasureRequest,
 ) -> PaMeasureDictResponse:
     #scale_obj=ScaleValidator(scale=scale)
-    image=base64_to_bytes(image)
-    return InferenceService.pa_measure_dict(image, component_model, contour_model, scale_x, scale_y)
+    image=base64_to_bytes(request.image)
+    return InferenceService.pa_measure_dict(image, component_model, contour_model, request.scale_x, request.scale_y)
 
 @app.post("/pa_measure_cvat", response_model=PaMeasureCvatResponse)
 async def generate_periapical_film_measure_dict(
-    image: str,
-    #scale: Any, #: expected Annotated[str, Form()] or array
-    scale_x: float,
-    scale_y: float,  
+    # image: str,
+    # #scale: Any, #: expected Annotated[str, Form()] or array
+    # scale_x: float,
+    # scale_y: float,  
+    request: PaMeasureRequest,
 ) -> PaMeasureDictResponse:
     #scale_obj=ScaleValidator(scale=scale)
-    image=base64_to_bytes(image)
-    return InferenceService.pa_measure_cvat(image, component_model, contour_model, scale_x, scale_y)
+    image=base64_to_bytes(request.image)
+    return InferenceService.pa_measure_cvat(image, component_model, contour_model, request.scale_x, request.scale_y)
 @app.post("/pa_measure_image", response_model=ImageResponse)#, response_model=DentalMeasureDictResponse)
 async def generate_periapical_film_measure_image_base64(
-    image: str,
-    #scale: Any, #: expected Annotated[str, Form()] or array
-    scale_x: float,
-    scale_y: float,  
+    # image: str,
+    # #scale: Any, #: expected Annotated[str, Form()] or array
+    # scale_x: float,
+    # scale_y: float,  
+    request: PaMeasureRequest
 ) -> ImageResponse:
     #scale_obj=ScaleValidator(scale=scale)
-    image=base64_to_bytes(image)
-    return InferenceService.pa_measure_image_base64(image, component_model, contour_model, scale_x, scale_y)
+    image=base64_to_bytes(request.image)
+    return InferenceService.pa_measure_image_base64(image, component_model, contour_model, request.scale_x, request.scale_y)
 
 @app.post("/pa_segmentation_yolov8", response_model=PaSegmentationYoloV8Response)
 async def generate_periapical_film_segmentations_yolov8(
-    image: str,
+    #image: str,
+    request: PaSegmentationRequest,
 ) -> PaSegmentationYoloV8Response:
-    image=base64_to_bytes(image)
+    image=base64_to_bytes(request.image)
     return InferenceService.pa_segmentation_yolov8(image, component_model)
 
 @app.post("/pa_segmentation_cvat", response_model=PaSegmentationCvatResponse)
 async def generate_periapical_film_segmentations_cvat(
-    image: str,
+    #image: str,
+    request: PaSegmentationRequest
 ) -> PaSegmentationCvatResponse:
-    image=base64_to_bytes(image)
+    image=base64_to_bytes(request.image)
     return InferenceService.pa_segmentation_cvat(image, component_model)
 
 @app.post("/pa_segmentation_image", response_model=ImageResponse)
 async def generate_periapical_film_segmentations_image_base64(
-    image: str,
+    request: PaSegmentationRequest
 ) -> PaSegmentationCvatResponse:
-    image=base64_to_bytes(image)
+    image=base64_to_bytes(request.image)
     return InferenceService.pa_segmentation_image_base64(image, component_model)
+
 
 if __name__ == "__main__":
     uvicorn.run(app)
