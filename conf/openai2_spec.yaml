@@ -1,0 +1,444 @@
+swagger: '2.0'
+info:
+  title: Dental X-ray Inference API
+  description: API to infer information from dental X-ray images.
+  version: 1.0.0
+host: dentistry-inference-core-0218test-298229070754.asia-east1.run.app
+basePath: /
+schemes:
+- https
+paths:
+  /:
+    get:
+      summary: Read Root
+      operationId: read_root__get
+      produces:
+      - application/json
+      parameters: []
+      responses:
+        '200':
+          description: Successful Response
+          schema:
+            title: Response Read Root  Get
+            type: string
+  /pa_measure_dict:
+    post:
+      summary: Generate Periapical Film Measure Dict
+      operationId: generate_periapical_film_measure_dict_pa_measure_dict_post
+      parameters:
+      - name: request
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PaMeasureRequest'
+      responses:
+        '200':
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/PaMeasureDictResponse'
+        '422':
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/HTTPValidationError'
+      produces:
+      - application/json
+  /pa_measure_cvat:
+    post:
+      summary: Generate Periapical Film Measure Dict
+      operationId: generate_periapical_film_measure_dict_pa_measure_cvat_post
+      parameters:
+      - name: request
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PaMeasureRequest'
+      responses:
+        '200':
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/PaMeasureCvatResponse'
+        '422':
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/HTTPValidationError'
+      produces:
+      - application/json
+  /pa_measure_image:
+    post:
+      summary: Generate Periapical Film Measure Image Base64
+      operationId: generate_periapical_film_measure_image_base64_pa_measure_image_post
+      parameters:
+      - name: request
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PaMeasureRequest'
+      responses:
+        '200':
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/ImageResponse'
+        '422':
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/HTTPValidationError'
+      produces:
+      - application/json
+  /pa_segmentation_yolov8:
+    post:
+      summary: Generate Periapical Film Segmentations Yolov8
+      operationId: generate_periapical_film_segmentations_yolov8_pa_segmentation_yolov8_post
+      parameters:
+      - name: request
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PaSegmentationRequest'
+      responses:
+        '200':
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/PaSegmentationYoloV8Response'
+        '422':
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/HTTPValidationError'
+      produces:
+      - application/json
+  /pa_segmentation_cvat:
+    post:
+      summary: Generate Periapical Film Segmentations Cvat
+      operationId: generate_periapical_film_segmentations_cvat_pa_segmentation_cvat_post
+      parameters:
+      - name: request
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PaSegmentationRequest'
+      responses:
+        '200':
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/PaSegmentationCvatResponse'
+        '422':
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/HTTPValidationError'
+      produces:
+      - application/json
+  /pa_segmentation_image:
+    post:
+      summary: Generate Periapical Film Segmentations Image Base64
+      operationId: generate_periapical_film_segmentations_image_base64_pa_segmentation_image_post
+      parameters:
+      - name: request
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PaSegmentationRequest'
+      responses:
+        '200':
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/ImageResponse'
+        '422':
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/HTTPValidationError'
+      produces:
+      - application/json
+definitions:
+  CvatSegmentation:
+    title: CvatSegmentation
+    required:
+    - confidence
+    - label
+    - type
+    - points
+    type: object
+    properties:
+      confidence:
+        title: Confidence
+        type: number
+      label:
+        title: Label
+        type: string
+      type:
+        title: Type
+        type: string
+      points:
+        title: Points
+        type: array
+        items:
+          type: number
+  CvatSegmentations:
+    title: CvatSegmentations
+    required:
+    - class_names
+    - yolov8_contents
+    type: object
+    properties:
+      class_names:
+        title: Class Names
+        type: object
+        additionalProperties:
+          type: string
+      yolov8_contents:
+        title: Yolov8 Contents
+        type: array
+        items:
+          $ref: '#/definitions/CvatSegmentation'
+  DentalMeasurements:
+    title: DentalMeasurements
+    required:
+    - side_id
+    - CEJ
+    - ALC
+    - APEX
+    - CAL
+    - TRL
+    - ABLD
+    - stage
+    type: object
+    properties:
+      side_id:
+        title: Side Id
+        description: Side ID must be a non-negative integer
+        minimum: 0.0
+        type: integer
+      CEJ:
+        title: Cej
+        maxItems: 2
+        minItems: 2
+        type: array
+      ALC:
+        title: Alc
+        maxItems: 2
+        minItems: 2
+        type: array
+      APEX:
+        title: Apex
+        maxItems: 2
+        minItems: 2
+        type: array
+      CAL:
+        title: Cal
+        description: CAL must be a non-negative float
+        minimum: 0.0
+        type: number
+      TRL:
+        title: Trl
+        description: TRL must be a non-negative float
+        minimum: 0.0
+        type: number
+      ABLD:
+        title: Abld
+        description: ABLD must be a non-negative float
+        minimum: 0.0
+        type: number
+      stage:
+        title: Stage
+        enum:
+        - 0
+        - 1
+        - 2
+        - 3
+        - I
+        - II
+        - III
+  HTTPValidationError:
+    title: HTTPValidationError
+    type: object
+    properties:
+      detail:
+        title: Detail
+        type: array
+        items:
+          $ref: '#/definitions/ValidationError'
+  ImageResponse:
+    title: ImageResponse
+    required:
+    - request_id
+    - content_type
+    - image
+    - messages
+    type: object
+    properties:
+      request_id:
+        title: Request Id
+        type: integer
+      content_type:
+        title: Content Type
+        type: string
+      image:
+        title: Image
+        type: string
+      messages:
+        title: Messages
+        type: string
+  Measurements:
+    title: Measurements
+    required:
+    - teeth_id
+    - pair_measurements
+    - teeth_center
+    type: object
+    properties:
+      teeth_id:
+        title: Teeth Id
+        type: integer
+      pair_measurements:
+        title: Pair Measurements
+        type: array
+        items:
+          $ref: '#/definitions/DentalMeasurements'
+      teeth_center:
+        title: Teeth Center
+        maxItems: 2
+        minItems: 2
+        type: array
+  PaMeasureCvatResponse:
+    title: PaMeasureCvatResponse
+    required:
+    - request_id
+    - measurements
+    - message
+    type: object
+    properties:
+      request_id:
+        title: Request Id
+        type: integer
+      measurements:
+        title: Measurements
+        type: array
+        items:
+          type: object
+      message:
+        title: Message
+        type: string
+  PaMeasureDictResponse:
+    title: PaMeasureDictResponse
+    required:
+    - request_id
+    - measurements
+    - message
+    type: object
+    properties:
+      request_id:
+        title: Request Id
+        type: integer
+      measurements:
+        title: Measurements
+        type: array
+        items:
+          $ref: '#/definitions/Measurements'
+      message:
+        title: Message
+        type: string
+  PaMeasureRequest:
+    title: PaMeasureRequest
+    required:
+    - image
+    type: object
+    properties:
+      image:
+        title: Image
+        maxLength: 10000000
+        minLength: 1
+        type: string
+      scale_x:
+        title: Scale X
+        default: 1.0
+        type: number
+      scale_y:
+        title: Scale Y
+        default: 1.0
+        type: number
+  PaSegmentationCvatResponse:
+    title: PaSegmentationCvatResponse
+    required:
+    - request_id
+    - yolo_results
+    - message
+    type: object
+    properties:
+      request_id:
+        title: Request Id
+        type: integer
+      yolo_results:
+        $ref: '#/definitions/CvatSegmentations'
+      message:
+        title: Message
+        type: string
+  PaSegmentationRequest:
+    title: PaSegmentationRequest
+    required:
+    - image
+    type: object
+    properties:
+      image:
+        title: Image
+        maxLength: 10000000
+        minLength: 1
+        type: string
+  PaSegmentationYoloV8Response:
+    title: PaSegmentationYoloV8Response
+    required:
+    - request_id
+    - yolo_results
+    - message
+    type: object
+    properties:
+      request_id:
+        title: Request Id
+        type: integer
+      yolo_results:
+        $ref: '#/definitions/YoloV8Segmentation'
+      message:
+        title: Message
+        type: string
+  ValidationError:
+    title: ValidationError
+    required:
+    - loc
+    - msg
+    - type
+    type: object
+    properties:
+      loc:
+        title: Location
+        type: array
+        items:
+          type: string
+      msg:
+        title: Message
+        type: string
+      type:
+        title: Error Type
+        type: string
+  YoloV8Segmentation:
+    title: YoloV8Segmentation
+    required:
+    - class_names
+    - yolov8_contents
+    type: object
+    properties:
+      class_names:
+        title: Class Names
+        type: object
+        additionalProperties:
+          type: string
+      yolov8_contents:
+        title: Yolov8 Contents
+        type: array
+        items:
+          type: array
+x-google-backend:
+  address: https://dentistry-inference-core-0218test-298229070754.asia-east1.run.app
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: key
+    in: query
+security:
+- api_key: []
