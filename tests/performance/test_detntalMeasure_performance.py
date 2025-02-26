@@ -221,10 +221,11 @@ def test_detntalMeasure_performance(config=None):
     component_model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
     contour_model=YOLO('./models/dentistryContour_yolov11n-seg_4.46.pt')
     if config is None:
-        with open('./conf/dental_measure_parameters.yaml', 'r') as file:
+        with open('./conf/best_dental_measure_parameters.yaml', 'r') as file:
             config = yaml.safe_load(file)
     for key, value in config.items():
-        globals()[key] = value        
+        globals()[key] = value
+
     scale_x=30/960
     scale_y=40/1080
 
