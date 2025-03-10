@@ -92,6 +92,12 @@ curl -s https://api.github.com/repos/nuclio/nuclio/releases/latest \
 			| wget -O nuctl -qi - && chmod +x nuctl
 ```
 
+create nuclio project
+
+```
+nuctl create project cvat
+```
+
 Deploy the functions in nuclio
 ```
 nuctl deploy --project-name cvat --path "./dentistry-inference-core/src/allocation/service_layer/cvat_nuclio/segmentation_PA" --platform local
