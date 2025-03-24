@@ -19,7 +19,7 @@ def create_model(num_classes):
 
     return model
 
-def pano_caries_detecion(model, pil_img, return_type='image'):
+def pano_caries_detecion(model, weights_path, pil_img, return_type='image_array'):
 
     # read class_indict
     class_dict={'Decay': 1}
@@ -27,10 +27,9 @@ def pano_caries_detecion(model, pil_img, return_type='image'):
     
     # get devices
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    print("using {} device.".format(device))
+    #print("using {} device.".format(device))
 
     # load train weights
-    weights_path = "./models/dentistry_pano-caries-detection-resNetFpn_5.12.pth"
     assert os.path.exists(weights_path), "{} file dose not exist.".format(weights_path)
     weights_dict = torch.load(weights_path, map_location='cpu')
     weights_dict = weights_dict["model"] if "model" in weights_dict else weights_dict
@@ -68,7 +67,7 @@ def pano_caries_detecion(model, pil_img, return_type='image'):
         # 保存预测的图片结果
         #plot_img.save("test_result.jpg")
 
-    if return_type == 'image':
+    if return_type == 'image_array':
         if len(predict_boxes) == 0:
             return None, "No caries found"
         plot_img = draw_objs(pil_img,
@@ -88,7 +87,8 @@ def pano_caries_detecion(model, pil_img, return_type='image'):
 if __name__ == '__main__':
     # # create model
     model = create_model(num_classes=1)
+    weights_path = "./models/dentistry_pano-caries-detection-resNetFpn_5.12.pth"
     pil_img = Image.open("./tests/files/027107.jpg")
-    plot_img = pano_caries_detecion(model, pil_img, return_type='image')
+    plot_img = pano_caries_detecion(model, weights_path, pil_img, return_type='image')
     plt.imshow(plot_img)
     plt.show()
