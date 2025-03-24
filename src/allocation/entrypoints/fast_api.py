@@ -10,8 +10,8 @@ from typing import Any
 from typing import Optional
 import uvicorn
 from src.allocation.service_layer.services import InferenceService
-from src.allocation.domain.dental_measure.schemas import PaMeasureDictResponse, ImageResponse, PaMeasureCvatResponse, PaMeasureRequest, PaSegmentationRequest
-from src.allocation.domain.dental_segmentation.schemas import PaSegmentationYoloV8Response, PaSegmentationCvatResponse
+from src.allocation.domain.pa_dental_measure.schemas import PaMeasureDictResponse, ImageResponse, PaMeasureCvatResponse, PaMeasureRequest, PaSegmentationRequest
+from src.allocation.domain.pa_dental_segmentation.schemas import PaSegmentationYoloV8Response, PaSegmentationCvatResponse
 from contextlib import asynccontextmanager
 from ultralytics import YOLO
 from src.allocation.adapters.utils import base64_to_bytes

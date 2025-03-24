@@ -1,7 +1,7 @@
-from src.allocation.domain.dental_measure.schemas import PaMeasureDictResponse, DentalMeasureDictValidator, ImageResponse, PaMeasureCvatResponse
-from src.allocation.domain.dental_segmentation.schemas import *
-from src.allocation.domain.dental_measure.main import *
-from src.allocation.domain.dental_segmentation.main import *
+from src.allocation.domain.pa_dental_measure.schemas import PaMeasureDictResponse, DentalMeasureDictValidator, ImageResponse, PaMeasureCvatResponse
+from src.allocation.domain.pa_dental_segmentation.schemas import *
+from src.allocation.domain.pa_dental_measure.main import *
+from src.allocation.domain.pa_dental_segmentation.main import *
 import numpy as np
 import cv2
 from ultralytics import YOLO

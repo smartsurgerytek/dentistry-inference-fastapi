@@ -4,7 +4,7 @@ import os
 from pydantic import ValidationError
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
-from src.allocation.domain.dental_measure.schemas import *
+from src.allocation.domain.pa_dental_measure.schemas import *
 
 test_values = {
     "valid_numbers": [0, 1, 2, 3, 10, 20],

@@ -7,7 +7,7 @@ from skimage.measure import approximate_polygon
 import os 
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..')))
-from src.allocation.domain.dental_segmentation.utils import *
+from src.allocation.domain.pa_dental_segmentation.utils import *
 import yaml
 
 #model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')

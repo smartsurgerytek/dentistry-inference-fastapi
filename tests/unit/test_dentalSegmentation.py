@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 import cv2
-from src.allocation.domain.dental_segmentation.main import *
+from src.allocation.domain.pa_dental_segmentation.main import *
 import yaml
 model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
 def test_dentalSegmentation_normalImage():

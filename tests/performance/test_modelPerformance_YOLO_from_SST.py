@@ -14,8 +14,8 @@ import glob
 import cv2
 from sklearn.cluster import DBSCAN
 import json
-from src.allocation.domain.dental_segmentation.main import yolo_transform
-from src.allocation.domain.dental_measure.utils import show_two
+from src.allocation.domain.pa_dental_segmentation.main import yolo_transform
+from src.allocation.domain.pa_dental_measure.utils import show_two
 def show_plot(image):
     """
     顯示圖片並顯示滑鼠當前指向的 XY 座標

@@ -8,7 +8,7 @@ from sklearn.preprocessing import label_binarize
 import matplotlib.pyplot as plt
 import seaborn as sns
 import cv2
-from src.allocation.domain.dental_measure.main import *
+from src.allocation.domain.pa_dental_measure.main import *
 
 def restructure_dataframe(df):
     """重構 DataFrame 結構"""
