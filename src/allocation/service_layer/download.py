@@ -6,9 +6,12 @@ filename = "dental_contour/dentistry_yolov11n-seg_contour4.46.pt"
 
 os.makedirs('./models',exist_ok=True)
 save_map={
-    "dental_contour/dentistryContour_yolov11n-seg_4.46.pt":"./models/dentistryContour_yolov11n-seg_4.46.pt",
-    "all_category/dentistry_yolov11x-seg-all_4.42.pt":"./models/dentistry_yolov11x-seg-all_4.42.pt"}
+    "PA_dental_contour/dentistryContour_yolov11n-seg_4.46.pt":"./models/dentistryContour_yolov11n-seg_4.46.pt",
+    "PA_segmentation/dentistry_yolov11x-seg-all_4.42.pt":"./models/dentistry_yolov11x-seg-all_4.42.pt",
+    "PANO_caries_detection/dentistry_pano-caries-detection-resNetFpn_5.12.pth":"models/dentistry_pano-caries-detection-resNetFpn_5.12.pth"}
+
 for filename, save_path in save_map.items():
+    if os.path.exists(save_path):
+        continue
     file_path = hf_hub_download(repo_id=repo_id, filename=filename)
     shutil.copy(file_path, save_path)
-print(file_path)
