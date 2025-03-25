@@ -1,7 +1,6 @@
 import os 
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..')))
-
 import torch
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -27,6 +26,7 @@ def pano_caries_detecion(model, weights_path, pil_img, return_type='image_array'
     
     # get devices
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
     #print("using {} device.".format(device))
 
     # load train weights
@@ -89,6 +89,7 @@ if __name__ == '__main__':
     model = create_model(num_classes=1)
     weights_path = "./models/dentistry_pano-caries-detection-resNetFpn_5.12.pth"
     pil_img = Image.open("./tests/files/027107.jpg")
-    plot_img = pano_caries_detecion(model, weights_path, pil_img, return_type='image')
+    plot_img, error_messages = pano_caries_detecion(model, weights_path, pil_img, return_type='image_array')
+    breakpoint()
     plt.imshow(plot_img)
     plt.show()

@@ -889,8 +889,9 @@ class RegionProposalNetwork(torch.nn.Module):
               #print("scores",i.shape)[2000,1]*4
 
         losses = {}
-        pos_align_feature=torch.rand(0).cuda()
-        pos_level=torch.rand(0).cuda()
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        pos_align_feature = torch.rand(0, device=device)
+        pos_level = torch.rand(0, device=device)
         #global sampled_pos_inds, sampled_neg_inds, pos_ids, neg_ids, pos_boxes, neg_boxes, pos_levels, neg_levels, pos_rois, neg_rois, pos_align_feature, pos_align_feature
 
         if self.training:
@@ -928,7 +929,7 @@ class RegionProposalNetwork(torch.nn.Module):
              #   print(i.shape)
 
             #正负样本坐标信息
-            pos_boxes=res[sampled_pos_inds].cuda()
+            pos_boxes = res[sampled_pos_inds].to(device)
             #neg_boxes=res[sampled_neg_inds].cuda()
             #print("pos_boxes", pos_boxes.shape)
 
