@@ -112,7 +112,30 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, tolerance
                     "type": "mask",
                     "points": polygons.ravel().tolist(),
                     #"mask": cvat_mask
-                })                
+                })
+            elif return_type=="cvat_mask": 
+                contours = find_contours(mask_binary, 0.5)
+                if len(contours)==0:
+                    continue
+                contour = contours[0]
+                contour = np.flip(contour, axis=1)
+                polygons = approximate_polygon(contour, tolerance=tolerance)
+
+                xyxy = box.xyxy.tolist()
+                xtl = int(xyxy[0][0])
+                ytl = int(xyxy[0][1])
+                xbr = int(xyxy[0][2])
+                ybr = int(xyxy[0][3])
+
+                cvat_mask = to_cvat_mask((xtl, ytl, xbr, ybr), mask_binary)
+
+                yolov8_contents.append({
+                    "confidence": confidence,
+                    "label": class_names[int(box.cls)],
+                    "type": "mask",
+                    "points": polygons.ravel().tolist(),
+                    "mask": cvat_mask
+                })                               
             elif return_type=='yolov8':
                 yolov8_points=get_yolov8_label(mask_binary, tolerance=tolerance)
                 yolov8_line=[class_id]
