@@ -2,9 +2,12 @@ from src.allocation.domain.pa_dental_measure.schemas import PaMeasureDictRespons
 from src.allocation.domain.pa_dental_segmentation.schemas import *
 from src.allocation.domain.pa_dental_measure.main import *
 from src.allocation.domain.pa_dental_segmentation.main import *
+from src.allocation.domain.pano_caries_detection.main import *
+from src.allocation.domain.pano_caries_detection.schemas import *
 import numpy as np
 import cv2
 from ultralytics import YOLO
+from PIL import Image
 class InferenceService:
 
     @staticmethod
@@ -142,3 +145,44 @@ class InferenceService:
             content_type='image/png',
             messages="Inference completed successfully"
         )
+
+    @staticmethod
+    def pano_caries_detection_image_base64(image: bytes, model, weights_path: str ) -> ImageResponse:
+        image_pil= Image.open(io.BytesIO(image))
+
+        output_image_array, error_message = pano_caries_detecion(model, weights_path, image_pil, return_type='image_array')
+        #drop the mask cols in cvat_result_dict
+        #show_plot(output_image_array)
+        output_image_base64= numpy_to_base64(output_image_array, image_format='PNG')
+
+        if error_message:
+            return ImageResponse(
+            request_id=0,
+            image=output_image_base64,
+            content_type='image/png',
+            messages=error_message
+        )
+
+        return ImageResponse(
+            request_id=0,
+            image=output_image_base64,
+            content_type='image/png',
+            messages="Inference completed successfully"
+        )
+    
+    @staticmethod
+    def pano_caries_detection_dict(image: bytes, model, weights_path: str ) -> PanoCariesDetectionDictResponse:
+        image_pil= Image.open(io.BytesIO(image))
+        results_dict = pano_caries_detecion(model, weights_path, image_pil, return_type='dict')
+        if not results_dict['error_messages']:
+            return PanoCariesDetectionDictResponse(
+                request_id=0,
+                pano_caries_detection_dict=results_dict,  
+                message="Inference completed successfully"
+            )
+        else:
+            return PanoCariesDetectionDictResponse(
+                request_id=0,
+                pano_caries_detection_dict=results_dict,  
+                message="Inference failed"
+            )

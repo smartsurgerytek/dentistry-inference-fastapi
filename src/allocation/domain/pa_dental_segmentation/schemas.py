@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Dict, Union
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, model_validator, Field
 
 # define yolo segmentation model
 class YoloV8Segmentation(BaseModel):
@@ -34,3 +34,6 @@ class PaSegmentationCvatResponse(BaseModel):
     request_id: int  # 圖像的唯一標識符
     yolo_results: CvatSegmentations  # 多個物體檢測結果
     message: str
+
+class PaSegmentationRequest(BaseModel):
+    image: str = Field(..., min_length=1, max_length=10_000_000)  # 增加最大長度限制

@@ -150,4 +150,4 @@ def draw_objs(image: Image,
         # Draw all mask onto image.
         image = draw_masks(image, masks, colors, mask_thresh)
 
-    return image
+    return np.array(image)

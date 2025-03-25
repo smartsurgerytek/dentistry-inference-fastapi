@@ -238,8 +238,7 @@ class RPNHead(nn.Module):
                 torch.nn.init.normal_(layer.weight, std=0.01)
                 torch.nn.init.constant_(layer.bias, 0)
 
-    def forward(self, x):
-        # type: (List[Tensor]) -> Tuple[List[Tensor], List[Tensor]]x主干网络输入特征层
+    def forward(self, x): # 主干网络输入特征层
         logits = []
         bbox_reg = []
         for i, feature in enumerate(x):

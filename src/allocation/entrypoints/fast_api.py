@@ -10,26 +10,37 @@ from typing import Any
 from typing import Optional
 import uvicorn
 from src.allocation.service_layer.services import InferenceService
-from src.allocation.domain.pa_dental_measure.schemas import PaMeasureDictResponse, ImageResponse, PaMeasureCvatResponse, PaMeasureRequest, PaSegmentationRequest
-from src.allocation.domain.pa_dental_segmentation.schemas import PaSegmentationYoloV8Response, PaSegmentationCvatResponse
+from src.allocation.domain.pa_dental_measure.schemas import PaMeasureDictResponse, ImageResponse, PaMeasureCvatResponse, PaMeasureRequest
+from src.allocation.domain.pa_dental_segmentation.schemas import PaSegmentationYoloV8Response, PaSegmentationCvatResponse, PaSegmentationRequest
+from src.allocation.domain.pano_caries_detection.schemas import PanoCariesDetectionRequest, PanoCariesDetectionDictResponse
+from src.allocation.domain.pano_caries_detection.main import create_pano_caries_detection_model
 from contextlib import asynccontextmanager
 from ultralytics import YOLO
 from src.allocation.adapters.utils import base64_to_bytes
 from fastapi_swagger2 import FastAPISwagger2
+
 import yaml
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Load the ML model
-    global component_model
-    component_model = YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
+    global pa_component_model
+    pa_component_model = YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
     
-    global contour_model
-    contour_model = YOLO('./models/dentistryContour_yolov11n-seg_4.46.pt')
+    global pa_contour_model
+    pa_contour_model = YOLO('./models/dentistryContour_yolov11n-seg_4.46.pt')
+
+    global pano_caries_detection_model
+    pano_caries_detection_model= create_pano_caries_detection_model(1)
+
+    global pano_caries_detection_model_weight_path
+    pano_caries_detection_model_weight_path='./models/dentistry_pano-caries-detection-resNetFpn_5.12.pth'
 
     yield  
     # Cleanup on shutdown
-    component_model = None
-    contour_model = None
+    pa_component_model = None
+    pa_contour_model = None
+    pano_caries_detection_model= None
+    pano_caries_detection_model_weight_path=''
 
 app = FastAPI(
     title="Dental X-ray Inference API",
@@ -71,7 +82,7 @@ async def generate_periapical_film_measure_dict(
 ) -> PaMeasureDictResponse:
     #scale_obj=ScaleValidator(scale=scale)
     image=base64_to_bytes(request.image)
-    return InferenceService.pa_measure_dict(image, component_model, contour_model, request.scale_x, request.scale_y)
+    return InferenceService.pa_measure_dict(image, pa_component_model, pa_contour_model, request.scale_x, request.scale_y)
 
 @app.post("/pa_measure_cvat", response_model=PaMeasureCvatResponse)
 async def generate_periapical_film_measure_dict(
@@ -83,7 +94,7 @@ async def generate_periapical_film_measure_dict(
 ) -> PaMeasureDictResponse:
     #scale_obj=ScaleValidator(scale=scale)
     image=base64_to_bytes(request.image)
-    return InferenceService.pa_measure_cvat(image, component_model, contour_model, request.scale_x, request.scale_y)
+    return InferenceService.pa_measure_cvat(image, pa_component_model, pa_contour_model, request.scale_x, request.scale_y)
 @app.post("/pa_measure_image", response_model=ImageResponse)#, response_model=DentalMeasureDictResponse)
 async def generate_periapical_film_measure_image_base64(
     # image: str,
@@ -94,7 +105,7 @@ async def generate_periapical_film_measure_image_base64(
 ) -> ImageResponse:
     #scale_obj=ScaleValidator(scale=scale)
     image=base64_to_bytes(request.image)
-    return InferenceService.pa_measure_image_base64(image, component_model, contour_model, request.scale_x, request.scale_y)
+    return InferenceService.pa_measure_image_base64(image, pa_component_model, pa_contour_model, request.scale_x, request.scale_y)
 
 @app.post("/pa_segmentation_yolov8", response_model=PaSegmentationYoloV8Response)
 async def generate_periapical_film_segmentations_yolov8(
@@ -102,7 +113,7 @@ async def generate_periapical_film_segmentations_yolov8(
     request: PaSegmentationRequest,
 ) -> PaSegmentationYoloV8Response:
     image=base64_to_bytes(request.image)
-    return InferenceService.pa_segmentation_yolov8(image, component_model)
+    return InferenceService.pa_segmentation_yolov8(image, pa_component_model)
 
 @app.post("/pa_segmentation_cvat", response_model=PaSegmentationCvatResponse)
 async def generate_periapical_film_segmentations_cvat(
@@ -110,15 +121,28 @@ async def generate_periapical_film_segmentations_cvat(
     request: PaSegmentationRequest
 ) -> PaSegmentationCvatResponse:
     image=base64_to_bytes(request.image)
-    return InferenceService.pa_segmentation_cvat(image, component_model)
+    return InferenceService.pa_segmentation_cvat(image, pa_component_model)
 
 @app.post("/pa_segmentation_image", response_model=ImageResponse)
 async def generate_periapical_film_segmentations_image_base64(
     request: PaSegmentationRequest
 ) -> PaSegmentationCvatResponse:
     image=base64_to_bytes(request.image)
-    return InferenceService.pa_segmentation_image_base64(image, component_model)
+    return InferenceService.pa_segmentation_image_base64(image, pa_component_model)
 
+@app.post("/pano_caries_detection_image", response_model=ImageResponse)
+async def generate_pano_caries_detection_image_base64(
+    request: PanoCariesDetectionRequest
+) -> ImageResponse:
+    image=base64_to_bytes(request.image)
+    return InferenceService.pano_caries_detection_image_base64(image, pano_caries_detection_model, pano_caries_detection_model_weight_path)
+
+@app.post("/pano_caries_detection_dict", response_model=PanoCariesDetectionDictResponse)
+async def generate_pano_caries_detection_image_base64(
+    request: PanoCariesDetectionRequest
+) -> PanoCariesDetectionDictResponse:
+    image=base64_to_bytes(request.image)
+    return InferenceService.pano_caries_detection_dict(image, pano_caries_detection_model, pano_caries_detection_model_weight_path)
 
 if __name__ == "__main__":
     uvicorn.run(app)

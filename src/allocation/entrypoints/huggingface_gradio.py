@@ -7,14 +7,14 @@ import cv2
 from src.allocation.domain.pa_dental_measure.main import *
 from src.allocation.domain.pa_dental_segmentation.main import *
 from ultralytics import YOLO
-from src.allocation.domain.pano_caries_detection.main import create_model, pano_caries_detecion
+from src.allocation.domain.pano_caries_detection.main import create_pano_caries_detection_model, pano_caries_detecion
 
 title = "Dentistry Model segmentation Demo"
 description = "Input A Image and get the segmentation result"
 pa_segmentation_model = YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
 pa_measurement_component_model=pa_segmentation_model
 pa_measurement_contour_model=YOLO('./models/dentistryContour_yolov11n-seg_4.46.pt')
-pano_caries_detection_model=create_model(num_classes=1)
+pano_caries_detection_model=create_pano_caries_detection_model(num_classes=1)
 pano_caries_detection_wieght_path='./models/dentistry_pano-caries-detection-resNetFpn_5.12.pth'
 #test_function()
 def opencv2pil(opencv_image):

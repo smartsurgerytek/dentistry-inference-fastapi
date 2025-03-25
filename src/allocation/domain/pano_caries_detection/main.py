@@ -11,7 +11,7 @@ from src.allocation.domain.pano_caries_detection.utils import draw_objs
 from src.allocation.domain.pano_caries_detection.backbone.resnet50_fpn_model import resnet50_fpn_backbone
 from src.allocation.domain.pano_caries_detection.network.faster_rcnn_framework import FasterRCNN
 
-def create_model(num_classes):
+def create_pano_caries_detection_model(num_classes):
 
     backbone = resnet50_fpn_backbone(norm_layer=torch.nn.BatchNorm2d, trainable_layers=3)
     model = FasterRCNN(backbone=backbone, num_classes=num_classes+1, rpn_score_thresh=0.5)
@@ -53,14 +53,15 @@ def pano_caries_detecion(model, weights_path, pil_img, return_type='image_array'
 
         predictions = model(img.to(device))[0]
 
-        predict_boxes = predictions["boxes"].to("cpu").numpy()
+        predict_boxes = predictions["boxes"].to("cpu").numpy().astype(int)
         predict_classes = predictions["labels"].to("cpu").numpy()
         predict_scores = predictions["scores"].to("cpu").numpy()
 
         results_dict={
-            'boxes': predict_boxes,
-            'labels': predict_classes,
-            'scores': predict_scores,
+            'boxes': predict_boxes.tolist(),
+            'labels': predict_classes.tolist(),
+            'scores': predict_scores.tolist(),
+            'error_messages': error_messages
         }
 
 
@@ -86,10 +87,9 @@ def pano_caries_detecion(model, weights_path, pil_img, return_type='image_array'
 
 if __name__ == '__main__':
     # # create model
-    model = create_model(num_classes=1)
+    model = create_pano_caries_detection_model(num_classes=1)
     weights_path = "./models/dentistry_pano-caries-detection-resNetFpn_5.12.pth"
     pil_img = Image.open("./tests/files/027107.jpg")
     plot_img, error_messages = pano_caries_detecion(model, weights_path, pil_img, return_type='image_array')
-    breakpoint()
     plt.imshow(plot_img)
     plt.show()
