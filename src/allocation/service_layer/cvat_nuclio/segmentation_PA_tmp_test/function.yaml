@@ -53,7 +53,8 @@ spec:
           value: mkdir -p /opt/nuclio/src
         - kind: COPY
           value: ../../../../../src /opt/nuclio/src
-
+        - kind: COPY
+          value: ../../../../../conf /opt/nuclio/conf
   triggers:
     myHttpTrigger:
       maxWorkers: 1
