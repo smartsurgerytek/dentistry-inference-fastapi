@@ -49,7 +49,10 @@ spec:
           value: huggingface-cli download smartsurgery/dentistry-models PA_segmentation/dentistry_yolov11x-seg-all_4.42.pt --local-dir /tmp
         - kind: RUN
           value: mkdir -p /opt/nuclio && mv /tmp/PA_segmentation/dentistry_yolov11x-seg-all_4.42.pt /opt/nuclio/pa_model.pt && rm /tmp/* -rf
-
+        - kind: RUN
+          value: mkdir -p /opt/nuclio/src
+        - kind: COPY
+          value: ../../../../../src /opt/nuclio/src
 
   triggers:
     myHttpTrigger:
@@ -66,19 +69,3 @@ spec:
         maximumRetryCount: 3
       mountMode: volume
 
-volumes:
-    - volume:
-        name: src-volume
-        hostPath:
-          path: ./src  # Kubernetes 節點上的 /src 目錄
-      volumeMount:
-        name: src-volume
-        mountPath: /opt/nuclio/src  # 容器內掛載點
-
-    - volume:
-        name: conf-volume
-        hostPath:
-          path: ./conf  # Kubernetes 節點上的 ./conf 目錄
-      volumeMount:
-        name: conf-volume
-        mountPath: /opt/nuclio/conf  # 容器內掛載點
