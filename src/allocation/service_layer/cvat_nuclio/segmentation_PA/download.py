@@ -1,17 +1,16 @@
 import io, base64, cv2, json
 import numpy as np
 from ultralytics import YOLO
-from skimage.measure import find_contours, approximate_polygon
 
-import os 
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../..')))
 from src.allocation.domain.pa_dental_segmentation.main import *
+from src.allocation.service_layer.cvat_nuclio.segmentation_PA.download import down_load_function
+
 def init_context(context):
     context.logger.info("Init context...  0%")
-    context.user_data.model_handler = YOLO('/opt/nuclio/pa_model.pt')
+    down_load_function()
+    context.user_data.model_handler = YOLO('/opt/nuclio/models/dentistry_yolov11x-seg-all_4.42.pt')
     context.logger.info("Init context...100%")
-
+    
 def handler(context, event):
     context.logger.info("Run sst model")
     data = event.body
@@ -22,13 +21,3 @@ def handler(context, event):
     rt=result_dict['yolov8_contents']
     return context.Response(body=json.dumps(rt), headers={},
         content_type='application/json', status_code=200)
-
-
-# if __name__ == '__main__':
-#     model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
-#     image=cv2.imread('./tests/files/nomal-x-ray-0.8510638-270-740_0_2022011008.png')
-#     with open('./conf/dentistry_PA.yaml', 'r') as file:
-#         config=yaml.safe_load(file)
-#     test1=yolo_transform(image, model, return_type='cvat_mask', plot_config=None, tolerance=0.5)
-#     rt = transform(image, model)
-#     breakpoint()    

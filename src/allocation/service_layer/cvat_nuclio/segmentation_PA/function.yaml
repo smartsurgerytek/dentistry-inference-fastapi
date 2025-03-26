@@ -30,7 +30,6 @@ spec:
   build:
     image: dentistry-pa-segmentation-yolov11x
     baseImage: python:3.9
-
     directives:
       preCopy:
         - kind: ENV
@@ -42,15 +41,7 @@ spec:
         - kind: RUN
           value: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
         - kind: RUN
-          value: pip install -U "huggingface_hub[cli]" ultralytics scikit-image
-        - kind: RUN
-          value: git config --global credential.helper store && huggingface-cli login --token please write the token here --add-to-git-credential
-        - kind: RUN
-          value: huggingface-cli download smartsurgery/dentistry-models all_category/dentistry_yolov11x-seg-all_4.42.pt --local-dir /tmp
-        - kind: RUN
-          value: mkdir -p /opt/nuclio && mv /tmp/all_category/dentistry_yolov11x-seg-all_4.42.pt /opt/nuclio/pa_model.pt && rm /tmp/* -rf
-
-
+          value: pip install -U "huggingface_hub[cli]" ultralytics scikit-image          
   triggers:
     myHttpTrigger:
       maxWorkers: 1
