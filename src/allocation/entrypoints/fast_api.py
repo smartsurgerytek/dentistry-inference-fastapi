@@ -14,6 +14,8 @@ from src.allocation.domain.pa_dental_measure.schemas import PaMeasureDictRespons
 from src.allocation.domain.pa_dental_segmentation.schemas import PaSegmentationYoloV8Response, PaSegmentationCvatResponse, PaSegmentationRequest
 from src.allocation.domain.pano_caries_detection.schemas import PanoCariesDetectionRequest, PanoCariesDetectionDictResponse
 from src.allocation.domain.pano_caries_detection.main import create_pano_caries_detection_model
+from src.allocation.domain.pa_pano_classification.main import create_pa_pano_classification_model
+from src.allocation.domain.pa_pano_classification.schemas import PaPanoClassificationResponse
 from contextlib import asynccontextmanager
 from ultralytics import YOLO
 from src.allocation.adapters.utils import base64_to_bytes
@@ -34,6 +36,9 @@ async def lifespan(app: FastAPI):
 
     global pano_caries_detection_model_weight_path
     pano_caries_detection_model_weight_path='./models/dentistry_pano-caries-detection-resNetFpn_5.12.pth'
+
+    global pa_pano_classification_model
+    pa_pano_classification_model=create_pa_pano_classification_model('./models/pa_pano_classification.pth')
 
     yield  
     # Cleanup on shutdown
@@ -138,11 +143,18 @@ async def generate_pano_caries_detection_image_base64(
     return InferenceService.pano_caries_detection_image_base64(image, pano_caries_detection_model, pano_caries_detection_model_weight_path)
 
 @app.post("/pano_caries_detection_dict", response_model=PanoCariesDetectionDictResponse)
-async def generate_pano_caries_detection_image_base64(
+async def generate_pano_caries_detection_dict(
     request: PanoCariesDetectionRequest
 ) -> PanoCariesDetectionDictResponse:
     image=base64_to_bytes(request.image)
     return InferenceService.pano_caries_detection_dict(image, pano_caries_detection_model, pano_caries_detection_model_weight_path)
+
+@app.post("/pa_pano_classification_dict", response_model=PaPanoClassificationResponse)
+async def generate_pa_pano_classification(
+    request: PaSegmentationRequest
+) -> PaPanoClassificationResponse:
+    image=base64_to_bytes(request.image)
+    return InferenceService.pa_pano_classification_dict(image, pa_pano_classification_model)
 
 if __name__ == "__main__":
     uvicorn.run(app)

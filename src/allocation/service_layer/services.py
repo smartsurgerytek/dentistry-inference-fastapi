@@ -4,6 +4,8 @@ from src.allocation.domain.pa_dental_measure.main import *
 from src.allocation.domain.pa_dental_segmentation.main import *
 from src.allocation.domain.pano_caries_detection.main import *
 from src.allocation.domain.pano_caries_detection.schemas import *
+from src.allocation.domain.pa_pano_classification.main import *
+from src.allocation.domain.pa_pano_classification.schemas import *
 import numpy as np
 import cv2
 from ultralytics import YOLO
@@ -186,3 +188,16 @@ class InferenceService:
                 pano_caries_detection_dict=results_dict,  
                 message="Inference failed"
             )
+        
+    @staticmethod
+    def pa_pano_classification_dict(image: bytes, model) -> ImageResponse:
+        image_pil= Image.open(io.BytesIO(image)).convert('RGB')
+        predicted_class, scores = predict_image_pa_pano_classification(model, image_pil)  
+        return PaPanoClassificationResponse(
+            request_id=0,
+            predicted_class=predicted_class,
+            scores=scores,
+            message="Classification completed successfully"
+        )
+        #drop the mask cols in cvat_result_dict
+        #show_plot(output_image_array)

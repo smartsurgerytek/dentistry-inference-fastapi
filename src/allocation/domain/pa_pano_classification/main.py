@@ -26,15 +26,15 @@ class SimpleCNN(nn.Module):
         x = self.fc2(x)
         return x
     
-def load_model(model_path):
+def create_pa_pano_classification_model(model_path):
     model = SimpleCNN()
     model.load_state_dict(torch.load(model_path))
     return model
-def read_image(image_path):
+def read_pil_image(image_path):
     # 使用 cv2 加載圖片
     return Image.open(image_path).convert('RGB')
 
-def predict_image(model, image):
+def predict_image_pa_pano_classification(model, image):
     predicted_class_mapping={
         0: "periapical film",
         1: "panoramic x-ray",
@@ -57,9 +57,8 @@ def predict_image(model, image):
     
     with torch.no_grad():
         outputs = model(image)  # 獲取模型輸出
-        scores = torch.sigmoid(outputs)
         _, predicted = torch.max(outputs.data, 1)  # 獲取預測類別
-    
+        scores = torch.sigmoid(outputs)
     
     return predicted_class_mapping[predicted.item()], scores.squeeze().cpu().numpy()[predicted.item()]
 
@@ -67,12 +66,12 @@ if __name__ == '__main__':
 
 
 
-    model = load_model("./models/pa_pano_classification.pth")  # 載入最佳模型的權重
+    model = create_pa_pano_classification_model("./models/pa_pano_classification.pth")  # 載入最佳模型的權重
 
     # 測試單張圖片
     image_path = './tests/files/027107.jpg'  # 替換為你的圖片路徑
-    image = read_image(image_path)
-    predicted_class, scores = predict_image(model, image)
+    image = read_pil_image(image_path)
+    predicted_class, scores = predict_image_pa_pano_classification(model, image)
     
     print(f'Predicted class: {predicted_class}')
     print(f'Scores: {scores}')
