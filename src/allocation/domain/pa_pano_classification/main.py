@@ -61,7 +61,7 @@ def predict_image(model, image):
         _, predicted = torch.max(outputs.data, 1)  # 獲取預測類別
     
     
-    return predicted_class_mapping[predicted.item()], scores.squeeze().cpu().numpy()[0]
+    return predicted_class_mapping[predicted.item()], scores.squeeze().cpu().numpy()[predicted.item()]
 
 if __name__ == '__main__':
 
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     model = load_model("./models/pa_pano_classification.pth")  # 載入最佳模型的權重
 
     # 測試單張圖片
-    image_path = './tests/files/nomal-x-ray-0.8510638-270-740_0_2022011008.png'  # 替換為你的圖片路徑
+    image_path = './tests/files/027107.jpg'  # 替換為你的圖片路徑
     image = read_image(image_path)
     predicted_class, scores = predict_image(model, image)
     
