@@ -3,6 +3,10 @@ import shutil
 import os
 repo_id = "smartsurgery/dentistry-models"  # repo 名稱
 
+with open('./conf/hf_token.txt', 'r', encoding='utf-8') as file:
+    hf_token = file.read()
+    print(hf_token)
+
 os.makedirs('./models',exist_ok=True)
 save_map={
     "PA_dental_contour/dentistry_pa-contour_yolov11n-seg_24.46.pt":"./models/dentistry_pa-contour_yolov11n-seg_24.46.pt",
@@ -15,5 +19,5 @@ save_map={
 for filename, save_path in save_map.items():
     if os.path.exists(save_path):
         continue
-    file_path = hf_hub_download(repo_id=repo_id, filename=filename)
+    file_path = hf_hub_download(repo_id=repo_id, filename=filename, token=hf_token)
     shutil.copy(file_path, save_path)
