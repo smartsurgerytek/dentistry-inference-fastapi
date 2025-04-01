@@ -50,9 +50,10 @@ def get_yolov8_label(mask_binary,tolerance=0.5):
 def yolo_transform(image, model, return_type='dict', plot_config=None, tolerance=0.5):
     # if return_type == 'image_array' and plot_config is None:
     #     raise ValueError("Provide a config for segmentation colors when return_type is 'image")
-    if plot_config is None:
-        with open('./conf/mask_color_setting.yaml', 'r') as file:
-            plot_config = yaml.safe_load(file)
+    if plot_config is None and return_type=='image_array':
+        # with open('./conf/mask_color_setting.yaml', 'r') as file:
+        #     plot_config = yaml.safe_load(file)
+        raise ValueError("Provide a config for segmentation colors")
     # get the color list from config
     if plot_config is not None:
         # color_list=[plot_config['color_dict']]
@@ -194,7 +195,7 @@ if __name__=='__main__':
     image=cv2.imread('./tests/files/nomal-x-ray-0.8510638-270-740_0_2022011008.png')
     with open('./conf/dentistry_PA.yaml', 'r') as file:
         config=yaml.safe_load(file)
-    test1=yolo_transform(image, return_type='image', plot_config=config)
+    test1=yolo_transform(image, return_type='image_array', plot_config=config)
     test2=yolo_transform(image, return_type='cvat')
     test3=yolo_transform(image, return_type='dict')
 

@@ -17,6 +17,8 @@ pa_measurement_contour_model=YOLO('./models/dentistryContour_yolov11n-seg_4.46.p
 pano_caries_detection_model=create_pano_caries_detection_model(num_classes=1)
 pano_caries_detection_wieght_path='./models/dentistry_pano-caries-detection-resNetFpn_5.12.pth'
 #test_function()
+with open('./conf/pa_segmentation_mask_color_setting.yaml', 'r') as file:
+    pa_segmentation_plot_config=yaml.safe_load(file)
 def opencv2pil(opencv_image):
     return Image.fromarray(cv2.cvtColor(opencv_image, cv2.COLOR_BGR2RGB))
 def create_inference(fn_name='pa_segmentation', label="Input Image", test_image_path=None):
@@ -31,7 +33,7 @@ def create_inference(fn_name='pa_segmentation', label="Input Image", test_image_
             lambda img: yolo_transform(img, 
                                        model=pa_segmentation_model,
                                        return_type='image_array',
-                                       plot_config=None,
+                                       plot_config=pa_segmentation_plot_config,
                                        tolerance=0.5)[0],
             inputs=image_input,
             outputs=image_output
