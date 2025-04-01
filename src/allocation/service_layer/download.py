@@ -10,6 +10,7 @@ save_map={
     "PA_segmentation/dentistry_yolov11x-seg-all_4.42.pt":"./models/dentistry_yolov11x-seg-all_4.42.pt",
     "PANO_caries_detection/dentistry_pano-caries-detection-resNetFpn_5.12.pth":"models/dentistry_pano-caries-detection-resNetFpn_5.12.pth",
     "PA_PANO_classification/pa_pano_classification.pth":"models/pa_pano_classification.pth",
+    "PANO_fdi_segmentation/pano_fdi_segmentation_25.12.pt":'models/pano_fdi_segmentation_25.12.pt'
     }
 
 for filename, save_path in save_map.items():
