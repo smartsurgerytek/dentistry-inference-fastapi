@@ -168,12 +168,35 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, tolerance
                 
                 
     if return_type=='image_array':
-        label_image=get_label_text_img(result.boxes.cls.cpu().numpy().astype(int), plot_image.shape[1], color_dict, class_names)
+        def draw_legend(color_dict, present_label_indexes, legend_width=200):
+            
+            """根據顏色字典創建圖例圖片，動態調整高度"""
+            # 計算圖例的高度
+            legend_height = 30 * len(color_dict)  # 每個標籤30像素
+            legend = np.zeros((legend_height, legend_width, 3), dtype=np.uint8)
+            
+            # 繪製圖例
+            j=0
+            for i, (label, color) in enumerate(color_dict.items()):
+                if i in present_label_indexes:
+                    cv2.rectangle(legend, (10, j * 30), (50, (j + 1) * 30), color, -1)
+                    cv2.putText(legend, label, (60, (j + 1) * 30 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                    j=j+1
 
-        plot_image=np.concatenate((plot_image, label_image), axis=0)
+            return legend
 
-        plot_image = cv2.resize(plot_image, (image.shape[1], image.shape[0]))
-        return plot_image, error_message
+        present_label_indexes=result.boxes.cls.cpu().numpy().astype(int)
+        label_width=200
+        label_image=draw_legend(color_dict, present_label_indexes, label_width)
+        label_image_resized = cv2.resize(label_image, (int(label_width*plot_image.shape[0]/label_image.shape[0]), plot_image.shape[0]))
+        concat_image=np.concatenate((plot_image, label_image_resized), axis=1)
+
+        # label_image=get_label_text_img(result.boxes.cls.cpu().numpy().astype(int), plot_image.shape[1], color_dict, class_names)
+
+        #plot_image=np.concatenate((plot_image, label_image), axis=0)
+
+        # plot_image = cv2.resize(plot_image, (image.shape[1], image.shape[0]))
+        return concat_image, error_message
     
     else:
         result_dict={
@@ -191,12 +214,12 @@ def show_plot(image):
 
 
 if __name__=='__main__':
-    #model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
+    model=YOLO('./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
     image=cv2.imread('./tests/files/nomal-x-ray-0.8510638-270-740_0_2022011008.png')
-    with open('./conf/dentistry_PA.yaml', 'r') as file:
+    with open('./conf/pa_segmentation_mask_color_setting.yaml', 'r') as file:
         config=yaml.safe_load(file)
-    test1=yolo_transform(image, return_type='image_array', plot_config=config)
-    test2=yolo_transform(image, return_type='cvat')
-    test3=yolo_transform(image, return_type='dict')
+    test1, messages=yolo_transform(image, model, return_type='image_array', plot_config=config, tolerance=0.5)
+    # test2=yolo_transform(image, return_type='cvat')
+    # test3=yolo_transform(image, return_type='dict')
 
-    #show_plot(result)
+    show_plot(test1)
