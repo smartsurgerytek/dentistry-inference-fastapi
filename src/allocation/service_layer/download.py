@@ -9,7 +9,7 @@ save_map={
     "PA_segmentation/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt":"./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt",
     "PANO_caries_detection/dentistry_pano-CariesDetection_resNetFpn_25.12.pth":"models/dentistry_pano-CariesDetection_resNetFpn_25.12.pth",
     "PA_PANO_classification/dentistry_pa-pano-classification_fpcl_25.10.pth":"models/dentistry_pa-pano-classification_fpcl_25.10.pth",
-    "PANO_fdi_segmentation/dentistry_pano-fdi_segmentation_yolo11x-seg_25.12.pt":'models/dentistry_pano-fdi_segmentation_yolo11x-seg_25.12.pt'
+    "PANO_fdi_segmentation/dentistry_pano-fdi-segmentation_yolo11x-seg_25.12.pt":'models/dentistry_pano-fdi-segmentation_yolo11x-seg_25.12.pt'
     }
 
 for filename, save_path in save_map.items():
