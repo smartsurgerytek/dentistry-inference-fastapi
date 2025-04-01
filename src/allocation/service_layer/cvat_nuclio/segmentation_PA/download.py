@@ -1,23 +1,25 @@
-import io, base64, cv2, json
-import numpy as np
-from ultralytics import YOLO
+from huggingface_hub import hf_hub_download
+import shutil
+import os
 
-from src.allocation.domain.pa_dental_segmentation.main import *
-from src.allocation.service_layer.cvat_nuclio.segmentation_PA.download import down_load_function
+with open('./conf/hf_token.txt', 'r', encoding='utf-8') as file:
+    hf_token = file.read()
+    print(hf_token)
 
-def init_context(context):
-    context.logger.info("Init context...  0%")
-    down_load_function()
-    context.user_data.model_handler = YOLO('/opt/nuclio/models/dentistry_yolov11x-seg-all_4.42.pt')
-    context.logger.info("Init context...100%")
-    
-def handler(context, event):
-    context.logger.info("Run sst model")
-    data = event.body
-    image_bytes = io.BytesIO(base64.b64decode(data["image"]))
-    nparr  = np.frombuffer(image_bytes.getvalue(),  np.uint8)
-    image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    result_dict=yolo_transform(image, context.user_data.model_handler, return_type='cvat_mask', plot_config=None, tolerance=0.5)
-    rt=result_dict['yolov8_contents']
-    return context.Response(body=json.dumps(rt), headers={},
-        content_type='application/json', status_code=200)
+def donw_load_function():
+    repo_id = "smartsurgery/dentistry-models"  # repo 名稱
+
+    os.makedirs('./models',exist_ok=True)
+    save_map={
+        "PA_dental_contour/dentistry_pa-contour_yolov11n-seg_24.46.pt":"/opt/nuclio/models/dentistry_pa-contour_yolov11n-seg_24.46.pt",
+        "PA_segmentation/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt":"/opt/nuclio/models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt",
+        "PANO_caries_detection/dentistry_pano-CariesDetection_resNetFpn_25.12.pth":"/opt/nuclio/models/dentistry_pano-CariesDetection_resNetFpn_25.12.pth",
+        "PA_PANO_classification/dentistry_pa-pano-classification_fpcl_25.10.pth":"/opt/nuclio/models/dentistry_pa-pano-classification_fpcl_25.10.pth",
+        "PANO_fdi_segmentation/dentistry_pano-fdi-segmentation_yolo11x-seg_25.12.pt":'/opt/nuclio/models/dentistry_pano-fdi-segmentation_yolo11x-seg_25.12.pt'
+        }
+
+    for filename, save_path in save_map.items():
+        if os.path.exists(save_path):
+            continue
+        file_path = hf_hub_download(repo_id=repo_id, filename=filename, token=hf_token)
+        shutil.copy(file_path, save_path)
