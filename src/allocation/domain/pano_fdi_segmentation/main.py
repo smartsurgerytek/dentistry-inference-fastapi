@@ -2,8 +2,6 @@ from ultralytics import YOLO
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-from skimage.measure import label, regionprops, find_contours
-from skimage.measure import approximate_polygon
 import os 
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..')))
@@ -13,7 +11,7 @@ import yaml
 
 
 
-def fdi_segmentation(image, model, plot_config=None, return_type='dict'):
+def pano_fdi_segmentation(image, model, plot_config=None, return_type='cvat'):
     if plot_config is None:
         with open('./conf/pano_fdi_segmentation_mask_color_setting.yaml', 'r') as file:
             plot_config = yaml.safe_load(file)
@@ -28,5 +26,7 @@ def fdi_segmentation(image, model, plot_config=None, return_type='dict'):
 if __name__=='__main__':
     model=YOLO('./models/dentistry_pano-fdi-segmentation_yolo11x-seg_25.12.pt')
     image=cv2.imread('./tests/files/027107.jpg')
-    image, messages =fdi_segmentation(image, model, return_type='image_array')
+    image, messages =pano_fdi_segmentation(image, model, return_type='image_array')
     show_plot(image)
+    result_dict=pano_fdi_segmentation(image, model, plot_config=None, return_type='cvat')
+    print(result_dict)
