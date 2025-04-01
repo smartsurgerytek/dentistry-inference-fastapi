@@ -7,3 +7,4 @@ class PaPanoClassificationResponse(BaseModel):
     predicted_class: str  # 預測的類別
     scores: float  # 多個物體檢測結果
     message: str
+

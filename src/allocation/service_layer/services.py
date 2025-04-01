@@ -6,6 +6,8 @@ from src.allocation.domain.pano_caries_detection.main import *
 from src.allocation.domain.pano_caries_detection.schemas import *
 from src.allocation.domain.pa_pano_classification.main import *
 from src.allocation.domain.pa_pano_classification.schemas import *
+from src.allocation.domain.pano_fdi_segmentation.main import *
+from src.allocation.domain.pano_fdi_segmentation.schemas import *
 import numpy as np
 import cv2
 from ultralytics import YOLO
@@ -199,5 +201,57 @@ class InferenceService:
             scores=scores,
             message="Classification completed successfully"
         )
-        #drop the mask cols in cvat_result_dict
-        #show_plot(output_image_array)
+    
+    @staticmethod
+    def pano_fdi_segmentation_image_base64(image: bytes, model) -> ImageResponse:
+        image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)
+        output_image_array, error_message=pano_fdi_segmentation(image_np, model, return_type='image_array')
+        output_image_base64= numpy_to_base64(output_image_array, image_format='PNG')
+
+        if error_message:
+            return ImageResponse(
+            request_id=0,
+            image=output_image_base64,
+            content_type='image/png',
+            messages=error_message
+        )
+
+        return ImageResponse(
+            request_id=0,
+            image=output_image_base64,
+            content_type='image/png',
+            messages="Inference completed successfully"
+        )        
+    @staticmethod
+    def pano_fdi_segmentation_cvat(image: bytes, model:YOLO) -> PanoSegmentationCvatResponse:
+        image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
+        cvat_result_dict=pano_fdi_segmentation(image_np, model, return_type='cvat')
+
+        if not cvat_result_dict.get('yolov8_contents'):
+            return PanoSegmentationCvatResponse(
+                request_id=0,
+                yolo_results=cvat_result_dict,
+                message="Nothing detected for the image"
+            )
+        return PanoSegmentationCvatResponse(
+            request_id=0,
+            yolo_results=cvat_result_dict,
+            message="Inference completed successfully"
+        )
+    
+    @staticmethod
+    def pano_fdi_segmentation_yolov8(image: bytes, model:YOLO) -> PanoSegmentationYoloV8Response:
+        image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
+        yolov8_result_dict=pano_fdi_segmentation(image_np, model, return_type='yolov8')
+
+        if not yolov8_result_dict.get('yolov8_contents'):
+            return PanoSegmentationYoloV8Response(
+                request_id=0,
+                yolo_results=yolov8_result_dict,
+                message="Nothing detected for the image"
+            )
+        return PanoSegmentationYoloV8Response(
+            request_id=0,
+            yolo_results=yolov8_result_dict,
+            message="Inference completed successfully"
+        )

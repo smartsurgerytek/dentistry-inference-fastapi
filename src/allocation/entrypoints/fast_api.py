@@ -16,6 +16,7 @@ from src.allocation.domain.pano_caries_detection.schemas import PanoCariesDetect
 from src.allocation.domain.pano_caries_detection.main import create_pano_caries_detection_model
 from src.allocation.domain.pa_pano_classification.main import create_pa_pano_classification_model
 from src.allocation.domain.pa_pano_classification.schemas import PaPanoClassificationResponse
+from src.allocation.domain.pano_fdi_segmentation.schemas import PanoSegmentationYoloV8Response, PanoSegmentationCvatResponse, PanoSegmentationRequest
 from contextlib import asynccontextmanager
 from ultralytics import YOLO
 from src.allocation.adapters.utils import base64_to_bytes
@@ -26,20 +27,22 @@ import yaml
 async def lifespan(app: FastAPI):
     # Load the ML model
     global pa_component_model
-    pa_component_model = YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
+    pa_component_model = YOLO('./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
     
     global pa_contour_model
-    pa_contour_model = YOLO('./models/dentistryContour_yolov11n-seg_4.46.pt')
+    pa_contour_model = YOLO('./models/dentistry_pa-contour_yolov11n-seg_24.46.pt')
 
     global pano_caries_detection_model
     pano_caries_detection_model= create_pano_caries_detection_model(1)
 
     global pano_caries_detection_model_weight_path
-    pano_caries_detection_model_weight_path='./models/dentistry_pano-caries-detection-resNetFpn_5.12.pth'
+    pano_caries_detection_model_weight_path='./models/dentistry_pano-CariesDetection_resNetFpn_25.12.pth'
 
     global pa_pano_classification_model
-    pa_pano_classification_model=create_pa_pano_classification_model('./models/pa_pano_classification.pth')
+    pa_pano_classification_model=create_pa_pano_classification_model('./models/dentistry_pa-pano-classification_cnn_25.10.pth')
 
+    global pano_fdi_segmentation_model
+    pano_fdi_segmentation_model= YOLO('./models/dentistry_pano-fdi-segmentation_yolo11x-seg_25.12.pt')
     yield  
     # Cleanup on shutdown
     pa_component_model = None
@@ -155,6 +158,29 @@ async def generate_pa_pano_classification(
 ) -> PaPanoClassificationResponse:
     image=base64_to_bytes(request.image)
     return InferenceService.pa_pano_classification_dict(image, pa_pano_classification_model)
+
+@app.post("/pano_fdi_segmentation_yolov8", response_model=PanoSegmentationYoloV8Response)
+async def generate_fdi_panoramic_xray_segmentations_yolov8(
+    #image: str,
+    request: PanoSegmentationRequest,
+) -> PanoSegmentationYoloV8Response:
+    image=base64_to_bytes(request.image)
+    return InferenceService.pano_fdi_segmentation_yolov8(image, pano_fdi_segmentation_model)
+
+@app.post("/pano_fdi_segmentation_cvat", response_model=PanoSegmentationCvatResponse)
+async def generate_fdi_panoramic_xray_segmentations_cvat(
+    #image: str,
+    request: PanoSegmentationRequest
+) -> PanoSegmentationCvatResponse:
+    image=base64_to_bytes(request.image)
+    return InferenceService.pa_segmentation_cvat(image, pano_fdi_segmentation_model)
+
+@app.post("/pano_fdi_segmentation_image", response_model=ImageResponse)
+async def generate_fdi_panoramic_xray_segmentations_image_base64(
+    request: PanoSegmentationRequest
+) -> PanoSegmentationCvatResponse:
+    image=base64_to_bytes(request.image)
+    return InferenceService.pano_fdi_segmentation_image_base64(image, pano_fdi_segmentation_model)
 
 if __name__ == "__main__":
     uvicorn.run(app)
