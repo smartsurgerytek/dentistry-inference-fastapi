@@ -183,4 +183,5 @@ async def generate_fdi_panoramic_xray_segmentations_image_base64(
     return InferenceService.pano_fdi_segmentation_image_base64(image, pano_fdi_segmentation_model)
 
 if __name__ == "__main__":
-    uvicorn.run(app)
+    #uvicorn.run(app)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
