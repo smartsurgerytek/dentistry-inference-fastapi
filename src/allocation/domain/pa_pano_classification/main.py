@@ -28,7 +28,10 @@ class SimpleCNN(nn.Module):
     
 def create_pa_pano_classification_model(model_path):
     model = SimpleCNN()
-    model.load_state_dict(torch.load(model_path))
+    if torch.cuda.is_available():  # 如果有可用的GPU
+        model.load_state_dict(torch.load(model_path))
+    else:
+        model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
     return model
 def read_pil_image(image_path):
     # 使用 cv2 加載圖片
