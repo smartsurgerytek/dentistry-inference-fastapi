@@ -16,7 +16,7 @@ class DentalMeasurements(BaseModel):
     CAL: float = Field(..., ge=0, description="CAL must be a non-negative float")
     TRL: float = Field(..., ge=0, description="TRL must be a non-negative float")
     ABLD: float = Field(..., ge=0, description="ABLD must be a non-negative float")
-    stage: Union[Literal[0, 1, 2, 3, "I", "II", "III"]]
+    stage: Union[Literal[0, 1 , 2 , 3 ,'0', '1', '2', '3', "I", "II", "III"]]
 
 class Measurements(BaseModel):
     teeth_id: int
