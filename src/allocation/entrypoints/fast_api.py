@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
-from fastapi import FastAPI, Request, File
+from fastapi import FastAPI, Request, File, APIRouter
 from pydantic import ValidationError
 from fastapi.responses import JSONResponse
 from typing import Annotated
@@ -58,7 +58,7 @@ app = FastAPI(
 )
 FastAPISwagger2(app)
 
-
+v1_router = APIRouter()
 @app.exception_handler(ValidationError)
 async def validation_exception_handler(request: Request, exc: ValidationError):
     return JSONResponse(
@@ -78,9 +78,9 @@ async def validation_exception_handler(request: Request, exc: ValidationError):
 
 @app.get("/", response_model=str)
 async def read_root() -> str:
-    return "Welcome to Smart Surgery Dentistry APIs!"
+    return "Welcome to Smart Surgery Dentistry APIs! "
 
-@app.post("/pa_measure_dict", response_model=PaMeasureDictResponse)
+@v1_router.post("/pa_measure_dict", response_model=PaMeasureDictResponse)
 async def generate_periapical_film_measure_dict(
     # image: str,
     # #scale: Any, #: expected Annotated[str, Form()] or array
@@ -92,7 +92,7 @@ async def generate_periapical_film_measure_dict(
     image=base64_to_bytes(request.image)
     return InferenceService.pa_measure_dict(image, pa_component_model, pa_contour_model, request.scale_x, request.scale_y)
 
-@app.post("/pa_measure_cvat", response_model=PaMeasureCvatResponse)
+@v1_router.post("/pa_measure_cvat", response_model=PaMeasureCvatResponse)
 async def generate_periapical_film_measure_dict(
     # image: str,
     # #scale: Any, #: expected Annotated[str, Form()] or array
@@ -103,7 +103,7 @@ async def generate_periapical_film_measure_dict(
     #scale_obj=ScaleValidator(scale=scale)
     image=base64_to_bytes(request.image)
     return InferenceService.pa_measure_cvat(image, pa_component_model, pa_contour_model, request.scale_x, request.scale_y)
-@app.post("/pa_measure_image", response_model=ImageResponse)#, response_model=DentalMeasureDictResponse)
+@v1_router.post("/pa_measure_image", response_model=ImageResponse)#, response_model=DentalMeasureDictResponse)
 async def generate_periapical_film_measure_image_base64(
     # image: str,
     # #scale: Any, #: expected Annotated[str, Form()] or array
@@ -115,7 +115,7 @@ async def generate_periapical_film_measure_image_base64(
     image=base64_to_bytes(request.image)
     return InferenceService.pa_measure_image_base64(image, pa_component_model, pa_contour_model, request.scale_x, request.scale_y)
 
-@app.post("/pa_segmentation_yolov8", response_model=PaSegmentationYoloV8Response)
+@v1_router.post("/pa_segmentation_yolov8", response_model=PaSegmentationYoloV8Response)
 async def generate_periapical_film_segmentations_yolov8(
     #image: str,
     request: PaSegmentationRequest,
@@ -123,7 +123,7 @@ async def generate_periapical_film_segmentations_yolov8(
     image=base64_to_bytes(request.image)
     return InferenceService.pa_segmentation_yolov8(image, pa_component_model)
 
-@app.post("/pa_segmentation_cvat", response_model=PaSegmentationCvatResponse)
+@v1_router.post("/pa_segmentation_cvat", response_model=PaSegmentationCvatResponse)
 async def generate_periapical_film_segmentations_cvat(
     #image: str,
     request: PaSegmentationRequest
@@ -131,35 +131,35 @@ async def generate_periapical_film_segmentations_cvat(
     image=base64_to_bytes(request.image)
     return InferenceService.pa_segmentation_cvat(image, pa_component_model)
 
-@app.post("/pa_segmentation_image", response_model=ImageResponse)
+@v1_router.post("/pa_segmentation_image", response_model=ImageResponse)
 async def generate_periapical_film_segmentations_image_base64(
     request: PaSegmentationRequest
 ) -> PaSegmentationCvatResponse:
     image=base64_to_bytes(request.image)
     return InferenceService.pa_segmentation_image_base64(image, pa_component_model)
 
-@app.post("/pano_caries_detection_image", response_model=ImageResponse)
+@v1_router.post("/pano_caries_detection_image", response_model=ImageResponse)
 async def generate_pano_caries_detection_image_base64(
     request: PanoCariesDetectionRequest
 ) -> ImageResponse:
     image=base64_to_bytes(request.image)
     return InferenceService.pano_caries_detection_image_base64(image, pano_caries_detection_model, pano_caries_detection_model_weight_path)
 
-@app.post("/pano_caries_detection_dict", response_model=PanoCariesDetectionDictResponse)
+@v1_router.post("/pano_caries_detection_dict", response_model=PanoCariesDetectionDictResponse)
 async def generate_pano_caries_detection_dict(
     request: PanoCariesDetectionRequest
 ) -> PanoCariesDetectionDictResponse:
     image=base64_to_bytes(request.image)
     return InferenceService.pano_caries_detection_dict(image, pano_caries_detection_model, pano_caries_detection_model_weight_path)
 
-@app.post("/pa_pano_classification_dict", response_model=PaPanoClassificationResponse)
+@v1_router.post("/pa_pano_classification_dict", response_model=PaPanoClassificationResponse)
 async def generate_pa_pano_classification(
     request: PaSegmentationRequest
 ) -> PaPanoClassificationResponse:
     image=base64_to_bytes(request.image)
     return InferenceService.pa_pano_classification_dict(image, pa_pano_classification_model)
 
-@app.post("/pano_fdi_segmentation_yolov8", response_model=PanoSegmentationYoloV8Response)
+@v1_router.post("/pano_fdi_segmentation_yolov8", response_model=PanoSegmentationYoloV8Response)
 async def generate_fdi_panoramic_xray_segmentations_yolov8(
     #image: str,
     request: PanoSegmentationRequest,
@@ -167,7 +167,7 @@ async def generate_fdi_panoramic_xray_segmentations_yolov8(
     image=base64_to_bytes(request.image)
     return InferenceService.pano_fdi_segmentation_yolov8(image, pano_fdi_segmentation_model)
 
-@app.post("/pano_fdi_segmentation_cvat", response_model=PanoSegmentationCvatResponse)
+@v1_router.post("/pano_fdi_segmentation_cvat", response_model=PanoSegmentationCvatResponse)
 async def generate_fdi_panoramic_xray_segmentations_cvat(
     #image: str,
     request: PanoSegmentationRequest
@@ -175,13 +175,15 @@ async def generate_fdi_panoramic_xray_segmentations_cvat(
     image=base64_to_bytes(request.image)
     return InferenceService.pa_segmentation_cvat(image, pano_fdi_segmentation_model)
 
-@app.post("/pano_fdi_segmentation_image", response_model=ImageResponse)
+@v1_router.post("/pano_fdi_segmentation_image", response_model=ImageResponse)
 async def generate_fdi_panoramic_xray_segmentations_image_base64(
     request: PanoSegmentationRequest
 ) -> PanoSegmentationCvatResponse:
     image=base64_to_bytes(request.image)
     return InferenceService.pano_fdi_segmentation_image_base64(image, pano_fdi_segmentation_model)
 
+app.include_router(v1_router, prefix="/v1")
+
 if __name__ == "__main__":
-    #uvicorn.run(app)
-    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    uvicorn.run(app)
+    #uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
