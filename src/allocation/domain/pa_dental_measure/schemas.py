@@ -16,7 +16,7 @@ class DentalMeasurements(BaseModel):
     CAL: float = Field(..., ge=0, description="CAL must be a non-negative float")
     TRL: float = Field(..., ge=0, description="TRL must be a non-negative float")
     ABLD: float = Field(..., ge=0, description="ABLD must be a non-negative float")
-    stage: Union[Literal[0, 1 , 2 , 3 ,'0', '1', '2', '3', "I", "II", "III"]]
+    stage: Union[Literal[0, 1, 2, 3, "I", "II", "III"]]
 
 class Measurements(BaseModel):
     teeth_id: int
@@ -58,10 +58,24 @@ class ImageResponse(BaseModel):
     image: str# Base64 encoded string
     messages: str
 
+
 class PaMeasureRequest(BaseModel):
     image: str = Field(..., min_length=1, max_length=10_000_000)  # 增加最大長度限制
     scale_x: float = Field(default=1.0)
     scale_y: float = Field(default=1.0)
-
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "image": ",/9j/4AAQSkZJRgABAQEAYA......",
+                "scale_x": 0.0234375,
+                "scale_y": 0.0416666,
+            }
+    }
 class PaSegmentationRequest(BaseModel):
     image: str = Field(..., min_length=1, max_length=10_000_000)  # 增加最大長度限制
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "image": ",/9j/4AAQSkZJRgABAQEAYA......",
+            }
+    }

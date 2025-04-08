@@ -37,3 +37,9 @@ class PaSegmentationCvatResponse(BaseModel):
 
 class PaSegmentationRequest(BaseModel):
     image: str = Field(..., min_length=1, max_length=10_000_000)  # 增加最大長度限制
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "image": ",/9j/4AAQSkZJRgABAQEAYA......",
+            }
+    }
