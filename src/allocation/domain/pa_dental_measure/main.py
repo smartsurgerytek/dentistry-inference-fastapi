@@ -1,3 +1,6 @@
+import os 
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..')))
 import cv2
 from ultralytics import YOLO
 import numpy as np
@@ -6,17 +9,17 @@ import yaml
 # components_model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
 # contour_model=YOLO('./models/dentistryContour_yolov11n-seg_4.46.pt')
 
-def extract_features(masks_dict, original_img, config=None):
+def perform_morphology(masks_dict, original_img, config=None):
 
-    """從遮罩中提取特徵點與區域資訊"""
+    """Extract feature points and region information from the mask"""
     overlay = original_img.copy()
     line_image = original_img.copy()
 
     # 清理各個遮罩
     if masks_dict.get('dental_crown') is not None:
-        masks_dict['dental_crown'] = clean_mask(masks_dict['dental_crown'], kernel_x=DENTAL_CROWN_KERNAL_X, kernel_y=DENTAL_CROWN_KERNAL_Y , iterations=DENTAL_CROWN_ITERATION)
+        masks_dict['dental_crown'] = opening_mask(masks_dict['dental_crown'], kernel_x=DENTAL_CROWN_KERNAL_X, kernel_y=DENTAL_CROWN_KERNAL_Y , iterations=DENTAL_CROWN_ITERATION)
     
-    masks_dict['dentin'] = clean_mask(masks_dict['dentin'], kernel_x=DENTI_KERNAL_X, kernel_y=DENTI_KERNAL_Y, iterations=DENTI_ITERATION)
+    masks_dict['dentin'] = opening_mask(masks_dict['dentin'], kernel_x=DENTI_KERNAL_X, kernel_y=DENTI_KERNAL_Y, iterations=DENTI_ITERATION)
 
     gum_kernel = np.ones((2*GUM_KERNAL_X+1, 2*GUM_KERNAL_Y+1), np.uint8)
     masks_dict['gum'] = cv2.dilate(masks_dict['gum'], gum_kernel, iterations=GUM_ITERATION)
@@ -30,7 +33,7 @@ def extract_features(masks_dict, original_img, config=None):
         'dental_crown': (163, 118, 158),
         'dentin':(117, 122, 152),
         'gum': (0, 177, 177),
-        'crown': (255, 0, 128),
+        'artificial_crown': (255, 0, 128),
     }
     for key in key_color_mapping.keys():
         if masks_dict.get(key) is not None:
@@ -88,7 +91,7 @@ def locate_points(image, component_mask, binary_images, idx, overlay, config=Non
     # if binary_images.get('crown') is not None:
     #     binary_images["dental_crown"]=cv2.bitwise_or(binary_images["dental_crown"], binary_images["crown"])
 
-    enamel_left_x, enamel_left_y, enamel_right_x, enamel_right_y = locate_points_with_dental_crown(image, binary_images.get("dental_crown"), dilated_mask, mid_x, mid_y, overlay, binary_images.get('crown'), config)
+    enamel_left_x, enamel_left_y, enamel_right_x, enamel_right_y = locate_points_with_dental_crown(image, binary_images.get("dental_crown"), dilated_mask, mid_x, mid_y, overlay, binary_images.get('artificial_crown'), config)
 
     ########### 處理與 gum 之交點 (Alveolar_bone的頂端) ########### 
     gum_left_x, gum_left_y, gum_right_x, gum_right_y = locate_points_with_gum(binary_images["gum"], dilated_mask, mid_x, mid_y, overlay, config)
@@ -135,10 +138,8 @@ def get_mask_dict_from_model(model, image, method='semantic', mask_threshold=0.5
     results=model.predict(image, verbose=False)
     result=results[0]
 
-    detections=[]
-    # 獲取類別名稱
+    # get class name
     class_names = result.names
-    class_name_list=[]         
     boxes = result.boxes  # Boxes object for bbox outputs
     masks = result.masks  # Masks object for segmentation masks outputs
 
@@ -149,7 +150,6 @@ def get_mask_dict_from_model(model, image, method='semantic', mask_threshold=0.5
     box_x_list=[]
     for mask, box in zip(masks.data, boxes):
         class_id = int(box.cls)# Get class ID and confidence
-        #confidence = float(box.conf)=
         class_name = class_names[class_id] # Get class name
         mask_np = mask.cpu().numpy() # Convert mask to numpy array and resize to match original image
         mask_np = cv2.resize(mask_np, (image.shape[1], image.shape[0]))
@@ -159,23 +159,15 @@ def get_mask_dict_from_model(model, image, method='semantic', mask_threshold=0.5
             continue
 
         if method=='semantic':
-            if class_name not in masks_dict.keys():
-                masks_dict[class_name]=mask_binary
-            else:
-                masks_dict[class_name]=cv2.bitwise_or(masks_dict[class_name], mask_binary) #find the union of masks
+            masks_dict[class_name] = cv2.bitwise_or(masks_dict.get(class_name, 0), mask_binary)
         else:
-            if class_name not in masks_dict.keys():
-                masks_dict[class_name]=[mask_binary]
-            else:
-                masks_dict[class_name].append(mask_binary)
-            if box.xyxy.type()=='torch.cuda.FloatTensor':
-                box_x_list.append(int(box.xyxy[0][0].cpu().numpy()))
-            else:
-                box_x_list.append(int(box.xyxy[0][0].numpy()))
-    if box_x_list:
+            masks_dict.setdefault(class_name, []).append(mask_binary)
+            box_x_list.append(int(box.xyxy[0][0].detach().cpu().numpy()))
+            
+    # dental_contour_model: this code is used for resorting mask order so that it is easy to oberserve the performance
+    if box_x_list and masks_dict.get('dental_contour') is not None:
         sorted_indices = sorted(range(len(box_x_list)), key=lambda i: box_x_list[i])
-        # masks_dict['dental_contour'] = [masks_dict['dental_contour'][i] for i in sorted_indices] # alan mod
-
+        masks_dict['dental_contour'] = [masks_dict['dental_contour'][i] for i in sorted_indices] # alan mod
     return masks_dict
 
 def generate_error_image(text):
@@ -201,598 +193,41 @@ def generate_error_image(text):
     cv2.putText(image, text, (text_x, text_y), font, font_scale, color, thickness)
     return image
 
-# def split_erase():
-from sklearn.cluster import KMeans
-from sklearn.cluster import DBSCAN
-from scipy.optimize import curve_fit
 
-
-Side_Shift = 3
-Side_Contou_THD = 100
-Match_Shift = 10
-Match_Shift_Sec = 20
-Match_Dist = 50
-
-Window_Group_Max = 160
-Window_Group = 100
-Window_Margin = 10
-Slide_Group = 4
-
-OP_HWD = 30
-
-DBSCAN_EPS = 15
-DBSCAN_MIN_SAMP = 5
-
-PIT_RADIUS = 5
-
-DIVIDE_LINE_EXT = 8
-DIVIDE_LINE_SLOPE_THD = 0.75
-
-def get_end_point(mask_sobj_in, flag_dir = 0):
-    
-    y_arr, x_arr = np.nonzero(mask_sobj_in)
-    
-    sorted_indx = np.argsort(y_arr)
-    
-    if(flag_dir == 0):#Top
-        return x_arr[sorted_indx[-1]], y_arr[sorted_indx[-1]]
-        
-    else:#Bottom
-        return x_arr[sorted_indx[0]], y_arr[sorted_indx[0]]
-
-def Refine_CoordBoundary(x_in, hf_wd, min_x, max_x):
-    
-    x_st = x_in - hf_wd
-    if(x_st < min_x):
-        x_st = min_x
-    
-    x_ed = x_in + hf_wd
-    if(x_ed > max_x):
-        x_ed = max_x
-    
-    return round(x_st), round(x_ed)
-    
-    
-def extend_line(p1, p2, length=DIVIDE_LINE_EXT):
-    # 計算方向向量
-    direction = np.array(p2) - np.array(p1)
-    
-    # 計算單位方向向量
-    unit_direction = direction / np.linalg.norm(direction)
-
-    # 前延伸點 (p1 向反方向延伸)
-    new_p1 = np.array(p1) - length * unit_direction
-
-    # 後延伸點 (p2 向同方向延伸)
-    new_p2 = np.array(p2) + length * unit_direction
-
-    return tuple(np.int32(np.round(new_p1))), tuple(np.int32(np.round(new_p2)))
-
-    
-def mask_split_in_win(st, win_group, mask_inter_in, mask_divide_in, rdentin_bin):
-    
-    # print('st = {}, win_group = {}'.format(st, win_group))
-    divide_state = 0 # 0 is no split ;  1 is split done
-    
-    # Copy and clear outoff rect.
-    mask_divide = np.copy(mask_divide_in)
-    mask_tmp = np.copy(mask_inter_in)
-    mask_tmp[:, 0:st] = 0
-    mask_tmp[:, st + win_group:] = 0
-        
-    coordinates = np.argwhere(mask_tmp == 255)
-
-    # 使用 DBSCAN 進行聚類
-    dbscan = DBSCAN(eps=DBSCAN_EPS, min_samples=DBSCAN_MIN_SAMP)
-    dbscan_labels = dbscan.fit_predict(coordinates)
-
-    # 確保有至少兩個有效簇
-    unique_labels = set(dbscan_labels) - {-1}  # 排除噪聲 (-1 為噪聲標籤)
-    if len(unique_labels) < 2:
-        # print("DBSCAN did not find > 1 Group")
-        ttt = 1
-    else:
-        # 計算每個簇的中心點
-        cluster_centers = []
-        for label in unique_labels:
-            if(label != -1):
-                cluster_points = coordinates[dbscan_labels == label]
-                center = np.mean(cluster_points, axis=0)  # 計算簇中心
-                cluster_centers.append(center)
-
-                
-        tot_cent = len(cluster_centers)
-        start_point = [0,0]
-        end_point = [0,0]
-        if tot_cent > 2:
-            # print("聚類結果 > 2")
-            # print(cluster_centers)
-            
-            cent_st_id = 0
-            cent_ed_id = 1
-            while(cent_ed_id < tot_cent):
-                start_point = (int(round(cluster_centers[cent_st_id][1])), int(round(cluster_centers[cent_st_id][0])))
-                end_point = (int(round(cluster_centers[cent_ed_id][1])), int(round(cluster_centers[cent_ed_id][0])))
-                    
-                dx = (start_point[0] - end_point[0])
-                if abs(dx) < 1:
-                    dx = 1
-                m = float(start_point[1] - end_point[1]) / float(dx)
-
-                if(abs(m) > DIVIDE_LINE_SLOPE_THD):
-                    # print(f"Mask divide:: Start Point Org: {start_point}, End Point Org: {end_point}, M: {m}")
-                    start_point, end_point = extend_line(start_point, end_point)
-                    # print(f"Mask divide:: Start Point Divided: {start_point}, End Point Divided: {end_point}, M: {m}")
-                    cv2.line(mask_divide, start_point, end_point, 0, 4)
-                    cv2.line(rdentin_bin, start_point, end_point, 0, 4)
-                    del cluster_centers[0]
-                    del cluster_centers[0]
-                    
-                    divide_state = 1
-                else:
-                    # print(f"Start Point: {start_point}, End Point: {end_point}, M: {m}")
-                    del cluster_centers[1]
-                    
-                tot_cent = len(cluster_centers)
-                    
-        else:
-            start_point = (int(round(cluster_centers[0][1])), int(round(cluster_centers[0][0])))
-            end_point = (int(round(cluster_centers[1][1])), int(round(cluster_centers[1][0])))
-                
-            dx = (start_point[0] - end_point[0])
-            if abs(dx) < 1:
-                dx = 1
-            m = float(start_point[1] - end_point[1]) / float(dx)
-
-            if(abs(m) > DIVIDE_LINE_SLOPE_THD):
-                # print(f"Mask divide:: Start Point Org: {start_point}, End Point Org: {end_point}, M: {m}")
-                start_point, end_point = extend_line(start_point, end_point)
-                # print(f"Mask divide:: Start Point Divided: {start_point}, End Point Divided: {end_point}, M: {m}")
-                cv2.line(mask_divide, start_point, end_point, 0, 4)
-                cv2.line(rdentin_bin, start_point, end_point, 0, 4)
-                
-                divide_state = 1
-  
-
-    return mask_divide, divide_state
-    
-# Refine rect's start x and rect window size (avoid vertical line for x cut at pit circle)
-def margin_refine(can_st_x, can_win, mask_inter_in):
-    
-    mk_wd = mask_inter_in.shape[1]
-    # marg_box_hwd = 0
-    comp_width = 0
-    
-#     st_lt = can_st_x - marg_box_hwd
-#     if st_lt < 0:
-#         st_lt = 0 
-#     st_rt = can_st_x + marg_box_hwd
-#     if st_rt >= mk_wd:
-#         st_rt = mk_wd - 1
-        
-    
-#     ed_lt = can_st_x + can_win - marg_box_hwd
-#     if ed_lt < 0:
-#         ed_lt = 0 
-#     ed_rt = can_st_x + can_win + marg_box_hwd 
-#     if ed_rt >= mk_wd:
-#         ed_rt = mk_wd - 1
-        
-    can_ed_org = can_st_x + can_win
-    
-    margin_region = mask_inter_in[:, can_st_x]
-    reg_val = np.sum(np.sum(margin_region))
-    if(reg_val > 0):
-        comp_width = Window_Margin
-        if can_st_x - Window_Margin < 0:
-            comp_width = can_st_x
-        can_st_x -= comp_width # Enlarge left to refine
-        
-     
-    margin_region = mask_inter_in[:, can_ed_org]
-    reg_val = np.sum(np.sum(margin_region))
-    if(reg_val > 0):
-        can_win += comp_width + Window_Margin # Enlarge Right to refine
-    
-    
-    return can_st_x, can_win
-    
-def mask_split_func(mask_inter_in, rdentin_bin):
-    mask_inter_cp = np.copy(mask_inter_in)
-    mask_divide = np.copy(rdentin_bin)
-    group_inter = np.zeros_like(mask_inter_cp)
-    width = mask_inter_cp.shape[1]
-    
-    win_group = Window_Group_Max # init. oberservation window
-    st_x = 0 # rect win start x
-    ed_x = st_x + win_group # rect win end x
-    list_can_x = [] # candidator rect's start x
-    list_can_area = [] #candidator
-    list_can_win = [] # candidator
-    find_flag = 0 # If find one pair
-    num_lab_pre = 1 # 1, 2, 3, > 3
-    pair_rect_st_x = []
-    pair_rect_win = []
-    while (ed_x < width):
-        mk_win = mask_inter_cp[:, st_x:ed_x]
-        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mk_win, connectivity=8)
-        
-        # print('st = {}, num_labels = {}, win_group = {}'.format(st_x, num_labels, win_group))
-        
-        if num_labels < num_lab_pre: # if key pit number decreased, then back to get pair pits to split mask
-            if find_flag == 1:
-                
-                # Get the largest Pit Area in Candidators
-                sort_indx = np.argsort(list_can_area)
-                can_st_x = list_can_x[sort_indx[-1]]
-                can_win = list_can_win[sort_indx[-1]]
-                
-                # Refine rect's start x and rect window size (avoid vertical line for x cut at pit circle)
-                can_st_x, can_win = margin_refine(can_st_x, can_win, np.copy(mask_inter_cp))
-                
-                # Add final rect's start x and rect window size to the List # record
-                pair_rect_st_x.append(can_st_x) # record
-                pair_rect_win.append(can_win) # record
-                
-                
-                # Do split mask at this rect. window
-                mask_divide, divide_state = mask_split_in_win(can_st_x, can_win, np.copy(mask_inter_cp), mask_divide, rdentin_bin)
-                
-                # print('done divide & remove st = {}, ed = {}, win_group = {}, divide_state={}'.format(can_st_x, can_st_x+can_win, can_win, divide_state))
-                
-                if(divide_state == 1): #Clear pit info. mask (intersections) for avoiding error by repeating process.
-                    mask_inter_cp[:, can_st_x:(can_st_x+can_win)] = 0
-                
-                # cv2.imshow('done divide & remove', mask_inter_cp) # gui
-                # cv2.waitKey(0) # gui
-            
-                #Reset for Next
-                list_can_win.clear()
-                list_can_x.clear()
-                list_can_area.clear()
-                
-                find_flag = 0
-                win_group = Window_Group_Max # Use default Window
-                num_lab_pre = 1
-            else:
-                # Keep searching
-                test_line = 0
-            
-            st_x += Slide_Group
-            ed_x = st_x + win_group    
-                    
-        elif num_labels <= 2: # Keep searching
-            st_x += Slide_Group
-            ed_x = st_x + win_group    
-        
-        elif num_labels == 3: # Find a pair pits (candidator)
-            find_flag = 1
-
-            tot_area = 0
-            for i in range(1, num_labels):
-                tot_area += stats[i, cv2.CC_STAT_AREA]        
-            list_can_area.append(tot_area)
-            list_can_x.append(st_x)
-            list_can_win.append(win_group)
-            
-            st_x += Slide_Group
-            ed_x = st_x + win_group
-
-            # print('find ' + str(st_x))
-            
-        elif num_labels > 3:
-            # Find a pair pits but more than two pits (candidator)
-            if(win_group == Window_Group_Max): # Keep searching
-                win_group = Window_Group
-                ed_x = st_x + win_group
-                # print('Shrink')
-            else: # Find
-                find_flag = 1
-                
-                tot_area = 0
-                for i in range(1, num_labels):
-                    tot_area += stats[i, cv2.CC_STAT_AREA]        
-                list_can_area.append(tot_area)
-                list_can_x.append(st_x)
-                list_can_win.append(win_group)
-
-                st_x += Slide_Group
-                ed_x = st_x + win_group
-            
-        
-        num_lab_pre = num_labels # update number 
-        
-    # print('find pair rect. st. x = {}'.format(pair_rect_st_x))
-    # print('find pair rect window group = {}'.format(pair_rect_win))
-    
-    
-    return pair_rect_st_x, pair_rect_win, mask_divide
-    
-    
-    
-def quadratic_func(x, a, b, c):
-    
-    return a*x**2 + b*x + c
-    
-    
-    
-# Mask Intersection to Pit Key Circle Points
-def intersec_refine(mask_inter_in, comp_mask_in):
-    mask_inter_refine = np.zeros_like(mask_inter_in)
-    op_mask_show = np.zeros_like(mask_inter_in) # gui show
-    op_mask_cont_show = np.zeros_like(mask_inter_in) # gui show
-    inter_show = np.zeros_like(mask_inter_in) # gui show
-    inter_show = cv2.cvtColor(inter_show, cv2.COLOR_GRAY2BGR) # gui show
-    comp_mask = np.copy(comp_mask_in)
-    comp_mask_show = np.copy(comp_mask_in) # gui show
-    comp_mask_show = cv2.cvtColor(comp_mask_show, cv2.COLOR_GRAY2BGR) # gui show
-    
-    # Get original Intersection (y,x)
-    coordinates = np.argwhere(mask_inter_in == 255) # (y,x) type
-    
-    if(len(coordinates) < 2):
-        return mask_inter_refine
-    
-    # Use DBSCAN to Cluster Intersection
-    dbscan = DBSCAN(eps=DBSCAN_EPS, min_samples=DBSCAN_MIN_SAMP)  # 調整 eps 和 min_samples 根據數據密度
-    dbscan_labels = dbscan.fit_predict(coordinates)
-
-    unique_labels = set(dbscan_labels) - {-1}  # 排除噪聲 (-1 為噪聲標籤)
-    cluster_centers = [] # (x,y) type
-    if len(unique_labels) < 2:
-        # print("intersec_refine:: DBSCAN did not find > 1 Group")
-        return mask_inter_refine
-    else:
-        # Get each Cluster's center
-        for label in unique_labels:
-            if label != -1: # 排除噪聲
-                cluster_points = coordinates[dbscan_labels == label]
-                center = np.mean(cluster_points, axis=0)  # 計算簇中心
-                # print('intersec_refine:: {}'.format(center[[1,0]]))
-                cluster_centers.append(center[[1,0]])
-
-                
-    # Process each Cluster (Intersection Coarse Center)
-    tot_cent = len(cluster_centers)
-    cent_id = 0
-    OP_HWD = 30 # Pit Local Windows Box
-    while(cent_id < tot_cent):
-        clu_x, clu_y = cluster_centers[cent_id]
-        
-        # print('intersec_refine:: intersection center (x,y) = {}'.format((clu_x, clu_y)))
-        cv2.circle(inter_show, (np.int32(clu_x), np.int32(clu_y)), 3, (0, 0, 255), -1)
-        cv2.circle(comp_mask_show, (np.int32(clu_x), np.int32(clu_y)), 3, (0, 0, 255), -1)
-        
-        # Refine Local Box's Boundary
-        comp_ht, comp_wd = comp_mask.shape
-        x_min, x_max = Refine_CoordBoundary(clu_x, OP_HWD, 0, comp_wd-1)
-        y_min, y_max = Refine_CoordBoundary(clu_y, OP_HWD, 0, comp_ht-1)
-        
-        # Get Local Dentin Mask
-        op_mask = np.zeros_like(comp_mask)
-        op_mask[y_min:y_max, x_min:x_max] = cv2.bitwise_not(comp_mask[y_min:y_max, x_min:x_max])
-        op_mask_convex_hull = np.copy(op_mask) # for convex hull computing
-        
-        op_mask_show = cv2.bitwise_or(op_mask_show, op_mask) # gui
-        
-        # Get Local Dentin Mask Edge
-        kernel = np.ones((3, 3), np.uint8)
-        op_mask_ref = cv2.erode(op_mask, kernel, iterations=1)
-        op_mask -= op_mask_ref
-        op_mask[y_min:y_min+3, :] = 0
-        op_mask[y_max-3:y_max, :] = 0
-        
-        op_mask_cont_show = cv2.bitwise_or(op_mask_cont_show, op_mask) # gui
-        
-        # Get Local Dentin Mask Edge Coordinate
-        coord_op = np.argwhere(op_mask == 255) # (y,x) type
-        coord_op = coord_op[:, [1,0]] # (x,y) type
-        coord_op_x = coord_op[:, 0]
-        coord_op_y = coord_op[:, 1]
-
-        # Perform curve fitting
-        # poly_coeff = np.polyfit(coord_op_x, coord_op_y, 2)  # 拟合二次多项式
-        # poly = np.poly1d(poly_coeff)  # 生成多项式函数
-        poly_coeff, covariance = curve_fit(quadratic_func, coord_op_x, coord_op_y)
-        
-        # Get Local Mask (Edge) Shape Type Info.
-        coef_a, coef_b, coef_c = poly_coeff
-        # op_x_v = -coef_b / (2 * coef_a)  # 计算 y 方向的顶点
-        # op_y_v = poly(op_x_v)
-        # op_y_v = quadratic_func(op_x_v, coef_a, coef_b, coef_c)
-        
-        # Show Curve Fitting Results  # gui
-        x_vals = np.arange(x_min, x_max, 1)  # 取所有 x 范围
-        # y_vals = poly(x_vals)
-        y_vals = quadratic_func(x_vals, coef_a, coef_b, coef_c)
-        for x, y in zip(x_vals, y_vals):
-            cv2.circle(inter_show, (np.int32(x), np.int32(y)), 1, (0, 255, 255), -1)  # gui
-        
-        
-        # Get Point Cloud Direction
-        mean_coord = np.mean(coord_op, axis=0)
-        coord_centered = coord_op - mean_coord
-        cov_matrix = np.cov(coord_centered, rowvar=False)
-        eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
-        
-        # Project Point Cloud to short axis
-        coord_short_ax = np.abs(coord_centered @ eigenvectors[:, 1])
-        
-        # Determin Direction
-        med_num = 5
-        coord_sort_idx = np.argsort(coord_short_ax)
-        coord_y_dist_min = np.median(coord_op[coord_sort_idx[0:med_num], 1])
-        coord_y_dist_max = np.median(coord_op[coord_sort_idx[-med_num:], 1])
-        
-        coef_a = 1
-        if(coord_y_dist_min > coord_y_dist_max):
-            coef_a = -1
-        
-        # Refine Pit (x,y) Method:
-        
-        op_x_v = -1 # Pit Center x
-        op_y_v = -1 # Pit Center y
-        
-        # Refine Method 1
-        # Find Contours in the Local Dentin Mask
-        contours, _ = cv2.findContours(op_mask_convex_hull, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-        # Find the convex hull of the largest contour
-        # Assuming the largest contour corresponds to the object of interest
-        if contours:
-            largest_contour = max(contours, key=cv2.contourArea)  # Get the largest contour
-            convex_hull = cv2.convexHull(largest_contour)  # Compute the convex hull
-            sorted_hull = convex_hull[convex_hull[:, 0, 1].argsort()]
-            
-            # Use Mask (Edge) Shape Type to Refine Top or Bottom Pit Center
-            op_x_v_hull, op_y_v_hull = sorted_hull[0, 0, :]
-            if(coef_a < 0): # If parabolic notch upward
-                op_x_v_hull, op_y_v_hull = sorted_hull[-1, 0, :]
-        
-            # print('intersec_refine:: hull fitting refined pit (x,y) = {}'.format((op_x_v_hull, op_y_v_hull)))
-            cv2.circle(inter_show, (np.int32(op_x_v_hull), np.int32(op_y_v_hull)), 3, (0, 255, 0), -1)
-            cv2.circle(comp_mask_show, (np.int32(op_x_v_hull), np.int32(op_y_v_hull)), 3, (0, 255, 0), -1)
-        
-            op_x_v = op_x_v_hull
-            op_y_v = op_y_v_hull
-        
-    
-        # Refine Method 2 (Spare Method)
-        # Use Mask (Edge) Shape Type to Get Top or Bottom Pit Center in cloud points
-        sorted_coords = coord_op[coord_op[:, 1].argsort()]
-        op_x_v_ed, op_y_v_ed = sorted_coords[0]
-        if(coef_a < 0): # If parabolic notch upward
-            op_x_v_ed, op_y_v_ed = sorted_coords[-1]
-        
-        # print('intersec_refine:: egde refined pit (x,y) = {}'.format((op_x_v_ed, op_y_v_ed)))
-        cv2.circle(inter_show, (np.int32(op_x_v_ed), np.int32(op_y_v_ed)), 3, (255, 0, 0), -1)
-        cv2.circle(comp_mask_show, (np.int32(op_x_v_ed), np.int32(op_y_v_ed)), 3, (255, 0, 0), -1)
-        
-        # If convex hull fitting is failed then use Refine Method 2
-        if(op_x_v == -1 or op_y_v == -1):
-            op_x_v = op_x_v_ed
-            op_y_v = op_y_v_ed
-        
-        
-        # Refined Pit Key Center on Mask Results (center circle size is a key parameter, too)
-        cv2.circle(mask_inter_refine, (np.int32(op_x_v), np.int32(op_y_v)), PIT_RADIUS, 255, -1)
-        
-        cent_id += 1
-    
-    
-    # cv2.imshow('intersec_refine:: op_mask_show', op_mask_show) # gui
-    # cv2.imshow('intersec_refine:: op_mask_cont_show', op_mask_cont_show) # gui
-    # cv2.imshow('intersec_refine:: inter_show', inter_show) # gui
-    # cv2.imshow('intersec_refine:: comp_mask_show', comp_mask_show) # gui
-    # cv2.waitKey(0)
-    
-    return mask_inter_refine
-    
-    
-def mask_intersec(mask_lt_in, mask_rt_in, rec_y, rec_h, comp_mask_in):
-    mk_lt = np.copy(mask_lt_in)
-    mk_rt = np.copy(mask_rt_in)
-    comp_mask = np.copy(comp_mask_in)
-    
-    # Shift Side Edge Mask
-    height, width = mk_lt.shape[:2]
-    M = np.float32([[1, 0, Match_Shift], [0, 1, 0]])
-    mk_lt_sf = cv2.warpAffine(mk_lt, M, (width, height))
-    M = np.float32([[1, 0, -Match_Shift], [0, 1, 0]])
-    mk_rt_sf = cv2.warpAffine(mk_rt, M, (width, height))
-    
-    # Fast Intersection first
-    mask_inter = cv2.bitwise_and(mk_lt_sf, mk_rt_sf)
-    
-    
-    # Shift Side Edge Mask more
-    height, width = mk_lt.shape[:2]
-    M = np.float32([[1, 0, Match_Shift_Sec], [0, 1, 0]])
-    mk_lt_sf = cv2.warpAffine(mk_lt, M, (width, height))
-    M = np.float32([[1, 0, -Match_Shift_Sec], [0, 1, 0]])
-    mk_rt_sf = cv2.warpAffine(mk_rt, M, (width, height))
-    
-    # Fast Intersection second
-    mask_inter_sec = cv2.bitwise_and(mk_lt_sf, mk_rt_sf)
-        
-    # Get Each Intersection
-    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask_inter, connectivity=8)
-    for i in range(1, num_labels):
-        if stats[i, cv2.CC_STAT_AREA] < 5:
-            mask_inter[labels == i] = 0
-            # print(stats[i, cv2.CC_STAT_AREA])
-    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask_inter, connectivity=8)
-    
-    num_labels_sec, labels_sec, stats_sec, centroids_sec = cv2.connectedComponentsWithStats(mask_inter_sec, connectivity=8)
-    for i in range(1, num_labels_sec):
-        if stats_sec[i, cv2.CC_STAT_AREA] < 5:
-            mask_inter_sec[labels_sec == i] = 0
-            # print(stats_sec[i, cv2.CC_STAT_AREA])
-    
-    num_labels_sec, labels_sec, stats_sec, centroids_sec = cv2.connectedComponentsWithStats(mask_inter_sec, connectivity=8)
-    
-    # Second Aux Intersection to Enhance Mask Intersection
-    sec_idx = 1
-    win_roi = 120
-    while(sec_idx < num_labels_sec):
-        x_sec, y_sec = centroids_sec[sec_idx]
-        mask_roi = np.copy(mask_inter[int(y_sec - win_roi/2) : int(y_sec + win_roi/2), 
-                                      int(x_sec - win_roi/4) : int(x_sec + win_roi/4)])
-        if(np.sum(np.sum(mask_roi)) == 0):
-            mask_inter[labels_sec == sec_idx] = 255
-            # print('add')
-        
-        sec_idx += 1
-    
-    # cv2.imshow('org mask intersec', mask_inter) # gui show
-    # cv2.waitKey(0)
-    
-    # Mask Intersection to Intersection Key Circle Points
-    mask_inter = intersec_refine(mask_inter, comp_mask_in)
-    
-    return mask_inter
-    
-    
-#Filter Noise Components
-def process_mask(mask_in):
-    mask = np.zeros_like(mask_in)
-    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask_in, connectivity=8)
-    for i in range(1, num_labels):
-        if stats[i, cv2.CC_STAT_AREA] > Side_Contou_THD :
-            mask[labels == i] = 255
-            # print(stats[i, cv2.CC_STAT_AREA])
-
-    # cv2.imshow('img-mask-in2', mask)
-            
-    return mask
             
 # Enhace splitting Detin Mask 
-def enhance_split_detin(rdentin_bin):
+def enhance_split_detin(rdentin_bin, config):
+    if config is not None:
+        for label, values in config.items():
+            globals()[label] = values
+
     num_labels, labels = cv2.connectedComponents(rdentin_bin)
+    
     for i in range(1, num_labels):
         # Get each original detin mask
         component_mask = np.uint8(labels == i) * 255
-        mask_rgb = cv2.cvtColor(component_mask, cv2.COLOR_GRAY2RGB)
-        
+
         # Get Key Side Edge (for Fast Key Intersection Pit)
         height, width = component_mask.shape[:2]
+
         # Define Translation Matrix
-        M = np.float32([[1, 0, Side_Shift], [0, 1, 0]])
+        M = np.float32([[1, 0, DENTAL_SPLIT_SIDE_SHIFT], [0, 1, 0]])
         # Use WarpAffine for x axis shift
         shifted_mask = cv2.warpAffine(component_mask, M, (width, height))
         diff_mask1 = np.int16(component_mask) - np.int16(shifted_mask)
         diff_mask1[diff_mask1 < 0] = 0
         diff_mask1 = np.uint8(diff_mask1)
-        diff_mask1 = process_mask(diff_mask1)
+        diff_mask1 = select_main_dental_areas(diff_mask1, DENTAL_SPLIT_SIDE_CONTOUR_THRESHOLD)
         
         # Define Translation Matrix
-        M = np.float32([[1, 0, -Side_Shift], [0, 1, 0]])
+        M = np.float32([[1, 0, -DENTAL_SPLIT_SIDE_SHIFT], [0, 1, 0]])
+
         # Use WarpAffine for x axis shift
         shifted_mask = cv2.warpAffine(component_mask, M, (width, height))
         diff_mask2 = np.int16(component_mask) - np.int16(shifted_mask)
         diff_mask2[diff_mask2 < 0] = 0
         diff_mask2 = np.uint8(diff_mask2)
-        diff_mask2 = process_mask(diff_mask2)
+        diff_mask2 = select_main_dental_areas(diff_mask2, DENTAL_SPLIT_SIDE_CONTOUR_THRESHOLD)
         
         #Dilate to Enhance Feature
         kernel = np.ones((3, 3), np.uint8)
@@ -805,36 +240,61 @@ def enhance_split_detin(rdentin_bin):
         rec_x, rec_y, rec_w, rec_h = cv2.boundingRect(contou)
         rect = cv2.minAreaRect(contou)
         boxp = cv2.boxPoints(rect)
-        boxp = np.int0(boxp)
-        # print(boxp)
-        
-        # cv2.drawContours(mask_rgb, [boxp], 0, (0,255,0), 3)
-        # cv2.imshow('mask_rgb', mask_rgb)
+        boxp = np.intp(boxp)
 
-        # Combine mask to Show
-        comb_mask_show = cv2.bitwise_or(diff_mask1, diff_mask2)
-        
         # Fast Key Intersection Pit
-        mask_inter = mask_intersec(diff_mask2, diff_mask1, rec_y, rec_h, component_mask)
+        mask_inter = mask_intersec(diff_mask2, 
+                                   diff_mask1, 
+                                   component_mask,
+                                   config,
+                                   )
         
         # Use Key Intersection Pit to Split Mask
-        pair_rect_x, pair_rect_window, mk_divide = mask_split_func(mask_inter, rdentin_bin)
-    
-        # cv2.imshow('img-mask-org', component_mask)
-        # cv2.imshow('img-diff1', diff_mask1)
-        # cv2.imshow('img-diff2', diff_mask2)
-        # cv2.imshow('comb_mask_show', comb_mask_show) # gui show
-        # cv2.imshow('mask-intersec', mask_inter)
-        # cv2.imshow('mask-divide', mk_divide)
-        
-        # cv2.waitKey(0)
-        
-    # cv2.imshow('dentin_bin-divide', rdentin_bin)
-    # cv2.waitKey(0)
-        
-    # cv2.destroyAllWindows()
+        pair_rect_x, pair_rect_window, mk_divide = mask_split_func(mask_inter, rdentin_bin, config)
 
+    return mk_divide
+        
+
+def update_with_contour_and_crown_info(components_model_masks_dict, contours_model_masks_dict, image):
+    
+    updated_masks_dict = components_model_masks_dict.copy() #make the function pure
+
+    # Retrive the dental_contour from contour_model and add in components_model_masks_dict
+    updated_masks_dict['dental_contour']=np.zeros(image.shape[:2], dtype=np.uint8)
+    for dental_contour in contours_model_masks_dict['dental_contour']:
+        updated_masks_dict['dental_contour'] = cv2.bitwise_or(updated_masks_dict['dental_contour'], dental_contour)
+
+    ###Retrive the dental_contour from components_model 
+    # contour_elements = ['dentin', 'Caries', 'dental_crown', 'artificial_crown', 'Implant', 'Restoration', 'Pulp', 'Post_and_core']
+    # contours_from_component_model = np.zeros(image.shape[:2], dtype=np.uint8)
+    # for mask in [updated_masks_dict[key] for key in contour_elements if updated_masks_dict.get(key) is not None]:
+    #     contours_from_component_model = cv2.bitwise_or(contours_from_component_model, mask)
+
+    ###combine two model contours (Note that: sometimes you will need to combine two way to consturct the mask)
+    #updated_masks_dict['dental_contour']=cv2.bitwise_or(updated_masks_dict['dental_contour'], contours_from_component_model)
+
+    #retrive the crown or enamal mask
+    crown_or_enamal_mask = np.zeros(image.shape[:2], dtype=np.uint8)
+    for label in ['dental_crown', 'artificial_crown']:
+        mask = updated_masks_dict.get(label)
+        if mask is not None:
+            crown_or_enamal_mask = cv2.bitwise_or(crown_or_enamal_mask, mask)
+        
+    # retrive the dentin mask (dental_contours- crown_or_enamal_mask)
+    denti_from_contour_model=updated_masks_dict['dental_contour']-cv2.bitwise_and(updated_masks_dict['dental_contour'], crown_or_enamal_mask)
+    updated_masks_dict['dentin']=denti_from_contour_model
+    ### retrive the dentin mask (dental_contours- crown_or_enamal_mask) or (denti_from_contour)
+    # updated_masks_dict['dentin']=cv2.bitwise_or(updated_masks_dict['dentin'], denti_from_contour_model)
+    # if updated_masks_dict.get('Pulp') is not None:
+    #     updated_masks_dict['dentin']=cv2.bitwise_or(updated_masks_dict['dentin'], updated_masks_dict['Pulp'])
+    
+    # clean crown mask : the dental_crown sometimes have over lapped with the crown (the artifial material)
+    if updated_masks_dict.get('artificial_crown') is not None and updated_masks_dict.get('dental_crown') is not None:
+        updated_masks_dict["dental_crown"]=updated_masks_dict["dental_crown"]-cv2.bitwise_and(updated_masks_dict["dental_crown"], updated_masks_dict["artificial_crown"])
+
+    return updated_masks_dict
 def dental_estimation(image, component_model, contour_model, scale_x=31/960, scale_y=41 / 1080, return_type='dict', config=None):
+    #read the config and assign const
     if config is None:
         with open('./conf/best_dental_measure_parameters.yaml', 'r') as file:
             config = yaml.safe_load(file)
@@ -842,32 +302,42 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
         for label, values in config.items():
             globals()[label] = values
 
-    scale=(scale_x,scale_y)
-    components_model_masks_dict=get_mask_dict_from_model(component_model, image, method='semantic', mask_threshold=DENTAL_MODEL_THRESHOLD)
-    contours_model_masks_dict=get_mask_dict_from_model(contour_model, image, method='instance', mask_threshold=DENTAL_CONTOUR_MODEL_THRESHOLD)
-
     error_messages=''
+    # note that crown is a tooth-shaped "cap" made of artifial material that is placed over a damaged, decayed, or weakened tooth.
+    # while the dental crown refers to the visible portion of a tooth that is above the gum line in atonomy.
     denti_measure_names_map={
         'Alveolar_bone': 'gum',
         'Dentin': 'dentin',
         'Enamel': 'dental_crown',
-        'Crown': 'crown' ### In fact it is enamel (why labeling man so stupid)
+        'Crown': 'artificial_crown' ### In fact it is enamel (why labeling man so stupid)
     }
-    components_model_masks_dict = {denti_measure_names_map.get(k, k): v for k, v in components_model_masks_dict.items()}
-
-    # Error handling
     required_components = {
         'dentin': "No dental instance detected",
         'gum': "No gum detected"
     }
+    scale=(scale_x,scale_y)
+
+    # get the model dict
+    components_model_masks_dict_init=get_mask_dict_from_model(component_model,
+                                                              image, 
+                                                              method='semantic', 
+                                                              mask_threshold=DENTAL_MODEL_THRESHOLD)
+    components_model_masks_dict = {denti_measure_names_map.get(k, k): v for k, v in components_model_masks_dict_init.items()} #mapping the key
+
+    contours_model_masks_dict=get_mask_dict_from_model(contour_model,
+                                                       image, 
+                                                       method='instance', 
+                                                       mask_threshold=DENTAL_CONTOUR_MODEL_THRESHOLD)
+
 
     # check 'dentin' and 'gum' existed
     for component, error_message in required_components.items():
         if components_model_masks_dict.get(component) is None:
             error_messages=error_message
             return (generate_error_image(error_messages), error_messages) if 'image' in return_type else []
+        
     # check 'dental_crown', 'crown' existed
-    if (components_model_masks_dict.get('dental_crown') is None and components_model_masks_dict.get('crown') is None):
+    if all(components_model_masks_dict.get(key) is None for key in ['dental_crown', 'artificial_crown']):
         error_messages="No dental_crown detected"
         return (generate_error_image(error_messages), error_messages) if 'image' in return_type else [] 
     
@@ -876,56 +346,24 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
         error_messages = "No dental instance detected"
         return (generate_error_image(error_messages), error_messages) if 'image' in return_type else []
         
-    # Retrive the dental_contour from contour_model
 
-    components_model_masks_dict['dental_contour']=np.zeros(image.shape[:2], dtype=np.uint8)
-    for dental_contour in contours_model_masks_dict['dental_contour']:
-        components_model_masks_dict['dental_contour'] = cv2.bitwise_or(components_model_masks_dict['dental_contour'], dental_contour)
-    
-    # # Retrive the dental_contour from components_model
-    # contour_elements=['dentin','Caries','dental_crown','crown','Implant','Restoration','Pulp','Post_and_core']
-    # contours_from_component_model=np.zeros(image.shape[:2], dtype=np.uint8)
-    # for key in contour_elements:
-    #     if components_model_masks_dict.get(key) is not None:
-    #         contours_from_component_model = cv2.bitwise_or(contours_from_component_model, components_model_masks_dict[key])
-    # # combine two model contours
-    # components_model_masks_dict['dental_contour']=cv2.bitwise_or(components_model_masks_dict['dental_contour'], contours_from_component_model)
+    masks_dict=update_with_contour_and_crown_info(components_model_masks_dict, contours_model_masks_dict, image)
 
-    #retrive the crown or enamal mask
-    crown_or_enamal_mask = np.zeros(image.shape[:2], dtype=np.uint8)
-    for label in ['dental_crown', 'crown']:
-        mask = components_model_masks_dict.get(label)
-        if mask is not None:
-            crown_or_enamal_mask = cv2.bitwise_or(crown_or_enamal_mask, mask)
-        
-    # retrive the dentin mask (dental_contours- crown_or_enamal_mask)
-    denti_from_contour=components_model_masks_dict['dental_contour']-cv2.bitwise_and(components_model_masks_dict['dental_contour'], crown_or_enamal_mask)
-    components_model_masks_dict['dentin']=denti_from_contour
-    ## retrive the dentin mask (dental_contours- crown_or_enamal_mask) or (denti_from_contour)
-    # components_model_masks_dict['dentin']=cv2.bitwise_or(components_model_masks_dict['dentin'], denti_from_contour)
-    # if components_model_masks_dict.get('Pulp') is not None:
-    #     components_model_masks_dict['dentin']=cv2.bitwise_or(components_model_masks_dict['dentin'], components_model_masks_dict['Pulp'])
-    
-    # clean crown mask
-    if components_model_masks_dict.get('crown') is not None and components_model_masks_dict.get('dental_crown') is not None:
-        components_model_masks_dict["dental_crown"]=components_model_masks_dict["dental_crown"]-cv2.bitwise_and(components_model_masks_dict["dental_crown"], components_model_masks_dict["crown"])
-
-    overlay, line_image, non_masked_area= extract_features(components_model_masks_dict, image) # 處理繪圖用圖片等特徵處理後圖片
-
-    
+    overlay, line_image, non_masked_area= perform_morphology(masks_dict, image, config)
 
     predictions = []
     image_for_drawing=image.copy()
     #for i in range(1, num_labels):  # 從1開始，0是背景
-    enhance_split_detin(components_model_masks_dict['dentin']) # alan mod
-    num_labels, labels = cv2.connectedComponents(components_model_masks_dict['dentin'])
-    
+    dentin_mask_splited=enhance_split_detin(masks_dict['dentin'], config) # alan mod
+
+    num_labels, index_masks = cv2.connectedComponents(dentin_mask_splited)
+
     #for i, component_mask in enumerate(contours_model_masks_dict['dental_contour']):
     for i in range(1, num_labels):
-        component_mask = np.uint8(labels == i) * 255
+        component_mask = np.uint8(index_masks == i) * 255
 
         # 取得分析後的點
-        prediction = locate_points(image_for_drawing, component_mask, components_model_masks_dict, i+1, overlay, config)
+        prediction = locate_points(image_for_drawing, component_mask, masks_dict, i+1, overlay, config)
         # 如果無法判斷點，會回傳空字典
         if len(prediction) == 0:
             continue
@@ -938,53 +376,105 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
         prediction['teeth_center']=prediction['mid']
         if dental_pair_list:
             predictions.append(prediction)
-
+    if not predictions:
+        return []
+    
     if return_type=='cvat':
-        if not predictions:
-            return []
-        cvat_results=[]
-        points_label=['CEJ','APEX','ALC']
-        polyline_label=['CAL','TRL']
-        tag_label=['ABLD','stage']
-        polyline_mapping={
-            'CAL': ['enamel','gum'],
-            'TRL': ['enamel','dentin']
+
+        points_label = ['CEJ', 'APEX', 'ALC']
+        polyline_label = ['CAL', 'TRL']
+        tag_label = ['ABLD', 'stage']
+        polyline_mapping = {
+            'CAL': ['enamel', 'gum'],
+            'TRL': ['enamel', 'dentin']
         }
-        left_right=['left','right']
+        left_right = ['left', 'right']
+
+        def append_point(prediction, label, values, teeth_id, side_id):
+            return {
+                    'label': label,
+                    'type': 'point',
+                    'points': list(values),
+                    'teeth_id': teeth_id,
+                    'side_id': side_id
+                }
+
+        def append_polyline(prediction, label, values, teeth_id, side_id):
+            return {
+                    'label': label,
+                    'type': 'polyline',
+                    'points': list(prediction[polyline_mapping[label][0] + "_" + left_right[side_id]] + 
+                                prediction[polyline_mapping[label][1] + "_" + left_right[side_id]]),
+                    'attributes': [{'name': 'length', 'input_type': 'number', 'value': values}],
+                    'teeth_id': teeth_id,
+                    'side_id': side_id
+                }
+
+        def append_metadata(pair_measurement, tag_label, teeth_id, side_id):
+            return {
+                    'label': 'metadata',
+                    'type': 'tag',
+                    'attributes': [{'name': key, 'input_type': 'number', 'value': pair_measurement[key]} for key in tag_label],
+                    'teeth_id': teeth_id,
+                    'side_id': side_id
+                }
+
+        cvat_results = []
         for prediction in predictions:
-            teeth_id=prediction['teeth_id']
+            teeth_id = prediction['teeth_id']
             for pair_measurement in prediction['pair_measurements']:
-                side_id=pair_measurement['side_id']
+                side_id = pair_measurement['side_id']
                 for label, values in pair_measurement.items():
                     if label in points_label:
-                        cvat_results.append({'label':label,
-                                            'type':'point',
-                                            'points':list(values), 
-                                            'teeth_id':teeth_id, 
-                                            'side_id':side_id})
+                        cvat_results.append(append_point(prediction, label, values, teeth_id, side_id))
                     elif label in polyline_label:
-                        side=left_right[side_id]
-                        enamel_key=polyline_mapping[label][0]+"_"+side
-                        gum_or_dentin_key=polyline_mapping[label][1]+"_"+side
-                        points=list(prediction[enamel_key]+prediction[gum_or_dentin_key])                    
-                        cvat_results.append({'label':label,
-                                            'type':'polyline',
-                                            'points':points, 
-                                            'attributes':[{
-                                                'name':'length',
-                                                'input_type':'number',
-                                                'value': values,
-                                            }],
-                                            'teeth_id':teeth_id, 
-                                            'side_id':side_id})
-                meta_data_atrributes=[{'name': key,
-                                        'input_type': 'number',
-                                        'value': pair_measurement[key],} for key in tag_label]
-                cvat_results.append({'label':'metadata',
-                                    'type':'tag',
-                                    'attributes': meta_data_atrributes,
-                                    'teeth_id':teeth_id, 
-                                    'side_id':side_id})     
+                        cvat_results.append(append_polyline(prediction, label, values, teeth_id, side_id))
+
+                cvat_results.append(append_metadata(pair_measurement, tag_label, teeth_id, side_id))
+        
+        # cvat_results=[]
+        # points_label=['CEJ','APEX','ALC']
+        # polyline_label=['CAL','TRL']
+        # tag_label=['ABLD','stage']
+        # polyline_mapping={
+        #     'CAL': ['enamel','gum'],
+        #     'TRL': ['enamel','dentin']
+        # }
+        # left_right=['left','right']
+        # for prediction in predictions:
+        #     teeth_id=prediction['teeth_id']
+        #     for pair_measurement in prediction['pair_measurements']:
+        #         side_id=pair_measurement['side_id']
+        #         for label, values in pair_measurement.items():
+        #             if label in points_label:
+        #                 cvat_results.append({'label':label,
+        #                                     'type':'point',
+        #                                     'points':list(values), 
+        #                                     'teeth_id':teeth_id, 
+        #                                     'side_id':side_id})
+        #             elif label in polyline_label:
+        #                 side=left_right[side_id]
+        #                 enamel_key=polyline_mapping[label][0]+"_"+side
+        #                 gum_or_dentin_key=polyline_mapping[label][1]+"_"+side
+        #                 points=list(prediction[enamel_key]+prediction[gum_or_dentin_key])                    
+        #                 cvat_results.append({'label':label,
+        #                                     'type':'polyline',
+        #                                     'points':points, 
+        #                                     'attributes':[{
+        #                                         'name':'length',
+        #                                         'input_type':'number',
+        #                                         'value': values,
+        #                                     }],
+        #                                     'teeth_id':teeth_id, 
+        #                                     'side_id':side_id})
+        #         meta_data_atrributes=[{'name': key,
+        #                                 'input_type': 'number',
+        #                                 'value': pair_measurement[key],} for key in tag_label]
+        #         cvat_results.append({'label':'metadata',
+        #                             'type':'tag',
+        #                             'attributes': meta_data_atrributes,
+        #                             'teeth_id':teeth_id, 
+        #                             'side_id':side_id})     
         return cvat_results           
 
     if return_type=='image_array':
@@ -993,3 +483,11 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
     #     return numpy_to_base64(image_for_drawing, image_format='PNG'), error_messages
     else:
         return predictions
+    
+
+if __name__ == "__main__":
+    image=cv2.imread("./tests/files/caries-0.6741573-260-760_1_2022052768.png")
+    components_model=YOLO('./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
+    contour_model=YOLO('./models/dentistry_pa-contour_yolov11n-seg_24.46.pt')
+    predictions=dental_estimation(image, components_model, contour_model, scale_x=31/960, scale_y=41 / 1080, return_type='dict', config=None)
+    print(predictions)

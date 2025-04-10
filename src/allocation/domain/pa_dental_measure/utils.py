@@ -9,6 +9,8 @@ from io import BytesIO
 import base64
 from sklearn.decomposition import PCA
 from scipy.spatial import KDTree
+from sklearn.cluster import DBSCAN
+from scipy.optimize import curve_fit
 # PIXEL_THRESHOLD = 2000  # 設定閾值，僅保留像素數大於該值的區域
 # AREA_THRESHOLD = 500 # 設定閾值，避免過小的分割區域
 # DISTANCE_THRESHOLD = 200 # 定義距離閾值（例如：設定 10 為最大可接受距離）
@@ -171,7 +173,7 @@ def load_images_and_masks(dir_path, target_dir):
         'gum': f"gum_{target_dir}.png",
         'teeth': f"teeth_{target_dir}.png",
         'dental_crown': f"dentalcrown_{target_dir}.png",
-        'crown': f"crown_{target_dir}.png",
+        'artificial_crown': f"artificial_crown_{target_dir}.png",
         'dentin': f"dentin_{target_dir}.png",
         'original': f"raw_{target_dir}.png"
     }
@@ -188,7 +190,7 @@ def threshold_images(images):
             binary_images[key] = binary_img
     return binary_images
 
-def clean_mask(mask, kernel_x=1, kernel_y=1, iterations=5):
+def opening_mask(mask, kernel_x=1, kernel_y=1, iterations=5):
     ###only odd number can allow for kneral size
     kernel_tuple=(2*kernel_x+1, 2*kernel_y+1)
     kernel = np.ones(kernel_tuple, np.uint8)
@@ -967,3 +969,564 @@ def numpy_to_base64(image_np: np.ndarray, image_format='PNG') -> str:
     img_base64 = base64.b64encode(img_bytes).decode("utf-8")
     
     return img_base64
+
+
+
+def get_end_point(mask_sobj_in, flag_dir = 0):
+    
+    y_arr, x_arr = np.nonzero(mask_sobj_in)
+    
+    sorted_indx = np.argsort(y_arr)
+    
+    if(flag_dir == 0):#Top
+        return x_arr[sorted_indx[-1]], y_arr[sorted_indx[-1]]
+        
+    else:#Bottom
+        return x_arr[sorted_indx[0]], y_arr[sorted_indx[0]]
+
+def Refine_CoordBoundary(x_in, hf_wd, min_x, max_x):
+    
+    x_st = x_in - hf_wd
+    if(x_st < min_x):
+        x_st = min_x
+    
+    x_ed = x_in + hf_wd
+    if(x_ed > max_x):
+        x_ed = max_x
+    
+    return round(x_st), round(x_ed)
+    
+    
+def extend_line(p1, p2, length=8):
+    # 計算方向向量
+    direction = np.array(p2) - np.array(p1)
+    
+    # 計算單位方向向量
+    unit_direction = direction / np.linalg.norm(direction)
+
+    # 前延伸點 (p1 向反方向延伸)
+    new_p1 = np.array(p1) - length * unit_direction
+
+    # 後延伸點 (p2 向同方向延伸)
+    new_p2 = np.array(p2) + length * unit_direction
+
+    return tuple(np.int32(np.round(new_p1))), tuple(np.int32(np.round(new_p2)))
+
+    
+def mask_split_in_win(st, win_group, mask_inter_in, mask_divide_in, rdentin_bin, config):
+    if config is not None:
+        for label, values in config.items():
+            globals()[label] = values
+    # print('st = {}, win_group = {}'.format(st, win_group))
+    divide_state = 0 # 0 is no split ;  1 is split done
+    
+    # Copy and clear outoff rect.
+    mask_divide = np.copy(mask_divide_in)
+    mask_tmp = np.copy(mask_inter_in)
+    mask_tmp[:, 0:st] = 0
+    mask_tmp[:, st + win_group:] = 0
+        
+    coordinates = np.argwhere(mask_tmp == 255)
+
+    # 使用 DBSCAN 進行聚類
+    dbscan = DBSCAN(eps=DENTAL_SPLIT_DBSCAN_EPS, min_samples=DENTAL_SPLIT_DBSCAN_MIN_SAMP)
+    dbscan_labels = dbscan.fit_predict(coordinates)
+
+    # 確保有至少兩個有效簇
+    unique_labels = set(dbscan_labels) - {-1}  # 排除噪聲 (-1 為噪聲標籤)
+    if len(unique_labels) < 2:
+        pass
+    else:
+        # 計算每個簇的中心點
+        cluster_centers = []
+        for label in unique_labels:
+            if(label != -1):
+                cluster_points = coordinates[dbscan_labels == label]
+                center = np.mean(cluster_points, axis=0)  # 計算簇中心
+                cluster_centers.append(center)
+
+                
+        tot_cent = len(cluster_centers)
+        start_point = [0,0]
+        end_point = [0,0]
+        if tot_cent > 2:
+            # print("聚類結果 > 2")
+            # print(cluster_centers)
+            
+            cent_st_id = 0
+            cent_ed_id = 1
+            while(cent_ed_id < tot_cent):
+                start_point = (int(round(cluster_centers[cent_st_id][1])), int(round(cluster_centers[cent_st_id][0])))
+                end_point = (int(round(cluster_centers[cent_ed_id][1])), int(round(cluster_centers[cent_ed_id][0])))
+                    
+                dx = (start_point[0] - end_point[0])
+                if abs(dx) < 1:
+                    dx = 1
+                m = float(start_point[1] - end_point[1]) / float(dx)
+
+                if(abs(m) > DENTAL_SPLIT_DIVIDE_LINE_SLOPE_THD):
+                    # print(f"Mask divide:: Start Point Org: {start_point}, End Point Org: {end_point}, M: {m}")
+                    start_point, end_point = extend_line(start_point, end_point, DENTAL_SPLIT_DIVIDE_LINE_EXT)
+                    # print(f"Mask divide:: Start Point Divided: {start_point}, End Point Divided: {end_point}, M: {m}")
+                    cv2.line(mask_divide, start_point, end_point, 0, 4)
+                    cv2.line(rdentin_bin, start_point, end_point, 0, 4)
+                    del cluster_centers[0]
+                    del cluster_centers[0]
+                    
+                    divide_state = 1
+                else:
+                    # print(f"Start Point: {start_point}, End Point: {end_point}, M: {m}")
+                    del cluster_centers[1]
+                    
+                tot_cent = len(cluster_centers)
+                    
+        else:
+            start_point = (int(round(cluster_centers[0][1])), int(round(cluster_centers[0][0])))
+            end_point = (int(round(cluster_centers[1][1])), int(round(cluster_centers[1][0])))
+                
+            dx = (start_point[0] - end_point[0])
+            if abs(dx) < 1:
+                dx = 1
+            m = float(start_point[1] - end_point[1]) / float(dx)
+
+            if(abs(m) > DENTAL_SPLIT_DIVIDE_LINE_SLOPE_THD):
+                # print(f"Mask divide:: Start Point Org: {start_point}, End Point Org: {end_point}, M: {m}")
+                start_point, end_point = extend_line(start_point, end_point, DENTAL_SPLIT_DIVIDE_LINE_EXT)
+                # print(f"Mask divide:: Start Point Divided: {start_point}, End Point Divided: {end_point}, M: {m}")
+                cv2.line(mask_divide, start_point, end_point, 0, 4)
+                cv2.line(rdentin_bin, start_point, end_point, 0, 4)
+                
+                divide_state = 1
+  
+
+    return mask_divide, divide_state
+    
+# Refine rect's start x and rect window size (avoid vertical line for x cut at pit circle)
+def margin_refine(can_st_x, can_win, mask_inter_in):
+    
+    mk_wd = mask_inter_in.shape[1]
+    # marg_box_hwd = 0
+    comp_width = 0
+    
+#     st_lt = can_st_x - marg_box_hwd
+#     if st_lt < 0:
+#         st_lt = 0 
+#     st_rt = can_st_x + marg_box_hwd
+#     if st_rt >= mk_wd:
+#         st_rt = mk_wd - 1
+        
+    
+#     ed_lt = can_st_x + can_win - marg_box_hwd
+#     if ed_lt < 0:
+#         ed_lt = 0 
+#     ed_rt = can_st_x + can_win + marg_box_hwd 
+#     if ed_rt >= mk_wd:
+#         ed_rt = mk_wd - 1
+        
+    can_ed_org = can_st_x + can_win
+    
+    margin_region = mask_inter_in[:, can_st_x]
+    reg_val = np.sum(np.sum(margin_region))
+    if(reg_val > 0):
+        comp_width = DENTAL_SPLIT_WINDOW_MARGIN
+        if can_st_x - DENTAL_SPLIT_WINDOW_MARGIN < 0:
+            comp_width = can_st_x
+        can_st_x -= comp_width # Enlarge left to refine
+        
+     
+    margin_region = mask_inter_in[:, can_ed_org]
+    reg_val = np.sum(np.sum(margin_region))
+    if(reg_val > 0):
+        can_win += comp_width + DENTAL_SPLIT_WINDOW_MARGIN # Enlarge Right to refine
+    
+    
+    return can_st_x, can_win
+    
+def mask_split_func(mask_inter_in, rdentin_bin, config):
+    if config is not None:
+        for label, values in config.items():
+            globals()[label] = values
+
+    mask_inter_cp = np.copy(mask_inter_in)
+    mask_divide = np.copy(rdentin_bin)
+    #group_inter = np.zeros_like(mask_inter_cp)
+    width = mask_inter_cp.shape[1]
+    
+    win_group = DENTAL_SPLIT_WINDOW_GROUP_MAXIMUM # init. oberservation window
+    st_x = 0 # rect win start x
+    ed_x = st_x + win_group # rect win end x
+    list_can_x = [] # candidator rect's start x
+    list_can_area = [] #candidator
+    list_can_win = [] # candidator
+    find_flag = 0 # If find one pair
+    num_lab_pre = 1 # 1, 2, 3, > 3
+    pair_rect_st_x = []
+    pair_rect_win = []
+    while (ed_x < width):
+        mk_win = mask_inter_cp[:, st_x:ed_x]
+        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mk_win, connectivity=8)
+        
+        # print('st = {}, num_labels = {}, win_group = {}'.format(st_x, num_labels, win_group))
+        
+        if num_labels < num_lab_pre: # if key pit number decreased, then back to get pair pits to split mask
+            if find_flag == 1:
+                
+                # Get the largest Pit Area in Candidators
+                sort_indx = np.argsort(list_can_area)
+                can_st_x = list_can_x[sort_indx[-1]]
+                can_win = list_can_win[sort_indx[-1]]
+                
+                # Refine rect's start x and rect window size (avoid vertical line for x cut at pit circle)
+                can_st_x, can_win = margin_refine(can_st_x, can_win, np.copy(mask_inter_cp))
+                
+                # Add final rect's start x and rect window size to the List # record
+                pair_rect_st_x.append(can_st_x) # record
+                pair_rect_win.append(can_win) # record
+                
+                
+                # Do split mask at this rect. window
+                mask_divide, divide_state = mask_split_in_win(can_st_x, 
+                                                              can_win, 
+                                                              np.copy(mask_inter_cp), 
+                                                              mask_divide, 
+                                                              rdentin_bin,
+                                                              config,
+                                                              )
+                
+                # print('done divide & remove st = {}, ed = {}, win_group = {}, divide_state={}'.format(can_st_x, can_st_x+can_win, can_win, divide_state))
+                
+                if(divide_state == 1): #Clear pit info. mask (intersections) for avoiding error by repeating process.
+                    mask_inter_cp[:, can_st_x:(can_st_x+can_win)] = 0
+                
+                # cv2.imshow('done divide & remove', mask_inter_cp) # gui
+                # cv2.waitKey(0) # gui
+            
+                #Reset for Next
+                list_can_win.clear()
+                list_can_x.clear()
+                list_can_area.clear()
+                
+                find_flag = 0
+                win_group = DENTAL_SPLIT_WINDOW_GROUP_MAXIMUM # Use default Window
+                num_lab_pre = 1
+            else:
+                # Keep searching
+                test_line = 0
+            
+            st_x += DENTAL_SPLIT_SLIDE_GROUP
+            ed_x = st_x + win_group    
+                    
+        elif num_labels <= 2: # Keep searching
+            st_x += DENTAL_SPLIT_SLIDE_GROUP
+            ed_x = st_x + win_group    
+        
+        elif num_labels == 3: # Find a pair pits (candidator)
+            find_flag = 1
+
+            tot_area = 0
+            for i in range(1, num_labels):
+                tot_area += stats[i, cv2.CC_STAT_AREA]        
+            list_can_area.append(tot_area)
+            list_can_x.append(st_x)
+            list_can_win.append(win_group)
+            
+            st_x += DENTAL_SPLIT_SLIDE_GROUP
+            ed_x = st_x + win_group
+
+            # print('find ' + str(st_x))
+            
+        elif num_labels > 3:
+            # Find a pair pits but more than two pits (candidator)
+            if(win_group == DENTAL_SPLIT_WINDOW_GROUP_MAXIMUM): # Keep searching
+                win_group = DENTAL_SPLIT_WINDOW_GROUP_REDUCED
+                ed_x = st_x + win_group
+                # print('Shrink')
+            else: # Find
+                find_flag = 1
+                
+                tot_area = 0
+                for i in range(1, num_labels):
+                    tot_area += stats[i, cv2.CC_STAT_AREA]        
+                list_can_area.append(tot_area)
+                list_can_x.append(st_x)
+                list_can_win.append(win_group)
+
+                st_x += DENTAL_SPLIT_SLIDE_GROUP
+                ed_x = st_x + win_group
+            
+        
+        num_lab_pre = num_labels # update number 
+        
+    # print('find pair rect. st. x = {}'.format(pair_rect_st_x))
+    # print('find pair rect window group = {}'.format(pair_rect_win))
+    
+    
+    return pair_rect_st_x, pair_rect_win, mask_divide
+    
+    
+    
+def quadratic_func(x, a, b, c):
+    
+    return a*x**2 + b*x + c
+    
+    
+    
+# Mask Intersection to Pit Key Circle Points
+def intersec_refine(mask_inter_in, comp_mask_in, config, plot_bool=False):
+    if config is not None:
+        for key, value in config.items():
+            globals()[key] = value 
+
+    mask_inter_refine = np.zeros_like(mask_inter_in)
+    op_mask_show = np.zeros_like(mask_inter_in) # gui show
+    op_mask_cont_show = np.zeros_like(mask_inter_in) # gui show
+    inter_show = np.zeros_like(mask_inter_in) # gui show
+    inter_show_RGB = cv2.cvtColor(inter_show, cv2.COLOR_GRAY2BGR) # gui show
+    comp_mask = np.copy(comp_mask_in)
+    comp_mask_show = np.copy(comp_mask_in) # gui show
+    comp_mask_show_RGB = cv2.cvtColor(comp_mask_show, cv2.COLOR_GRAY2BGR) # gui show
+    
+    # Get original Intersection (y,x)
+    coordinates = np.argwhere(mask_inter_in == 255) # (y,x) type
+    
+    if(len(coordinates) < 2):
+        return mask_inter_refine
+    
+    # Use DBSCAN to Cluster Intersection
+    dbscan = DBSCAN(eps=DENTAL_SPLIT_DBSCAN_EPS, min_samples=DENTAL_SPLIT_DBSCAN_MIN_SAMP)  # 調整 eps 和 min_samples 根據數據密度
+    dbscan_labels = dbscan.fit_predict(coordinates)
+
+    unique_labels = set(dbscan_labels) - {-1}  # 排除噪聲 (-1 為噪聲標籤)
+    cluster_centers = [] # (x,y) type
+    if len(unique_labels) < 2:
+        # print("intersec_refine:: DBSCAN did not find > 1 Group")
+        return mask_inter_refine
+    else:
+        # Get each Cluster's center
+        for label in unique_labels:
+            if label != -1: # 排除噪聲
+                cluster_points = coordinates[dbscan_labels == label]
+                center = np.mean(cluster_points, axis=0)  # 計算簇中心
+                # print('intersec_refine:: {}'.format(center[[1,0]]))
+                cluster_centers.append(center[[1,0]])
+
+                
+    # Process each Cluster (Intersection Coarse Center)
+    tot_cent = len(cluster_centers)
+    cent_id = 0
+    #OP_HWD = 30 # Pit Local Windows Box
+    while(cent_id < tot_cent):
+        clu_x, clu_y = cluster_centers[cent_id]
+        
+        # print('intersec_refine:: intersection center (x,y) = {}'.format((clu_x, clu_y)))
+
+        
+        # Refine Local Box's Boundary
+        comp_ht, comp_wd = comp_mask.shape
+        x_min, x_max = Refine_CoordBoundary(clu_x, DENTAL_SPLIT_OP_HWD, 0, comp_wd-1)
+        y_min, y_max = Refine_CoordBoundary(clu_y, DENTAL_SPLIT_OP_HWD, 0, comp_ht-1)
+        
+        # Get Local Dentin Mask
+        op_mask = np.zeros_like(comp_mask)
+        op_mask[y_min:y_max, x_min:x_max] = cv2.bitwise_not(comp_mask[y_min:y_max, x_min:x_max])
+        op_mask_convex_hull = np.copy(op_mask) # for convex hull computing
+        
+        op_mask_show = cv2.bitwise_or(op_mask_show, op_mask) # gui
+        
+        # Get Local Dentin Mask Edge
+        kernel = np.ones((3, 3), np.uint8)
+        op_mask_ref = cv2.erode(op_mask, kernel, iterations=1)
+        op_mask -= op_mask_ref
+        op_mask[y_min:y_min+3, :] = 0
+        op_mask[y_max-3:y_max, :] = 0
+
+        if plot_bool:
+            cv2.circle(inter_show_RGB, (np.int32(clu_x), np.int32(clu_y)), 3, (0, 0, 255), -1)
+            cv2.circle(comp_mask_show_RGB, (np.int32(clu_x), np.int32(clu_y)), 3, (0, 0, 255), -1)        
+            op_mask_cont_show = cv2.bitwise_or(op_mask_cont_show, op_mask) # gui
+        
+        # Get Local Dentin Mask Edge Coordinate
+        coord_op = np.argwhere(op_mask == 255) # (y,x) type
+        coord_op = coord_op[:, [1,0]] # (x,y) type
+        coord_op_x = coord_op[:, 0]
+        coord_op_y = coord_op[:, 1]
+
+        # Perform curve fitting
+        # poly_coeff = np.polyfit(coord_op_x, coord_op_y, 2)  # 拟合二次多项式
+        # poly = np.poly1d(poly_coeff)  # 生成多项式函数
+        poly_coeff, covariance = curve_fit(quadratic_func, coord_op_x, coord_op_y)
+        
+        # Get Local Mask (Edge) Shape Type Info.
+        coef_a, coef_b, coef_c = poly_coeff
+        # op_x_v = -coef_b / (2 * coef_a)  # 计算 y 方向的顶点
+        # op_y_v = poly(op_x_v)
+        # op_y_v = quadratic_func(op_x_v, coef_a, coef_b, coef_c)
+        
+        # Show Curve Fitting Results  # gui
+        x_vals = np.arange(x_min, x_max, 1)  # 取所有 x 范围
+        # y_vals = poly(x_vals)
+        y_vals = quadratic_func(x_vals, coef_a, coef_b, coef_c)
+        for x, y in zip(x_vals, y_vals):
+            cv2.circle(inter_show_RGB, (np.int32(x), np.int32(y)), 1, (0, 255, 255), -1)  # gui
+        
+        
+        # Get Point Cloud Direction
+        mean_coord = np.mean(coord_op, axis=0)
+        coord_centered = coord_op - mean_coord
+        cov_matrix = np.cov(coord_centered, rowvar=False)
+        eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
+        
+        # Project Point Cloud to short axis
+        coord_short_ax = np.abs(coord_centered @ eigenvectors[:, 1])
+        
+        # Determin Direction
+        med_num = 5
+        coord_sort_idx = np.argsort(coord_short_ax)
+        coord_y_dist_min = np.median(coord_op[coord_sort_idx[0:med_num], 1])
+        coord_y_dist_max = np.median(coord_op[coord_sort_idx[-med_num:], 1])
+        
+        coef_a = 1
+        if(coord_y_dist_min > coord_y_dist_max):
+            coef_a = -1
+        
+        # Refine Pit (x,y) Method:
+        
+        op_x_v = -1 # Pit Center x
+        op_y_v = -1 # Pit Center y
+        
+        # Refine Method 1
+        # Find Contours in the Local Dentin Mask
+        contours, _ = cv2.findContours(op_mask_convex_hull, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Find the convex hull of the largest contour
+        # Assuming the largest contour corresponds to the object of interest
+        if contours:
+            largest_contour = max(contours, key=cv2.contourArea)  # Get the largest contour
+            convex_hull = cv2.convexHull(largest_contour)  # Compute the convex hull
+            sorted_hull = convex_hull[convex_hull[:, 0, 1].argsort()]
+            
+            # Use Mask (Edge) Shape Type to Refine Top or Bottom Pit Center
+            op_x_v_hull, op_y_v_hull = sorted_hull[0, 0, :]
+            if(coef_a < 0): # If parabolic notch upward
+                op_x_v_hull, op_y_v_hull = sorted_hull[-1, 0, :]
+        
+            # print('intersec_refine:: hull fitting refined pit (x,y) = {}'.format((op_x_v_hull, op_y_v_hull)))
+            if plot_bool:
+                cv2.circle(inter_show_RGB, (np.int32(op_x_v_hull), np.int32(op_y_v_hull)), 3, (0, 255, 0), -1)
+                cv2.circle(comp_mask_show_RGB, (np.int32(op_x_v_hull), np.int32(op_y_v_hull)), 3, (0, 255, 0), -1)
+        
+            op_x_v = op_x_v_hull
+            op_y_v = op_y_v_hull
+        
+    
+        # Refine Method 2 (Spare Method)
+        # Use Mask (Edge) Shape Type to Get Top or Bottom Pit Center in cloud points
+        sorted_coords = coord_op[coord_op[:, 1].argsort()]
+        op_x_v_ed, op_y_v_ed = sorted_coords[0]
+        if(coef_a < 0): # If parabolic notch upward
+            op_x_v_ed, op_y_v_ed = sorted_coords[-1]
+        
+        # print('intersec_refine:: egde refined pit (x,y) = {}'.format((op_x_v_ed, op_y_v_ed)))
+        if plot_bool:
+            cv2.circle(inter_show_RGB, (np.int32(op_x_v_ed), np.int32(op_y_v_ed)), 3, (255, 0, 0), -1)
+            cv2.circle(comp_mask_show_RGB, (np.int32(op_x_v_ed), np.int32(op_y_v_ed)), 3, (255, 0, 0), -1)
+        
+        # If convex hull fitting is failed then use Refine Method 2
+        if(op_x_v == -1 or op_y_v == -1):
+            op_x_v = op_x_v_ed
+            op_y_v = op_y_v_ed
+        
+        
+        # Refined Pit Key Center on Mask Results (center circle size is a key parameter, too)
+        if plot_bool:
+            cv2.circle(mask_inter_refine, (np.int32(op_x_v), np.int32(op_y_v)), DENTAL_SPLIT_PIT_RADIUS, 255, -1)
+        
+        cent_id += 1
+    
+    
+    # cv2.imshow('intersec_refine:: op_mask_show', op_mask_show) # gui
+    # cv2.imshow('intersec_refine:: op_mask_cont_show', op_mask_cont_show) # gui
+    # cv2.imshow('intersec_refine:: inter_show', inter_show) # gui
+    # cv2.imshow('intersec_refine:: comp_mask_show', comp_mask_show) # gui
+    # cv2.waitKey(0)
+    
+    return mask_inter_refine
+    
+#Filter Noise Components
+def select_main_dental_areas(mask_in, DENTAL_SPLIT_SIDE_CONTOUR_THRESHOLD):
+    mask = np.zeros_like(mask_in)
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask_in, connectivity=8)
+    for i in range(1, num_labels):
+        if stats[i, cv2.CC_STAT_AREA] > DENTAL_SPLIT_SIDE_CONTOUR_THRESHOLD :
+            mask[labels == i] = 255
+
+    return mask    
+def mask_intersec(mask_lt_in, mask_rt_in, comp_mask_in, config):
+
+    if config is not None:
+        for key, value in config.items():
+            globals()[key] = value 
+    def create_shifted_intersection_masks(mask_lt_in, mask_rt_in, shift_value):
+        """
+        Apply affine transformations to the left and right masks to create shifted versions,
+        calculate their intersection, and return a list of intersection masks.
+        
+        Args:
+        - mask_lt_in: Input left mask
+        - mask_rt_in: Input right mask
+        - shift_value: The shift value to apply to the transformations
+        - width: The width of the output masks
+        - height: The height of the output masks
+        
+        Returns:
+        - mask_inter_list: List containing the intersection masks
+        """
+        mk_lt = np.copy(mask_lt_in)
+        mk_rt = np.copy(mask_rt_in)
+        height, width = mk_lt.shape[:2]
+        # Define the affine transformation matrices
+        transform_matrix_plus = np.float32([[1, 0, shift_value], [0, 1, 0]])
+        transform_matrix_minus = np.float32([[1, 0, -shift_value], [0, 1, 0]])
+        
+        mask_inter_list = []
+        for _ in range(2):  # Repeat twice for the two transformations
+            mk_lt_sf = cv2.warpAffine(mk_lt, transform_matrix_plus, (width, height))
+            mk_rt_sf = cv2.warpAffine(mk_rt, transform_matrix_minus, (width, height))
+            
+            # Calculate the intersection of the shifted masks
+            mask_inter = cv2.bitwise_and(mk_lt_sf, mk_rt_sf)
+            mask_inter_list.append(mask_inter)
+        
+        return mask_inter_list
+    def remove_small_components(mask, area_threshold=5, connectivity=8):
+        """Remove connected components with an area smaller than the specified threshold and return the updated connected components analysis results"""
+        num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=connectivity)
+        
+        cleaned_mask = mask.copy()
+        for i in range(1, num_labels):  # 跳過背景
+            if stats[i, cv2.CC_STAT_AREA] < area_threshold:
+                cleaned_mask[labels == i] = 0
+        return cv2.connectedComponentsWithStats(cleaned_mask, connectivity=connectivity)
+    
+    def extract_roi_from_centroid(mask_inter, num_labels_sec, centroids_sec, win_roi=120):
+        enhanced_mask = np.copy(mask_inter)
+        # Iterate over each label from the second intersection
+        for sec_idx in range(1, num_labels_sec):  # Start from 1 to skip the background
+            x_sec, y_sec = centroids_sec[sec_idx]
+            # Extract region of interest (ROI) around the centroid
+            mask_roi = enhanced_mask[int(y_sec - win_roi / 2) : int(y_sec + win_roi / 2),
+                                    int(x_sec - win_roi / 4) : int(x_sec + win_roi / 4)]
+            # If the sum of the mask ROI is zero, fill the corresponding region in the enhanced mask
+            if np.sum(mask_roi) == 0:
+                enhanced_mask[index_masks_sec == sec_idx] = 255       
+        return enhanced_mask
+    
+    mask_inter_list=create_shifted_intersection_masks(mask_lt_in, mask_rt_in, DENTAL_SPLIT_MATCH_SHIFT)
+
+    mask_inter=mask_inter_list[0]
+    mask_inter_second=mask_inter_list[1]
+    num_labels_sec, index_masks_sec, stats, centroids_sec = remove_small_components(mask_inter_second, area_threshold=5)
+    enhanced_mask=extract_roi_from_centroid(mask_inter, num_labels_sec, centroids_sec, DENTAL_SPLIT_WIN_ROI)
+    refine_mask = intersec_refine(enhanced_mask, comp_mask_in, config)
+    
+    return refine_mask

@@ -3,11 +3,11 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 import pandas as pd
-from sklearn.metrics import confusion_matrix, classification_report, roc_auc_score, roc_curve
+from sklearn.metrics import confusion_matrix, roc_auc_score
 from sklearn.preprocessing import label_binarize
-import matplotlib.pyplot as plt
-import seaborn as sns
+
 import cv2
+import numpy as np
 from src.allocation.domain.pa_dental_measure.main import *
 
 def restructure_dataframe(df):
