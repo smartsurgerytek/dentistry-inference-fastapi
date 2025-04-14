@@ -92,13 +92,18 @@ curl -s https://api.github.com/repos/nuclio/nuclio/releases/latest \
 			| wget -O nuctl -qi - && chmod +x nuctl
 ```
 
+# add the huggingface token
+```
+echo "huggingface token" > ./conf/hf_token.txt
+```
+
 Deploy the functions in nuclio
 ```
-nuctl deploy --project-name cvat --path "./dentistry-inference-core/src/allocation/service_layer/cvat_nuclio/segmentation_PA" --platform local
+nuctl deploy --project-name cvat --path "./src/allocation/service_layer/cvat_nuclio/segmentation_PA" --platform local
 ```
 
 ```
-nuctl deploy --project-name cvat --path "./dentistry-inference-core/src/allocation/service_layer/cvat_nuclio/segmentation_PANO" --platform local
+nuctl deploy --project-name cvat --path "./src/allocation/service_layer/cvat_nuclio/segmentation_PANO" --platform local
 ```
 
 check functions aviability in nuclio
