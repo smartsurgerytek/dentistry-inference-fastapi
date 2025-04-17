@@ -91,52 +91,41 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, tolerance
             # Convert mask to binary image
             mask_binary = (mask_np > 0.5).astype(np.uint8) * 255
             mask_colored = np.zeros((mask_binary.shape[0], mask_binary.shape[1], 3), dtype=np.uint8)
-            if return_type=='cvat':
+            if 'cvat' in return_type:
                 contours = find_contours(mask_binary, 0.5)
                 if len(contours)==0:
                     continue
                 contour = contours[0]
                 contour = np.flip(contour, axis=1)
-                polygons = approximate_polygon(contour, tolerance=tolerance)
-
+                #polygons = approximate_polygon(contour, tolerance=tolerance)
+                
                 xyxy = box.xyxy.tolist()
                 xtl = int(xyxy[0][0])
                 ytl = int(xyxy[0][1])
                 xbr = int(xyxy[0][2])
                 ybr = int(xyxy[0][3])
+                local_binary_mask=mask_binary[ytl:ybr, xtl:xbr]
 
-                #cvat_mask = to_cvat_mask((xtl, ytl, xbr, ybr), mask_binary)
+                flatten_rle=mask_to_rle(local_binary_mask)
+                flatten_rle_plus_bbox=flatten_rle + [xtl,ytl,xbr-1,ybr-1]
 
-                yolov8_contents.append({
-                    "confidence": confidence,
-                    "label": class_names[int(box.cls)],
-                    "type": "mask",
-                    "points": polygons.ravel().tolist(),
-                    #"mask": cvat_mask
-                })
-            elif return_type=="cvat_mask": 
-                contours = find_contours(mask_binary, 0.5)
-                if len(contours)==0:
-                    continue
-                contour = contours[0]
-                contour = np.flip(contour, axis=1)
-                polygons = approximate_polygon(contour, tolerance=tolerance)
+                if return_type=='cvat_mask':
+                    cvat_mask = to_cvat_mask((xtl, ytl, xbr, ybr), mask_binary)
+                    yolov8_contents.append({
+                        "confidence": confidence,
+                        "label": class_names[int(box.cls)],
+                        "type": "mask",
+                        "points": flatten_rle_plus_bbox,
+                        "mask": cvat_mask
+                    })
+                else:
+                    yolov8_contents.append({
+                        "confidence": confidence,
+                        "label": class_names[int(box.cls)],
+                        "type": "mask",
+                        "points": flatten_rle_plus_bbox,
+                    })
 
-                xyxy = box.xyxy.tolist()
-                xtl = int(xyxy[0][0])
-                ytl = int(xyxy[0][1])
-                xbr = int(xyxy[0][2])
-                ybr = int(xyxy[0][3])
-
-                cvat_mask = to_cvat_mask((xtl, ytl, xbr, ybr), mask_binary)
-
-                yolov8_contents.append({
-                    "confidence": confidence,
-                    "label": class_names[int(box.cls)],
-                    "type": "mask",
-                    "points": polygons.ravel().tolist(),
-                    "mask": cvat_mask
-                })                               
             elif return_type=='yolov8':
                 yolov8_points=get_yolov8_label(mask_binary, tolerance=tolerance)
                 yolov8_line=[class_id]

@@ -46,3 +46,22 @@ def get_label_text_img(pred_index_labels, width, color_dict, text_dict):
                         1, (255,255,255), 1, cv2.LINE_AA)
             #print(label_img) #1117
     return label_img
+
+
+def mask_to_rle(mask: np.ndarray) -> list[int]:
+
+    flattened = mask.T.flatten(order='F')
+
+    rle = []
+    last_val = 0
+    count = 0
+
+    for val in flattened:
+        if val == last_val:
+            count += 1
+        else:
+            rle.append(count)
+            count = 1
+            last_val = val
+    rle.append(count)
+    return rle

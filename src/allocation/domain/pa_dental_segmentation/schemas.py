@@ -23,7 +23,7 @@ class CvatSegmentation(BaseModel):
     confidence: float
     label: str
     type: str
-    points: List[float]
+    points: List[int]
     #mask: List[int]
 
 class CvatSegmentations(BaseModel):
