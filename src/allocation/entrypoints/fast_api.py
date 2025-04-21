@@ -54,7 +54,9 @@ app = FastAPI(
     title="Dental X-ray Inference API",
     version="1.0.0",
     description="API to infer information from dental X-ray images.",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url=None,
+    redoc_url=None,
 )
 FastAPISwagger2(app)
 
