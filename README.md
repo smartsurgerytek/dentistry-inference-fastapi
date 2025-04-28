@@ -69,8 +69,52 @@ See the coverage
 ```
 pytest -vv --cov src/
 ```
+## cvat install
 
-## CVAT-nuclio deploy
+docker installation
+```
+sudo apt-get update
+sudo apt-get --no-install-recommends install -y \
+  apt-transport-https \
+  ca-certificates \
+  curl \
+  gnupg-agent \
+  software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository \
+  "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) \
+  stable"
+sudo apt-get update
+sudo apt-get --no-install-recommends install -y \
+  docker-ce docker-ce-cli containerd.io docker-compose-plugin
+```
+
+recommend to clone by ssh
+```
+git clone https://github.com/cvat-ai/cvat.git
+
+or
+
+git clone git@github.com:cvat-ai/cvat.git
+```
+
+export cvat host
+```
+export CVAT_HOST=FQDN_or_YOUR-IP-ADDRESS
+```
+
+run docker compose up
+```
+docker compose up -d
+```
+
+create super user
+```
+docker exec -it cvat_server bash -ic 'python3 ~/manage.py createsuperuser'
+```
+
+## CVAT auto annotation and Nuclio deploy
 
 cvat docker compose up
 
@@ -91,6 +135,19 @@ curl -s https://api.github.com/repos/nuclio/nuclio/releases/latest \
 			| tr -d \" \
 			| wget -O nuctl -qi - && chmod +x nuctl
 ```
+
+create project 
+```
+nuctl create project cvat
+```
+
+run deploy SAM
+```
+./serverless/deploy_gpu.sh /serverless/pytorch/facebookresearch/sam/nuclio
+or
+nuctl deploy --project-name cvat --path "/serverless/pytorch/facebookresearch/sam/nuclio" --platform local
+```
+
 
 # add the huggingface token
 ```
