@@ -88,7 +88,7 @@ def pano_caries_detecion(model, weights_path, pil_img, return_type='image_array'
 if __name__ == '__main__':
     # # create model
     model = create_pano_caries_detection_model(num_classes=1)
-    weights_path = "./models/dentistry_pano-caries-detection-resNetFpn_5.12.pth"
+    weights_path = "./models/dentistry_pano-CariesDetection_resNetFpn_25.12.pth"
     pil_img = Image.open("./tests/files/027107.jpg")
     plot_img, error_messages = pano_caries_detecion(model, weights_path, pil_img, return_type='image_array')
     plt.imshow(plot_img)
