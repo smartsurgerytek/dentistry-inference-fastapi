@@ -17,3 +17,4 @@ runs/
 *.pyc
 *.rar
 *.tgz
+.coverage
