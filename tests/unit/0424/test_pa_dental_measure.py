@@ -58,17 +58,39 @@ class TestDentalEstimation(unittest.TestCase):
                 if 'length' in pair:
                     self.assertGreater(pair['length'], 0, "長度應大於0")
 
-    def test_black_image_handling(self):
-        """測試：全黑圖片錯誤處理"""
-        result = dental_estimation(
-            self.black_image,
-            self.component_model,
-            self.contour_model,
-            return_type='dict'
-        )
-        # 應回傳 list，且長度為 0
-        self.assertIsInstance(result, list, "應返回 list 格式")
-        self.assertEqual(len(result), 0, "全黑圖片應無特徵點")
+    def test_missing_input_handling(self):
+        """測試：異常輸入處理（全黑圖片/部分mask缺失）"""
+        test_cases = [
+            # (測試名稱, 輸入圖像, mock行為)
+            ("全黑圖片", self.black_image, None),
+            ("部分mask缺失", self.normal_image, 
+                lambda: mock.patch(
+                    'src.allocation.domain.pa_dental_measure.main.get_mask_dict_from_model',
+                    side_effect=lambda *args, **kwargs: {
+                        'gum': np.ones(self.normal_image.shape[:2], dtype=np.uint8)*255,
+                        'dental_crown': np.ones(self.normal_image.shape[:2], dtype=np.uint8)*255
+                    }
+                ))
+        ]
+
+        for case_name, test_image, mock_behavior in test_cases:
+            with self.subTest(case_name=case_name):
+                # 動態套用 mock（若存在）
+                ctx = mock_behavior() if mock_behavior else mock.MagicMock()
+                if mock_behavior:
+                    ctx.__enter__()
+
+                # 執行被測函數
+                result = dental_estimation(
+                    test_image,
+                    self.component_model,
+                    self.contour_model,
+                    return_type='dict'
+                )
+
+                # 共同斷言
+                self.assertIsInstance(result, list)
+                self.assertEqual(len(result), 0, "全黑圖片/缺失mask時應回傳空list")
 
     def test_output_format_validation(self):
         """測試：不同 return_type 的輸出格式"""
@@ -92,24 +114,6 @@ class TestDentalEstimation(unittest.TestCase):
             return_type='image_array'
         )
         self.assertEqual(img_array.shape[:2], self.normal_image.shape[:2], "影像尺寸不符")
-
-    def test_partial_mask_missing(self):
-        """測試：模擬部分 mask 缺失情境，檢查補全及容錯"""
-        # mock get_mask_dict_from_model 讓 'dentin' 缺失
-        with mock.patch('src.allocation.domain.pa_dental_measure.main.get_mask_dict_from_model') as mock_get_mask:
-            def fake_get_mask(model, image, method='semantic', mask_threshold=0.5):
-                # 只回傳 gum、dental_crown
-                return {'gum': np.ones(self.normal_image.shape[:2], dtype=np.uint8)*255,
-                        'dental_crown': np.ones(self.normal_image.shape[:2], dtype=np.uint8)*255}
-            mock_get_mask.side_effect = fake_get_mask
-            result = dental_estimation(
-                self.normal_image,
-                self.component_model,
-                self.contour_model,
-                return_type='dict'
-            )
-            self.assertIsInstance(result, list)
-            self.assertEqual(len(result), 0, "缺失mask時應回傳空list或錯誤")
 
     def test_model_file_not_found(self):
         """測試：模型路徑不存在時應拋出 FileNotFoundError"""
