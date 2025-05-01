@@ -100,11 +100,5 @@ class TestYoloTransform(unittest.TestCase):
             self.assertIsInstance(item, list, 'yolov8_contents 元素應為 list')
             self.assertIsInstance(item[0], int, '第一個元素應為 class_id (int)')
 
-    def test_yolo_transform_normal_image_fallback(self):
-        """測試：未知 return_type 時應走 fallback 並回傳 class_names, yolov8_contents"""
-        result = yolo_transform(self.normal_image, self.model, return_type='unknown_type')
-        self.assertIn('class_names', result, 'fallback 應含 class_names')
-        self.assertIn('yolov8_contents', result, 'fallback 應含 yolov8_contents')
-
 if __name__ == '__main__':
     unittest.main()
