@@ -24,7 +24,25 @@
 **測試內容：**
 
 - 驗證全黑圖片輸入時，齲齒檢測結果為 None，訊息為 "No caries found"。
-- 驗證正常牙片圖片輸入時，齲齒檢測會有結果，且回傳型別為 PIL Image。
+- 驗證正常牙片圖片輸入時，齲齒檢測會有結果，且回傳型別為 PIL Image。  
+- Warning:
+```
+================================================================================== warnings summary =================================================================================== 
+tests/unit/0424/test_pano_caries_detection.py::TestPanoCariesDetection::test_black_image_handling
+  C:\Users\SSTek\anaconda3\envs\core-unittest\lib\site-packages\torch\functional.py:554: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\TensorShape.cpp:4316.)
+    return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+============================================================================ 2 passed, 1 warning in 27.73s ============================================================================ 
+```
+- 解決辦法：  
+```
+# 原本寫法
+y, x = torch.meshgrid(y_range, x_range)
+
+# 修改後
+y, x = torch.meshgrid(y_range, x_range, indexing='ij')
+```
 
 ---
 
