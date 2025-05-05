@@ -25,10 +25,11 @@ jobs:
         run: |
           git clone https://smartsurgery:$HF_TOKEN@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo hf_space
 
-      - name: Enable Git LFS in Hugging Face repo
+      - name: Enable Git LFS in Hugging Face repo and track files
         run: |
           cd hf_space
           git lfs install
+          # Track large files extensions (add more as needed)
           git lfs track "*.pdf" "*.pt" "*.pth" "*.png" "*.jpg" "*.npy"
           git add .gitattributes
           git commit -m "Track large files using Git LFS" || echo "No changes"
@@ -36,13 +37,13 @@ jobs:
       - name: Copy project files and force re-add LFS-tracked files
         run: |
           rsync -av --delete --exclude=".git" --exclude="hf_space/" ./ hf_space/ || [[ $? == 24 ]]
-
           cd hf_space
           git lfs install
-          
           # Force remove and re-add large files so Git knows to treat them with LFS
           git rm --cached docs/*.pdf || true
           git add docs/*.pdf
+          git rm --cached models/*.pt || true
+          git add models/*.pt
 
       - name: Overwrite README.md with Space metadata
         run: |
