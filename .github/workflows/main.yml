@@ -52,7 +52,7 @@ jobs:
         run: |
           python ./src/allocation/service_layer/download.py
 
-      - name: Debug: Check if models folder exists
+      - name: Debug Check if models folder exists
         run: |
           ls -R ./models || echo "models folder not found after download.py"
 
