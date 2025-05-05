@@ -9,43 +9,52 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout GitHub repo (with LFS)
+      - name: Checkout GitHub repository (with LFS)
         uses: actions/checkout@v3
         with:
           lfs: true
 
-      - name: Set up Git identity
+      - name: Configure Git identity
         run: |
           git config --global user.email "ci@github.com"
           git config --global user.name "GitHub CI"
 
-      - name: Clone Hugging Face Space (with token auth)
+      - name: Clone Hugging Face Space with token authentication
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}  # Set HUGGINGFACE_TOKEN environment variable
         run: |
           git clone https://smartsurgery:$HF_TOKEN@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo hf_space
 
-      - name: Enable Git LFS in Hugging Face repo and track files
+      - name: Enable Git LFS and track large files
         run: |
           cd hf_space
           git lfs install
-          # Track large files extensions (add more as needed)
+          # Track large file types (add more as necessary)
           git lfs track "*.pdf" "*.pt" "*.pth" "*.png" "*.jpg" "*.npy"
           git add .gitattributes
-          git commit -m "Track large files using Git LFS" || echo "No changes"
+          git commit -m "Track large files using Git LFS" || echo "No changes to commit"
 
-      - name: Copy project files and force re-add LFS-tracked files
+      - name: Sync project files and re-add LFS-tracked files
         run: |
           rsync -av --delete --exclude=".git" --exclude="hf_space/" ./ hf_space/ || [[ $? == 24 ]]
           cd hf_space
           git lfs install
-          # Force remove and re-add large files so Git knows to treat them with LFS
-          git rm --cached docs/*.pdf || true
-          git add docs/*.pdf
-          git rm --cached models/*.pt || true
-          git add models/*.pt
+          # Re-add large files to ensure they are tracked by LFS
+          for file in docs/*.pdf; do
+            [ -e "$file" ] && git rm --cached "$file" && git add "$file"
+          done
+          for file in models/*.pt; do
+            [ -e "$file" ] && git rm --cached "$file" && git add "$file"
+          done
 
-      - name: Overwrite README.md with Space metadata
+      - name: Run download script
+        env:
+          HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}  # Make HUGGINGFACE_TOKEN available to the script if needed
+        run: |
+          python src/allocation/service_layer/download.py
+
+      - name: Update README.md with Space metadata
         run: |
           cat <<EOF > hf_space/README.md
           ---
@@ -60,11 +69,12 @@ jobs:
           ---
           EOF
 
-      - name: Commit and push to Hugging Face
+      - name: Commit changes and push to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}  # Set HUGGINGFACE_TOKEN for the push step
         run: |
           cd hf_space
           git add .
-          git commit -m "Update from GitHub push (with README metadata + LFS fixes)" || echo "No changes to commit"
-          git push https://smartsurgery:$HF_TOKEN@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo main
+          git commit -m "Update from GitHub push (with README metadata + LFS updates)" || echo "No changes to commit"
+          git push https://smartsurgery:$HUGGINGFACE_TOKEN@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo main
