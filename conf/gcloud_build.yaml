@@ -3,7 +3,7 @@ steps:
     entrypoint: sh
     args:
       - -c
-      - 'echo "HUGGINGFACE_TOKEN=$HUGGINGFACE_TOKEN"'
+      - 'echo "HUGGINGFACE_TOKEN=$$HUGGINGFACE_TOKEN"'
     secretEnv:
       - HUGGINGFACE_TOKEN
     id: DebugSecret
