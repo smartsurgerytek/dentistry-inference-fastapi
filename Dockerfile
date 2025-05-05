@@ -6,12 +6,12 @@ ENV HUGGINGFACE_TOKEN=${HUGGINGFACE_TOKEN}
 
 WORKDIR /workspace
 
+COPY ./src /workspace/src
+COPY ./conf /workspace/conf
+
 RUN pip install huggingface_hub
 
 RUN python src/allocation/service_layer/download.py
-
-COPY ./src /workspace/src
-COPY ./conf /workspace/conf
 
 COPY requirements.txt /workspace/requirements.txt
 
