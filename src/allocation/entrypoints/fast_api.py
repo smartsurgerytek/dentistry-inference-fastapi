@@ -17,14 +17,18 @@ from src.allocation.domain.pano_caries_detection.main import create_pano_caries_
 from src.allocation.domain.pa_pano_classification.main import create_pa_pano_classification_model
 from src.allocation.domain.pa_pano_classification.schemas import PaPanoClassificationResponse
 from src.allocation.domain.pano_fdi_segmentation.schemas import PanoSegmentationYoloV8Response, PanoSegmentationCvatResponse, PanoSegmentationRequest
+from src.allocation.domain.aggregation.schemas import CombinedImageResponse
 from contextlib import asynccontextmanager
 from ultralytics import YOLO
 from src.allocation.adapters.utils import base64_to_bytes
 from fastapi_swagger2 import FastAPISwagger2
+from concurrent.futures import ProcessPoolExecutor
+import asyncio
 
-import yaml
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global executor
+    executor = ProcessPoolExecutor(max_workers=os.cpu_count() or 1)
     # Load the ML model
     global pa_component_model
     pa_component_model = YOLO('./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
@@ -49,15 +53,18 @@ async def lifespan(app: FastAPI):
     pa_contour_model = None
     pano_caries_detection_model= None
     pano_caries_detection_model_weight_path=''
+    executor.shutdown(wait=True)
 
 app = FastAPI(
     title="Dental X-ray Inference API",
     version="1.0.0",
     description="API to infer information from dental X-ray images.",
     lifespan=lifespan,
-    docs_url=None,
-    redoc_url=None,
+    #docs_url=None,
+    #redoc_url=None,
 )
+
+
 FastAPISwagger2(app)
 
 v1_router = APIRouter()
@@ -183,6 +190,44 @@ async def generate_fdi_panoramic_xray_segmentations_image_base64(
 ) -> PanoSegmentationCvatResponse:
     image=base64_to_bytes(request.image)
     return InferenceService.pano_fdi_segmentation_image_base64(image, pano_fdi_segmentation_model)
+
+@v1_router.post("/pa_aggregation_images", response_model=CombinedImageResponse)
+async def aggregate_pa_images_base64_dict(
+    request: PaMeasureRequest
+) -> CombinedImageResponse:
+    
+    image = base64_to_bytes(request.image)
+    loop = asyncio.get_running_loop()
+
+    # 定義所有需要執行的推論任務
+    tasks = [
+        loop.run_in_executor(
+            executor,
+            InferenceService.pa_measure_image_base64,
+            image, pa_component_model, pa_contour_model,
+            request.scale_x, request.scale_y
+        ),
+        loop.run_in_executor(
+            executor,
+            InferenceService.pa_segmentation_image_base64,
+            image, pa_component_model
+        ),
+        # 你可以在這裡繼續加入更多任務
+        # loop.run_in_executor(executor, your_other_inference_fn, image, ...)
+    ]
+
+    # 並行等待所有推論結果
+    results = await asyncio.gather(*tasks)
+
+    # 拆解結果（根據順序）
+    measure_img = results[0]
+    segmentation_img = results[1]
+
+    return CombinedImageResponse(
+        measure_image_base64=measure_img.image,
+        segmentation_image_base64=segmentation_img.image
+    )
+
 
 app.include_router(v1_router, prefix="/v1")
 
