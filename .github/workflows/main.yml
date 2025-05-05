@@ -29,13 +29,20 @@ jobs:
         run: |
           cd hf_space
           git lfs install
-          git lfs track "*.pt" "*.pth" "*.pdf" "*.png" "*.jpg"  # 依需要追蹤的副檔名調整
+          git lfs track "*.pdf" "*.pt" "*.pth" "*.png" "*.jpg"
           git add .gitattributes
           git commit -m "Track large files using Git LFS" || echo "No changes"
 
-      - name: Copy project files
+      - name: Copy project files and force re-add LFS-tracked files
         run: |
           rsync -av --delete --exclude=".git" --exclude="hf_space/" ./ hf_space/ || [[ $? == 24 ]]
+
+          cd hf_space
+          git lfs install
+          
+          # Force remove and re-add large files so Git knows to treat them with LFS
+          git rm --cached docs/*.pdf || true
+          git add docs/*.pdf
 
       - name: Overwrite README.md with Space metadata
         run: |
@@ -58,5 +65,5 @@ jobs:
         run: |
           cd hf_space
           git add .
-          git commit -m "Update from GitHub push (with README metadata)" || echo "No changes to commit"
+          git commit -m "Update from GitHub push (with README metadata + LFS fixes)" || echo "No changes to commit"
           git push https://smartsurgery:$HF_TOKEN@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo main
