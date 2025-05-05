@@ -56,7 +56,8 @@ jobs:
         env:
           HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}  # Make HUGGINGFACE_TOKEN available to the script if needed
         run: |
-          cp -r models ./hf_space/
+          cp -r ./models ./hf_space/
+          cp -r ./conf ./hf_space/
 
       - name: Update README.md with Space metadata
         run: |
