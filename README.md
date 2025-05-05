@@ -223,5 +223,4 @@ please check whether it is same as the gcloud run url
 # CI-CD
 
 ## huggingface
-test20
 ## gcloud run
