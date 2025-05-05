@@ -52,12 +52,20 @@ jobs:
         run: |
           python ./src/allocation/service_layer/download.py
 
+      - name: Debug: Check if models folder exists
+        run: |
+          ls -R ./models || echo "models folder not found after download.py"
+
       - name: Copy download files
         env:
           HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}  # Make HUGGINGFACE_TOKEN available to the script if needed
         run: |
           cp -r ./models ./hf_space/
           cp -r ./conf ./hf_space/
+
+      - name: Confirm contents copied to hf_space
+        run: |
+          ls -R ./hf_space/models || echo "models not copied"
 
       - name: Update README.md with Space metadata
         run: |
