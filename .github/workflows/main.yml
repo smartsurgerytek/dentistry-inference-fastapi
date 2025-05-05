@@ -27,18 +27,16 @@ jobs:
 
       - name: Overwrite README.md with Space metadata
         run: |
-          cat <<EOF > hf_space/README.md
----
-title: Smartsurgery Dentistry Models Demo
-emoji: 🐰
-colorFrom: red
-colorTo: pink
-sdk: gradio
-sdk_version: 4.41.0
-app_file: ./src/allocation/entrypoints/huggingface_gradio.py
-pinned: false
----
-EOF
+          echo '---' > hf_space/README.md
+          echo 'title: Smartsurgery Dentistry Models Demo' >> hf_space/README.md
+          echo 'emoji: 🐰' >> hf_space/README.md
+          echo 'colorFrom: red' >> hf_space/README.md
+          echo 'colorTo: pink' >> hf_space/README.md
+          echo 'sdk: gradio' >> hf_space/README.md
+          echo 'sdk_version: 4.41.0' >> hf_space/README.md
+          echo 'app_file: ./src/allocation/entrypoints/huggingface_gradio.py' >> hf_space/README.md
+          echo 'pinned: false' >> hf_space/README.md
+          echo '---' >> hf_space/README.md
 
       - name: Commit and push to Hugging Face
         run: |
