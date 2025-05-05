@@ -4,7 +4,7 @@ import cv2
 import pytest
 import sys
 import yaml
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 from src.allocation.domain.pano_fdi_segmentation.main import pano_fdi_segmentation, YOLO
 
 # 測試用檔案路徑

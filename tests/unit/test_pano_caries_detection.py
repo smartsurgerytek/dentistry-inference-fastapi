@@ -3,7 +3,7 @@ import os
 import numpy as np
 from PIL import Image
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 from src.allocation.domain.pano_caries_detection.main import (
     create_pano_caries_detection_model,
     pano_caries_detecion

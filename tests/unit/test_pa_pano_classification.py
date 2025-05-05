@@ -3,7 +3,7 @@ import os
 import numpy as np
 from PIL import Image
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 from src.allocation.domain.pa_pano_classification.main import (
     create_pa_pano_classification_model,
     read_pil_image,

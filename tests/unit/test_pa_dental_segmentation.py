@@ -7,7 +7,7 @@ from ultralytics import YOLO
 import sys
 
 # 將專案路徑加入 sys.path，方便 import
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 from src.allocation.domain.pa_dental_segmentation.main import yolo_transform
 
