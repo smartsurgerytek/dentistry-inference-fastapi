@@ -25,7 +25,7 @@ jobs:
 
       - name: Copy project files
         run: |
-          rsync -av --delete --exclude=".git" ./ hf_space/
+          rsync -av --delete --exclude=".git" --exclude="hf_space/" ./ hf_space/ || [[ $? == 24 ]]
 
       - name: Overwrite README.md with Space metadata
         run: |
