@@ -29,7 +29,7 @@ jobs:
         run: |
           cd hf_space
           git lfs install
-          git lfs track "*.pdf" "*.pt" "*.pth" "*.png" "*.jpg"
+          git lfs track "*.pdf" "*.pt" "*.pth" "*.png" "*.jpg" "*.npy"
           git add .gitattributes
           git commit -m "Track large files using Git LFS" || echo "No changes"
 
