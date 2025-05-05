@@ -1,10 +1,10 @@
 FROM python:3.9
-RUN apt-get update && apt-get install -y libgl1-mesa-glx
-
 
 ARG HUGGINGFACE_TOKEN
 RUN echo "Token at build: ${HUGGINGFACE_TOKEN}"
 ENV HUGGINGFACE_TOKEN=${HUGGINGFACE_TOKEN}
+
+RUN apt-get update && apt-get install -y libgl1-mesa-glx
 
 WORKDIR /workspace
 
