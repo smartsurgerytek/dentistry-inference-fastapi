@@ -219,3 +219,9 @@ deploy the proxy
 for eaxmple, https://34.107.237.238.nip.io/smartsurgery-dentistry?apikey=QpDPpMYkSAFJd0RNFI2eU15Ri5aA7ePWqTk4jhkr4c2mTzn9
 
 please check whether it is same as the gcloud run url
+
+# CI-CD
+
+## huggingface
+test20
+## gcloud run
