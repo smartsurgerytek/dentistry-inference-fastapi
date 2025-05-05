@@ -6,6 +6,10 @@ ENV HUGGINGFACE_TOKEN=${HUGGINGFACE_TOKEN}
 
 WORKDIR /workspace
 
+RUN pip install huggingface_hub
+
+RUN python src/allocation/service_layer/download.py
+
 COPY ./src /workspace/src
 COPY ./conf /workspace/conf
 
@@ -13,7 +17,7 @@ COPY requirements.txt /workspace/requirements.txt
 
 RUN pip install --no-cache-dir --upgrade -r /workspace/requirements.txt
 
-RUN python src/allocation/service_layer/download.py
+#RUN python src/allocation/service_layer/download.py
 
 
 #CMD ["fastapi", "run", "/workspace/src/allocation/entrypoints/fast_api.py", "--port", "8080"]
