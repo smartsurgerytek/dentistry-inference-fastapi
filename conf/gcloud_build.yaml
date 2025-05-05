@@ -9,16 +9,7 @@ steps:
     id: DebugSecret
 
   - name: gcr.io/cloud-builders/docker
-    args:
-      - build
-      - '--no-cache'
-      - '-t'
-      - >-
-        $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
-      - .
-      - '-f'
-      - Dockerfile
-      - '--build-arg=HUGGINGFACE_TOKEN=$$HUGGINGFACE_TOKEN'
+    args: ['-c', 'docker build --no-cache --build-arg=HUGGINGFACE_TOKEN=$HUGGINGFACE_TOKEN -t $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA -f Dockerfile .']
     id: Build
     secretEnv:
       - HUGGINGFACE_TOKEN
