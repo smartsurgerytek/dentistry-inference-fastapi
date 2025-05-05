@@ -3,7 +3,7 @@ RUN apt-get update && apt-get install -y libgl1-mesa-glx
 
 
 ARG HUGGINGFACE_TOKEN
-RUN echo "Token at build: $HUGGINGFACE_TOKEN"
+RUN echo "Token at build: ${HUGGINGFACE_TOKEN}"
 ENV HUGGINGFACE_TOKEN=${HUGGINGFACE_TOKEN}
 
 WORKDIR /workspace
