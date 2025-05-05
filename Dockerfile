@@ -7,6 +7,7 @@ COPY ./requirements.txt /workspace/requirements.txt
 
 RUN pip install --no-cache-dir --upgrade -r /workspace/requirements.txt
 
+RUN python ./src/allocation/service_layer/download.py
 COPY ./models /workspace/models
 COPY ./src /workspace/src
 COPY ./conf /workspace/conf
