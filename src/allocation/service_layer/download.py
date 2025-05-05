@@ -10,7 +10,7 @@ if os.environ.get("HUGGINGFACE_TOKEN"):
 if hf_token is None:
     with open('./conf/hf_token.txt', 'r', encoding='utf-8') as file:
         hf_token = file.read()
-    print(hf_token)
+print('hf_token', hf_token)
 
 os.makedirs('./models',exist_ok=True)
 save_map={
