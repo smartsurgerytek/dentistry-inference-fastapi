@@ -6,9 +6,11 @@ repo_id = "smartsurgery/dentistry-models"  # repo 名稱
 hf_token=None
 if os.environ.get("HUGGINGFACE_TOKEN"):
     hf_token = os.environ.get("HUGGINGFACE_TOKEN")
-with open('./conf/hf_token.txt', 'r', encoding='utf-8') as file:
-    hf_token = file.read()
-print(hf_token)
+
+if hf_token is None:
+    with open('./conf/hf_token.txt', 'r', encoding='utf-8') as file:
+        hf_token = file.read()
+    print(hf_token)
 
 os.makedirs('./models',exist_ok=True)
 save_map={
