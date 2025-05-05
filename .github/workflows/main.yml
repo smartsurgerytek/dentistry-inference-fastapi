@@ -50,7 +50,7 @@ jobs:
         env:
           HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}  # Make HUGGINGFACE_TOKEN available to the script if needed
         run: |
-          python src/allocation/service_layer/download.py
+          python ./src/allocation/service_layer/download.py
 
       - name: Copy download files
         env:

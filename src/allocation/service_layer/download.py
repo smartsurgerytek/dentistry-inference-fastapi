@@ -25,4 +25,5 @@ for filename, save_path in save_map.items():
     if os.path.exists(save_path):
         continue
     file_path = hf_hub_download(repo_id=repo_id, filename=filename, token=hf_token)
+    print(f"Downloading {filename} to {save_path}")
     shutil.copy(file_path, save_path)
