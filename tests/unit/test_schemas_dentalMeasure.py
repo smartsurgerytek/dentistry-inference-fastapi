@@ -9,7 +9,7 @@ from src.allocation.domain.pa_dental_measure.schemas import *
 test_values = {
     "valid_numbers": [0, 1, 2, 3, 10, 20],
     "invalid_numbers": [None, -1, "invalid", [], False],  # 確保這些無效值會被正確處理
-    "valid_stages": [0, 1, 2, 3, "I", "II", "III"],
+    "valid_stages": ['0', "I", "II", "III"],
     "invalid_stages": ["x", 4, None, [], -1]  # 同樣確保無效值被正確處理
 }
 
@@ -81,7 +81,7 @@ def test_boundary_conditions():
     # 測試邊界條件
     print("正在測試邊界條件...")
     boundary_data = [
-        {"side_id": 0, "CEJ": (0, 0), "ALC": (0, 0), "APEX": (0, 0), "CAL": 0.0, "TRL": 0.0, "ABLD": 0.0, "stage": 0},
+        {"side_id": 0, "CEJ": (0, 0), "ALC": (0, 0), "APEX": (0, 0), "CAL": 0.0, "TRL": 0.0, "ABLD": 0.0, "stage": '0'},
         {"side_id": 1, "CEJ": (1, 1), "ALC": (1, 1), "APEX": (1, 1), "CAL": 1.0, "TRL": 1.0, "ABLD": 1.0, "stage": "I"},
         {"side_id": 10, "CEJ": (10, 10), "ALC": (10, 10), "APEX": (10, 10), "CAL": 10.0, "TRL": 10.0, "ABLD": 10.0, "stage": "III"}
     ]
@@ -101,13 +101,13 @@ def test_exception_handling():
     # 測試異常處理
     print("正在測試異常處理...")
     exception_data = [
-        {"side_id": "invalid", "CEJ": (1, 2), "ALC": (3, 4), "APEX": (5, 6), "CAL": 1.5, "TRL": 2.5, "ABLD": 3.5, "stage": 0},
-        {"side_id": 1, "CEJ": "invalid", "ALC": (3, 4), "APEX": (5, 6), "CAL": 1.5, "TRL": 2.5, "ABLD": 3.5, "stage": 0},
-        {"side_id": 1, "CEJ": (1, 2), "ALC": "invalid", "APEX": (5, 6), "CAL": 1.5, "TRL": 2.5, "ABLD": 3.5, "stage": 0},
-        {"side_id": 1, "CEJ": (1, 2), "ALC": (3, 4), "APEX": "invalid", "CAL": 1.5, "TRL": 2.5, "ABLD": 3.5, "stage": 0},
-        {"side_id": 1, "CEJ": (1, 2), "ALC": (3, 4), "APEX": (5, 6), "CAL": "invalid", "TRL": 2.5, "ABLD": 3.5, "stage": 0},
-        {"side_id": 1, "CEJ": (1, 2), "ALC": (3, 4), "APEX": (5, 6), "CAL": 1.5, "TRL": "invalid", "ABLD": 3.5, "stage": 0},
-        {"side_id": 1, "CEJ": (1, 2), "ALC": (3, 4), "APEX": (5, 6), "CAL": 1.5, "TRL": 2.5, "ABLD": "invalid", "stage": 0},
+        {"side_id": "invalid", "CEJ": (1, 2), "ALC": (3, 4), "APEX": (5, 6), "CAL": 1.5, "TRL": 2.5, "ABLD": 3.5, "stage": '0'},
+        {"side_id": 1, "CEJ": "invalid", "ALC": (3, 4), "APEX": (5, 6), "CAL": 1.5, "TRL": 2.5, "ABLD": 3.5, "stage": '0'},
+        {"side_id": 1, "CEJ": (1, 2), "ALC": "invalid", "APEX": (5, 6), "CAL": 1.5, "TRL": 2.5, "ABLD": 3.5, "stage": '0'},
+        {"side_id": 1, "CEJ": (1, 2), "ALC": (3, 4), "APEX": "invalid", "CAL": 1.5, "TRL": 2.5, "ABLD": 3.5, "stage": '0'},
+        {"side_id": 1, "CEJ": (1, 2), "ALC": (3, 4), "APEX": (5, 6), "CAL": "invalid", "TRL": 2.5, "ABLD": 3.5, "stage": '0'},
+        {"side_id": 1, "CEJ": (1, 2), "ALC": (3, 4), "APEX": (5, 6), "CAL": 1.5, "TRL": "invalid", "ABLD": 3.5, "stage": '0'},
+        {"side_id": 1, "CEJ": (1, 2), "ALC": (3, 4), "APEX": (5, 6), "CAL": 1.5, "TRL": 2.5, "ABLD": "invalid", "stage": '0'},
         {"side_id": 1, "CEJ": (1, 2), "ALC": (3, 4), "APEX": (5, 6), "CAL": 1.5, "TRL": 2.5, "ABLD": 3.5, "stage": "invalid"}
     ]
     for i, data in enumerate(exception_data):
