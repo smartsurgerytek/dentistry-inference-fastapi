@@ -35,12 +35,16 @@ jobs:
           git add .gitattributes
           git commit -m "Track large files using Git LFS" || echo "No changes to commit"
 
-      - name: Clone and not necessary files
+      - name: Clone and remove not necessary files
         run: |
           rsync -av --delete --exclude=".git" --exclude="hf_space/" ./ hf_space/ || [[ $? == 24 ]]
           cd hf_space
           rm -rf docs
           rm -rf tests
+
+      - name: Run pip install
+        run: |
+          pip install -r requirements.txt
 
       - name: Run download script
         env:
