@@ -12,6 +12,11 @@ import numpy as np
 import cv2
 from ultralytics import YOLO
 from PIL import Image
+import yaml
+def read_yaml(yaml_path):
+    with open(yaml_path, 'r', encoding='utf-8') as file:
+        config = yaml.safe_load(file)
+    return config
 class InferenceService:
 
     @staticmethod
@@ -130,7 +135,8 @@ class InferenceService:
     @staticmethod
     def pa_segmentation_image_base64(image: bytes, model:YOLO) -> ImageResponse:
         image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
-        output_image_array, error_message=yolo_transform(image=image_np, model= model, return_type='image_array')
+        plot_config=read_yaml('./conf/pa_segmentation_mask_color_setting.yaml')
+        output_image_array, error_message=yolo_transform(image=image_np, model= model, return_type='image_array', plot_config=plot_config)
         #drop the mask cols in cvat_result_dict
         #show_plot(output_image_array)
         output_image_base64= numpy_to_base64(output_image_array, image_format='PNG')
