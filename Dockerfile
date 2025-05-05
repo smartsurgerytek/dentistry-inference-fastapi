@@ -1,6 +1,9 @@
 FROM python:3.9
 RUN apt-get update && apt-get install -y libgl1-mesa-glx
 
+ARG HUGGINGFACE_TOKEN
+ENV HUGGINGFACE_TOKEN=${HUGGINGFACE_TOKEN}
+
 WORKDIR /workspace
 
 COPY ./src /workspace/src
