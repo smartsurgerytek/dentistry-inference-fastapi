@@ -89,14 +89,11 @@ jobs:
         run: |
           cd hf_space
 
-          # Track model file types via Git LFS
+          rm -f .gitignore
+          
           git lfs track "*.pt" "*.pth"
           git add .gitattributes
-
-          # Add actual model files explicitly
           git add models/ conf/ README.md
-
-          # add all things
           git add .
 
           git status
