@@ -52,6 +52,12 @@ jobs:
         run: |
           python src/allocation/service_layer/download.py
 
+      - name: Copy download files
+        env:
+          HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}  # Make HUGGINGFACE_TOKEN available to the script if needed
+        run: |
+          COPY models ./hf_space/models
+
       - name: Update README.md with Space metadata
         run: |
           cat <<EOF > hf_space/README.md
