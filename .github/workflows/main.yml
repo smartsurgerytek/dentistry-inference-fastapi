@@ -17,9 +17,11 @@ jobs:
           git config --global user.email "ci@github.com"
           git config --global user.name "GitHub CI"
 
-      - name: Clone Hugging Face Space
+      - name: Clone Hugging Face Space (with token auth)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git clone https://huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo hf_space
+          git clone https://smartsurgery:$HF_TOKEN@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo hf_space
 
       - name: Copy project files
         run: |
@@ -27,20 +29,24 @@ jobs:
 
       - name: Overwrite README.md with Space metadata
         run: |
-          echo '---' > hf_space/README.md
-          echo 'title: Smartsurgery Dentistry Models Demo' >> hf_space/README.md
-          echo 'emoji: 🐰' >> hf_space/README.md
-          echo 'colorFrom: red' >> hf_space/README.md
-          echo 'colorTo: pink' >> hf_space/README.md
-          echo 'sdk: gradio' >> hf_space/README.md
-          echo 'sdk_version: 4.41.0' >> hf_space/README.md
-          echo 'app_file: ./src/allocation/entrypoints/huggingface_gradio.py' >> hf_space/README.md
-          echo 'pinned: false' >> hf_space/README.md
-          echo '---' >> hf_space/README.md
+          cat <<EOF > hf_space/README.md
+          ---
+          title: Smartsurgery Dentistry Models Demo
+          emoji: 🐰
+          colorFrom: red
+          colorTo: pink
+          sdk: gradio
+          sdk_version: 4.41.0
+          app_file: ./src/allocation/entrypoints/huggingface_gradio.py
+          pinned: false
+          ---
+          EOF
 
       - name: Commit and push to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           cd hf_space
           git add .
           git commit -m "Update from GitHub push (with README metadata)" || echo "No changes to commit"
-          git push https://smartsurgery:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo main
+          git push https://smartsurgery:$HF_TOKEN@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo main
