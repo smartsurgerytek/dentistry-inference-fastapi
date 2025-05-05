@@ -35,18 +35,12 @@ jobs:
           git add .gitattributes
           git commit -m "Track large files using Git LFS" || echo "No changes to commit"
 
-      - name: Sync project files and re-add LFS-tracked files
+      - name: Clone and not necessary files
         run: |
           rsync -av --delete --exclude=".git" --exclude="hf_space/" ./ hf_space/ || [[ $? == 24 ]]
           cd hf_space
-          git lfs install
-          # Re-add large files to ensure they are tracked by LFS
-          for file in docs/*.pdf; do
-            [ -e "$file" ] && git rm --cached "$file" && git add "$file"
-          done
-          for file in models/*.pt; do
-            [ -e "$file" ] && git rm --cached "$file" && git add "$file"
-          done
+          rm -rf docs
+          rm -rf tests
 
       - name: Run download script
         env:
