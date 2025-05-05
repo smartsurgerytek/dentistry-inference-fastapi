@@ -82,12 +82,25 @@ jobs:
           ---
           EOF
 
-      - name: Commit changes and push to Hugging Face
+      - name: Ensure models tracked by Git LFS and commit
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}  # Set HUGGINGFACE_TOKEN for the push step
+          HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           cd hf_space
+
+          # Track model file types via Git LFS
+          git lfs track "*.pt" "*.pth"
+          git add .gitattributes
+
+          # Add actual model files explicitly
+          git add models/ conf/ README.md
+
+          # add all things
           git add .
-          git commit -m "Update from GitHub push (with README metadata + LFS updates)" || echo "No changes to commit"
+
+          git status
+        
+          # Commit and push
+          git commit -m "Add model files and config" || echo "No changes to commit"
           git push https://smartsurgery:$HUGGINGFACE_TOKEN@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo main
