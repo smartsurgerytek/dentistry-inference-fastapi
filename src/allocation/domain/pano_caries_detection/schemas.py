@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Dict, Union, Optional
 from pydantic import BaseModel, model_validator, Field
 import numpy as np
@@ -25,10 +25,12 @@ class PanoCariesDetectionDictResponse(BaseModel):
 
 class PanoCariesDetectionRequest(BaseModel):
     image: str = Field(..., min_length=1, max_length=10_000_000)  # 增加最大長度限制
-    class Config:
-        json_schema_extra = {
+
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "image": ",/9j/4AAQSkZJRgABAQEAYA......",
             }
-    }
+        }
+    )
     

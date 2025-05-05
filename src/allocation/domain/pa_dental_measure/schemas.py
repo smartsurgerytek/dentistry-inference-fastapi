@@ -1,4 +1,4 @@
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, model_validator, ConfigDict
 from typing import List, Tuple, Any
 from fastapi import FastAPI, HTTPException
 from typing import Annotated
@@ -63,19 +63,21 @@ class PaMeasureRequest(BaseModel):
     image: str = Field(..., min_length=1, max_length=10_000_000)  # 增加最大長度限制
     scale_x: float = Field(default=1.0)
     scale_y: float = Field(default=1.0)
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "image": ",/9j/4AAQSkZJRgABAQEAYA......",
                 "scale_x": 0.0234375,
                 "scale_y": 0.0416666,
             }
-    }
+        }
+    )
 class PaSegmentationRequest(BaseModel):
     image: str = Field(..., min_length=1, max_length=10_000_000)  # 增加最大長度限制
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "image": ",/9j/4AAQSkZJRgABAQEAYA......",
             }
-    }
+        }
+    )
