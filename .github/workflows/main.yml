@@ -9,8 +9,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout GitHub repo
+      - name: Checkout GitHub repo (with LFS)
         uses: actions/checkout@v3
+        with:
+          lfs: true
 
       - name: Set up Git identity
         run: |
@@ -22,6 +24,14 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           git clone https://smartsurgery:$HF_TOKEN@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo hf_space
+
+      - name: Enable Git LFS in Hugging Face repo
+        run: |
+          cd hf_space
+          git lfs install
+          git lfs track "*.pt" "*.pth" "*.pdf" "*.png" "*.jpg"  # 依需要追蹤的副檔名調整
+          git add .gitattributes
+          git commit -m "Track large files using Git LFS" || echo "No changes"
 
       - name: Copy project files
         run: |
