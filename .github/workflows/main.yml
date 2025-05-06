@@ -40,7 +40,6 @@ jobs:
           rsync -av --delete --exclude=".git" --exclude="hf_space/" ./ hf_space/ || [[ $? == 24 ]]
           cd hf_space
           rm -rf docs
-          rm -rf tests
 
       - name: Run pip install
         run: |
