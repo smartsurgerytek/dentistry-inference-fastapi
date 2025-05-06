@@ -91,6 +91,9 @@ jobs:
           rm -f .gitignore
           
           git lfs track "*.pt" "*.pth"
+          git lfs track "*.jpg"
+          git lfs track "*.png"
+          git lfs track "*.npy"          
           git add .gitattributes
           git add models/ conf/ README.md
           git add .
