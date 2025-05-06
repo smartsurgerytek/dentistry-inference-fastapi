@@ -25,6 +25,7 @@ jobs:
           HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}  # Set HUGGINGFACE_TOKEN environment variable
         run: |
           git clone https://smartsurgery:$HF_TOKEN@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo hf_space
+          
 
       - name: Enable Git LFS and track large files
         run: |
@@ -38,8 +39,10 @@ jobs:
       - name: Clone and remove not necessary files
         run: |
           rsync -av --delete --exclude=".git" --exclude="hf_space/" ./ hf_space/ || [[ $? == 24 ]]
+          cp huggingface_requirements.txt hf_space/requirements.txt
           cd hf_space
           rm -rf docs
+          
 
       - name: Run pip install
         run: |
