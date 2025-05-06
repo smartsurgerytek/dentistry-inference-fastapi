@@ -36,7 +36,8 @@ steps:
       - >-
         --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
       - '--region=$_DEPLOY_REGION'
-      - '--memory=8Gi'      # ✅ 加上這一行提高記憶體上限
+      - '--memory=16Gi'      # ✅ 加上這一行提高記憶體上限
+      - '--cpu=8'
       - '--quiet'
     entrypoint: gcloud
 images:
