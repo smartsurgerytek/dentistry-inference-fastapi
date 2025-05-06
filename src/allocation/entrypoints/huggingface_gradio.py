@@ -3,12 +3,15 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
 import gradio as gr
+import yaml
+from PIL import Image
 import cv2
 from src.allocation.domain.pa_dental_measure.main import *
 from src.allocation.domain.pa_dental_segmentation.main import *
 from ultralytics import YOLO
 from src.allocation.domain.pano_caries_detection.main import create_pano_caries_detection_model, pano_caries_detecion
 from src.allocation.domain.pano_fdi_segmentation.main import pano_fdi_segmentation
+
 
 title = "Dentistry Model segmentation Demo"
 description = "Input A Image and get the segmentation result"

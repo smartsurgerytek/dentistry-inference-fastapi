@@ -14,3 +14,4 @@ optuna
 plotly
 kaleido
 fastapi_swagger2
+gradio
