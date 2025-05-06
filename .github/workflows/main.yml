@@ -44,7 +44,8 @@ jobs:
       - name: Run pip install
         run: |
           pip install -r requirements.txt
-
+          pip install pydantic==2.10.6
+          
       - name: Run download script
         env:
           HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}  # Make HUGGINGFACE_TOKEN available to the script if needed
