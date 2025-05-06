@@ -232,5 +232,5 @@ async def aggregate_pa_images_base64_dict(
 app.include_router(v1_router, prefix="/v1")
 
 if __name__ == "__main__":
-    uvicorn.run(app)
-    #uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    #uvicorn.run(app)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
