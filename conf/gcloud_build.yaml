@@ -1,3 +1,4 @@
+timeout: '3600s'  # 這裡設定為 20 分鐘（1200 秒）
 steps:
   - name: alpine
     entrypoint: sh
