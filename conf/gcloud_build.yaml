@@ -40,6 +40,7 @@ steps:
       - '--cpu=8'
       - '--quiet'
     entrypoint: gcloud
+
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     entrypoint: gcloud
     args:
@@ -49,7 +50,7 @@ steps:
       - $_SERVICE_NAME
       - '--platform=managed'
       - '--region=$_DEPLOY_REGION'
-      - '--to-revisions=REV_OLD=90,REV_NEW=10'
+      - '--to-revisions=LATEST=10'
 
 images:
   - >-
