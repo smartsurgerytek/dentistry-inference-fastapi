@@ -35,21 +35,29 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-models-
 
-      - name: Cache uv dependencies
+      - name: Cache uv dependencies and virtual environment
         uses: actions/cache@v4
         with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('requirements.txt') }}
+          path: |
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-uv-venv-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-uv-
+            ${{ runner.os }}-uv-venv-
+
+      - name: Create virtual environment with uv (if not exists)
+        run: |
+          if [ ! -d ".venv" ]; then
+            uv venv .venv
+          fi
 
       - name: Install dependencies with uv
         run: uv pip install -r requirements.txt
 
       - name: Download model to ./models
-        run: uv pip run python ./src/allocation/service_layer/download.py
+        run: uv run python ./src/allocation/service_layer/download.py
         env:
           HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}
 
       - name: Run tests with pytest
-        run: uv pip run pytest --cov=src -vv tests/unit
+        run: uv run pytest --cov=src -vv tests/unit
