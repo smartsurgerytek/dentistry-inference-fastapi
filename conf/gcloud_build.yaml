@@ -36,10 +36,21 @@ steps:
       - >-
         --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
       - '--region=$_DEPLOY_REGION'
-      - '--memory=16Gi'      # ✅ 加上這一行提高記憶體上限
+      - '--memory=16Gi'      
       - '--cpu=8'
       - '--quiet'
     entrypoint: gcloud
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    entrypoint: gcloud
+    args:
+      - run
+      - services
+      - update-traffic
+      - $_SERVICE_NAME
+      - '--platform=managed'
+      - '--region=$_DEPLOY_REGION'
+      - '--to-revisions=REV_OLD=90,REV_NEW=10'
+
 images:
   - >-
     $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
