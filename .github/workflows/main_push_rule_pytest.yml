@@ -18,10 +18,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
+        id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
-          cache: 'pip'
+          cache: 'pip'  # 快取 ~/.cache/pip
 
       - name: Cache downloaded models (./models)
         uses: actions/cache@v4
@@ -30,18 +31,30 @@ jobs:
           key: ${{ runner.os }}-models-${{ hashFiles('src/allocation/service_layer/download.py') }}
           restore-keys: |
             ${{ runner.os }}-models-
-            
-      - name: Install dependencies
+
+      - name: Cache virtual environment (optional)
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
+
+      - name: Set up virtual environment
         run: |
-          python -m pip install --upgrade pip
+          if [ ! -d ".venv" ]; then
+            python -m venv .venv
+          fi
+          source .venv/bin/activate
+          pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Download model to ./models
         run: |
-          python ./src/allocation/service_layer/download.py
+          .venv/bin/python ./src/allocation/service_layer/download.py
         env:
           HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}
 
       - name: Run tests with pytest
         run: |
-          pytest --cov=src -vv tests/unit
+          .venv/bin/pytest --cov=src -vv tests/unit
