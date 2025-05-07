@@ -16,8 +16,8 @@ jobs:
 
       - name: Configure Git identity
         run: |
-          git config --global user.email "ci@github.com"
-          git config --global user.name "GitHub CI"
+          git config --global user.email "developer@smartsurgerytek.com"
+          git config --global user.name "Smartsurgery CI"
 
       - name: Clone Hugging Face Space with token authentication
         env:
@@ -25,7 +25,6 @@ jobs:
           HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}  # Set HUGGINGFACE_TOKEN environment variable
         run: |
           git clone https://smartsurgery:$HF_TOKEN@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo hf_space
-          
 
       - name: Enable Git LFS and track large files
         run: |
@@ -39,15 +38,12 @@ jobs:
       - name: Clone and remove not necessary files
         run: |
           rsync -av --delete --exclude=".git" --exclude="hf_space/" ./ hf_space/ || [[ $? == 24 ]]
-          cp huggingface_requirements.txt hf_space/requirements.txt
           cd hf_space
           rm -rf docs
-          
 
       - name: Run pip install
         run: |
-          pip install huggingface_hub
-
+          pip install -r requirements.txt
 
       - name: Run download script
         env:
@@ -105,5 +101,5 @@ jobs:
           git status
         
           # Commit and push
-          git commit -m "Add model files and config" || echo "No changes to commit"
+          git commit -m "smartsurgery CI auto push from dentistry-inference-core" || echo "No changes to commit"
           git push https://smartsurgery:$HUGGINGFACE_TOKEN@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo main
