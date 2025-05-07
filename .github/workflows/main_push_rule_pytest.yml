@@ -22,10 +22,10 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install uv
+      - name: Upgrade pip and install uv
         run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          python -m pip install --upgrade pip
+          pip install uv
 
       - name: Cache downloaded models (./models)
         uses: actions/cache@v4
@@ -44,15 +44,12 @@ jobs:
             ${{ runner.os }}-uv-
 
       - name: Install dependencies with uv
-        run: |
-          ~/.cargo/bin/uv pip install -r requirements.txt
+        run: uv pip install -r requirements.txt
 
       - name: Download model to ./models
-        run: |
-          ~/.cargo/bin/uv pip run python ./src/allocation/service_layer/download.py
+        run: uv pip run python ./src/allocation/service_layer/download.py
         env:
           HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}
 
       - name: Run tests with pytest
-        run: |
-          ~/.cargo/bin/uv pip run pytest --cov=src -vv tests/unit
+        run: uv pip run pytest --cov=src -vv tests/unit
