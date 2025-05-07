@@ -42,13 +42,13 @@ jobs:
           rm -rf docs
 
       # Cache pip dependencies
-      - name: Cache pip dependencies
+      - name: Cache virtualenv
         uses: actions/cache@v3
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          path: ~/.venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            ${{ runner.os }}-venv-
 
       # Cache Hugging Face models
       - name: Cache downloaded models (./models)
@@ -59,8 +59,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-models-
 
-      - name: Run pip install
+      - name: Install dependencies
         run: |
+          python -m venv ~/.venv
+          source ~/.venv/bin/activate
           pip install -r requirements.txt
 
       - name: Run download script

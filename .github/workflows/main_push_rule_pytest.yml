@@ -22,13 +22,13 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Cache pip dependencies
+      - name: Cache virtualenv
         uses: actions/cache@v3
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          path: ~/.venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            ${{ runner.os }}-venv-
 
       - name: Cache downloaded models (./models)
         uses: actions/cache@v3
@@ -40,7 +40,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
+          python -m venv ~/.venv
+          source ~/.venv/bin/activate
           pip install -r requirements.txt
 
       - name: Download model to ./models

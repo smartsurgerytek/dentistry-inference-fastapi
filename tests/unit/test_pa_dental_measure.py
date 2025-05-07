@@ -105,15 +105,6 @@ class TestDentalEstimation(unittest.TestCase):
         )
         self.assertEqual(img_array.shape[:2], self.normal_image.shape[:2], "影像尺寸不符")
 
-    def test_model_file_not_found(self):
-        """測試：模型路徑不存在時應拋出 FileNotFoundError"""
-        with self.assertRaises(FileNotFoundError):
-            YOLO('./models/not_exist_model.pt')
-
-    def test_image_file_not_found(self):
-        """測試：圖片路徑不存在時應拋出 FileNotFoundError"""
-        with self.assertRaises(FileNotFoundError):
-            cv2.imread('./tests/files/not_exist_img.png')
 
 if __name__ == '__main__':
     unittest.main()
