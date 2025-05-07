@@ -8,16 +8,19 @@ RUN apt-get update && apt-get install -y libgl1-mesa-glx
 
 WORKDIR /workspace
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+
 COPY ./src /workspace/src
 COPY ./conf /workspace/conf
 
-RUN pip install huggingface_hub
+RUN uv pip install --system huggingface_hub
 
 RUN python src/allocation/service_layer/download.py
 
 COPY requirements.txt /workspace/requirements.txt
 
-RUN pip install --no-cache-dir --upgrade -r /workspace/requirements.txt
+RUN uv pip install --system -r /workspace/requirements.txt
 
 #RUN python src/allocation/service_layer/download.py
 
