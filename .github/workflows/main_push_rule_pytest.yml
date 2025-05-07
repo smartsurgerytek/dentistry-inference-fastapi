@@ -46,10 +46,10 @@ jobs:
 
       - name: Download model to ./models
         run: |
-          python ./src/allocation/service_layer/download.py
+          ~/.venv/bin/python ./src/allocation/service_layer/download.py
         env:
           HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}
 
       - name: Run tests with pytest
         run: |
-          pytest -vv tests/unit
+          ~/.venv/bin/python -m pytest -vv tests/unit
