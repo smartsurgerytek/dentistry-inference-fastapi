@@ -3,8 +3,8 @@ info:
   title: Dental X-ray Inference API
   description: API to infer information from dental X-ray images.
   version: 1.0.0
-host: dentistry-inference-core-0218test-298229070754.asia-east1.run.app
-basePath: /
+host: api.smartsurgerytek.net
+basePath: /dentistry-stg/
 schemes:
 - https
 paths:
@@ -170,7 +170,7 @@ definitions:
         title: Points
         type: array
         items:
-          type: number
+          type: integer
   CvatSegmentations:
     title: CvatSegmentations
     required:
@@ -239,13 +239,11 @@ definitions:
       stage:
         title: Stage
         enum:
-        - 0
-        - 1
-        - 2
-        - 3
+        - '0'
         - I
         - II
         - III
+        type: string
   HTTPValidationError:
     title: HTTPValidationError
     type: object
@@ -354,6 +352,10 @@ definitions:
         title: Scale Y
         default: 1.0
         type: number
+    example:
+      image: ',/9j/4AAQSkZJRgABAQEAYA......'
+      scale_x: 0.0234375
+      scale_y: 0.0416666
   PaSegmentationCvatResponse:
     title: PaSegmentationCvatResponse
     required:
@@ -381,6 +383,8 @@ definitions:
         maxLength: 10000000
         minLength: 1
         type: string
+    example:
+      image: ',/9j/4AAQSkZJRgABAQEAYA......'
   PaSegmentationYoloV8Response:
     title: PaSegmentationYoloV8Response
     required:
@@ -434,7 +438,7 @@ definitions:
         items:
           type: array
 x-google-backend:
-  address: https://dentistry-inference-core-0218test-298229070754.asia-east1.run.app
+  address: https://api.smartsurgerytek.net/dentistry-stg/
 securityDefinitions:
   api_key:
     type: apiKey

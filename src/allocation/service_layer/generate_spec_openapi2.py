@@ -119,7 +119,7 @@ async def generate_periapical_film_segmentations_image_base64(
     image=base64_to_bytes(request.image)
     return InferenceService.pa_segmentation_image_base64(image, component_model)
 
-URL='https://dentistry-inference-core-0218test-298229070754.asia-east1.run.app'
+URL='https://api.smartsurgerytek.net/dentistry-stg/'
 app.servers.append(URL)
 spec = app.swagger2()
 spec['x-google-backend'] = {'address': URL}
