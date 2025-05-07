@@ -21,19 +21,14 @@ jobs:
 
       - name: Clone Hugging Face Space with token authentication
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}  # Set HUGGINGFACE_TOKEN environment variable
         run: |
-          git clone https://smartsurgery:$HF_TOKEN@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo hf_space
+          git clone https://smartsurgery:$HUGGINGFACE_TOKEN@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo hf_space
 
-      - name: Enable Git LFS and track large files
+      - name: Enable Git LFS
         run: |
           cd hf_space
           git lfs install
-          # Track large file types (add more as necessary)
-          git lfs track "*.pdf" "*.pt" "*.pth" "*.png" "*.jpg" "*.npy"
-          git add .gitattributes
-          git commit -m "Track large files using Git LFS" || echo "No changes to commit"
 
       - name: Clone and remove not necessary files
         run: |
@@ -63,7 +58,7 @@ jobs:
         run: |
           python -m venv ~/.venv
           source ~/.venv/bin/activate
-          pip install -r requirements.txt
+          pip install huggingface_hub
 
       - name: Run download script
         env:
@@ -103,7 +98,6 @@ jobs:
 
       - name: Ensure models tracked by Git LFS and commit
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           cd hf_space
