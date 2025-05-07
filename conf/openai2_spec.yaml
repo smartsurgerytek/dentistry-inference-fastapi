@@ -21,10 +21,10 @@ paths:
           schema:
             title: Response Read Root  Get
             type: string
-  /pa_measure_dict:
+  /v1/pa_measure_dict:
     post:
       summary: Generate Periapical Film Measure Dict
-      operationId: generate_periapical_film_measure_dict_pa_measure_dict_post
+      operationId: generate_periapical_film_measure_dict_v1_pa_measure_dict_post
       parameters:
       - name: request
         in: body
@@ -42,10 +42,10 @@ paths:
             $ref: '#/definitions/HTTPValidationError'
       produces:
       - application/json
-  /pa_measure_cvat:
+  /v1/pa_measure_cvat:
     post:
       summary: Generate Periapical Film Measure Dict
-      operationId: generate_periapical_film_measure_dict_pa_measure_cvat_post
+      operationId: generate_periapical_film_measure_dict_v1_pa_measure_cvat_post
       parameters:
       - name: request
         in: body
@@ -63,10 +63,10 @@ paths:
             $ref: '#/definitions/HTTPValidationError'
       produces:
       - application/json
-  /pa_measure_image:
+  /v1/pa_measure_image:
     post:
       summary: Generate Periapical Film Measure Image Base64
-      operationId: generate_periapical_film_measure_image_base64_pa_measure_image_post
+      operationId: generate_periapical_film_measure_image_base64_v1_pa_measure_image_post
       parameters:
       - name: request
         in: body
@@ -84,10 +84,10 @@ paths:
             $ref: '#/definitions/HTTPValidationError'
       produces:
       - application/json
-  /pa_segmentation_yolov8:
+  /v1/pa_segmentation_yolov8:
     post:
       summary: Generate Periapical Film Segmentations Yolov8
-      operationId: generate_periapical_film_segmentations_yolov8_pa_segmentation_yolov8_post
+      operationId: generate_periapical_film_segmentations_yolov8_v1_pa_segmentation_yolov8_post
       parameters:
       - name: request
         in: body
@@ -105,10 +105,10 @@ paths:
             $ref: '#/definitions/HTTPValidationError'
       produces:
       - application/json
-  /pa_segmentation_cvat:
+  /v1/pa_segmentation_cvat:
     post:
       summary: Generate Periapical Film Segmentations Cvat
-      operationId: generate_periapical_film_segmentations_cvat_pa_segmentation_cvat_post
+      operationId: generate_periapical_film_segmentations_cvat_v1_pa_segmentation_cvat_post
       parameters:
       - name: request
         in: body
@@ -126,10 +126,10 @@ paths:
             $ref: '#/definitions/HTTPValidationError'
       produces:
       - application/json
-  /pa_segmentation_image:
+  /v1/pa_segmentation_image:
     post:
       summary: Generate Periapical Film Segmentations Image Base64
-      operationId: generate_periapical_film_segmentations_image_base64_pa_segmentation_image_post
+      operationId: generate_periapical_film_segmentations_image_base64_v1_pa_segmentation_image_post
       parameters:
       - name: request
         in: body
@@ -147,7 +147,159 @@ paths:
             $ref: '#/definitions/HTTPValidationError'
       produces:
       - application/json
+  /v1/pano_caries_detection_image:
+    post:
+      summary: Generate Pano Caries Detection Image Base64
+      operationId: generate_pano_caries_detection_image_base64_v1_pano_caries_detection_image_post
+      parameters:
+      - name: request
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PanoCariesDetectionRequest'
+      responses:
+        '200':
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/ImageResponse'
+        '422':
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/HTTPValidationError'
+      produces:
+      - application/json
+  /v1/pano_caries_detection_dict:
+    post:
+      summary: Generate Pano Caries Detection Dict
+      operationId: generate_pano_caries_detection_dict_v1_pano_caries_detection_dict_post
+      parameters:
+      - name: request
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PanoCariesDetectionRequest'
+      responses:
+        '200':
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/PanoCariesDetectionDictResponse'
+        '422':
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/HTTPValidationError'
+      produces:
+      - application/json
+  /v1/pa_pano_classification_dict:
+    post:
+      summary: Generate Pa Pano Classification
+      operationId: generate_pa_pano_classification_v1_pa_pano_classification_dict_post
+      parameters:
+      - name: request
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PaSegmentationRequest'
+      responses:
+        '200':
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/PaPanoClassificationResponse'
+        '422':
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/HTTPValidationError'
+      produces:
+      - application/json
+  /v1/pano_fdi_segmentation_yolov8:
+    post:
+      summary: Generate Fdi Panoramic Xray Segmentations Yolov8
+      operationId: generate_fdi_panoramic_xray_segmentations_yolov8_v1_pano_fdi_segmentation_yolov8_post
+      parameters:
+      - name: request
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PanoSegmentationRequest'
+      responses:
+        '200':
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/PanoSegmentationYoloV8Response'
+        '422':
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/HTTPValidationError'
+      produces:
+      - application/json
+  /v1/pano_fdi_segmentation_cvat:
+    post:
+      summary: Generate Fdi Panoramic Xray Segmentations Cvat
+      operationId: generate_fdi_panoramic_xray_segmentations_cvat_v1_pano_fdi_segmentation_cvat_post
+      parameters:
+      - name: request
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PanoSegmentationRequest'
+      responses:
+        '200':
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/PanoSegmentationCvatResponse'
+        '422':
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/HTTPValidationError'
+      produces:
+      - application/json
+  /v1/pano_fdi_segmentation_image:
+    post:
+      summary: Generate Fdi Panoramic Xray Segmentations Image Base64
+      operationId: generate_fdi_panoramic_xray_segmentations_image_base64_v1_pano_fdi_segmentation_image_post
+      parameters:
+      - name: request
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PanoSegmentationRequest'
+      responses:
+        '200':
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/ImageResponse'
+        '422':
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/HTTPValidationError'
+      produces:
+      - application/json
+  /v1/pa_aggregation_images:
+    post:
+      summary: Aggregate Pa Images Base64 Dict
+      operationId: aggregate_pa_images_base64_dict_v1_pa_aggregation_images_post
+      parameters:
+      - name: request
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PaMeasureRequest'
+      responses:
+        '200':
+          description: Successful Response
+          schema:
+            $ref: '#/definitions/CombinedImageResponse'
+        '422':
+          description: Validation Error
+          schema:
+            $ref: '#/definitions/HTTPValidationError'
+      produces:
+      - application/json
 definitions:
+  CombinedImageResponse:
+    title: CombinedImageResponse
+    type: object
+    additionalProperties:
+      type: string
   CvatSegmentation:
     title: CvatSegmentation
     required:
@@ -211,16 +363,25 @@ definitions:
         maxItems: 2
         minItems: 2
         type: array
+        prefixItems:
+        - type: integer
+        - type: integer
       ALC:
         title: Alc
         maxItems: 2
         minItems: 2
         type: array
+        prefixItems:
+        - type: integer
+        - type: integer
       APEX:
         title: Apex
         maxItems: 2
         minItems: 2
         type: array
+        prefixItems:
+        - type: integer
+        - type: integer
       CAL:
         title: Cal
         description: CAL must be a non-negative float
@@ -295,6 +456,9 @@ definitions:
         maxItems: 2
         minItems: 2
         type: array
+        prefixItems:
+        - type: integer
+        - type: integer
   PaMeasureCvatResponse:
     title: PaMeasureCvatResponse
     required:
@@ -356,6 +520,27 @@ definitions:
       image: ',/9j/4AAQSkZJRgABAQEAYA......'
       scale_x: 0.0234375
       scale_y: 0.0416666
+  PaPanoClassificationResponse:
+    title: PaPanoClassificationResponse
+    required:
+    - request_id
+    - predicted_class
+    - scores
+    - message
+    type: object
+    properties:
+      request_id:
+        title: Request Id
+        type: integer
+      predicted_class:
+        title: Predicted Class
+        type: string
+      scores:
+        title: Scores
+        type: number
+      message:
+        title: Message
+        type: string
   PaSegmentationCvatResponse:
     title: PaSegmentationCvatResponse
     required:
@@ -387,6 +572,113 @@ definitions:
       image: ',/9j/4AAQSkZJRgABAQEAYA......'
   PaSegmentationYoloV8Response:
     title: PaSegmentationYoloV8Response
+    required:
+    - request_id
+    - yolo_results
+    - message
+    type: object
+    properties:
+      request_id:
+        title: Request Id
+        type: integer
+      yolo_results:
+        $ref: '#/definitions/YoloV8Segmentation'
+      message:
+        title: Message
+        type: string
+  PanoCariesDetectionDict:
+    title: PanoCariesDetectionDict
+    required:
+    - boxes
+    - labels
+    - scores
+    type: object
+    properties:
+      boxes:
+        title: Boxes
+        description: Bounding boxes in [x_min, y_min, x_max, y_max] format
+        type: array
+        items:
+          type: array
+          items:
+            type: integer
+      labels:
+        title: Labels
+        description: Class labels for each detected object
+        type: array
+        items:
+          type: integer
+      scores:
+        title: Scores
+        description: Confidence scores for each detection
+        type: array
+        items:
+          type: number
+      error_messages:
+        title: Error Messages
+        description: List of error messages, if any
+        type: string
+        x-nullable: true
+  PanoCariesDetectionDictResponse:
+    title: PanoCariesDetectionDictResponse
+    required:
+    - request_id
+    - pano_caries_detection_dict
+    - message
+    type: object
+    properties:
+      request_id:
+        title: Request Id
+        type: integer
+      pano_caries_detection_dict:
+        $ref: '#/definitions/PanoCariesDetectionDict'
+      message:
+        title: Message
+        type: string
+  PanoCariesDetectionRequest:
+    title: PanoCariesDetectionRequest
+    required:
+    - image
+    type: object
+    properties:
+      image:
+        title: Image
+        maxLength: 10000000
+        minLength: 1
+        type: string
+    example:
+      image: ',/9j/4AAQSkZJRgABAQEAYA......'
+  PanoSegmentationCvatResponse:
+    title: PanoSegmentationCvatResponse
+    required:
+    - request_id
+    - yolo_results
+    - message
+    type: object
+    properties:
+      request_id:
+        title: Request Id
+        type: integer
+      yolo_results:
+        $ref: '#/definitions/CvatSegmentations'
+      message:
+        title: Message
+        type: string
+  PanoSegmentationRequest:
+    title: PanoSegmentationRequest
+    required:
+    - image
+    type: object
+    properties:
+      image:
+        title: Image
+        maxLength: 10000000
+        minLength: 1
+        type: string
+    example:
+      image: ',/9j/4AAQSkZJRgABAQEAYA......'
+  PanoSegmentationYoloV8Response:
+    title: PanoSegmentationYoloV8Response
     required:
     - request_id
     - yolo_results
@@ -442,7 +734,7 @@ x-google-backend:
 securityDefinitions:
   api_key:
     type: apiKey
-    name: key
+    name: apikey
     in: query
 security:
 - api_key: []

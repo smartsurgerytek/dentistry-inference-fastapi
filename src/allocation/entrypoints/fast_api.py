@@ -21,7 +21,6 @@ from src.allocation.domain.aggregation.schemas import CombinedImageResponse
 from contextlib import asynccontextmanager
 from ultralytics import YOLO
 from src.allocation.adapters.utils import base64_to_bytes
-from fastapi_swagger2 import FastAPISwagger2
 from concurrent.futures import ProcessPoolExecutor
 import asyncio
 
@@ -60,12 +59,9 @@ app = FastAPI(
     version="1.0.0",
     description="API to infer information from dental X-ray images.",
     lifespan=lifespan,
-    #docs_url=None,
-    #redoc_url=None,
+    docs_url=None,
+    redoc_url=None,
 )
-
-
-FastAPISwagger2(app)
 
 v1_router = APIRouter()
 @app.exception_handler(ValidationError)
