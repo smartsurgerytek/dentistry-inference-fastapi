@@ -43,13 +43,11 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: HuggingFace Login
-        run: |
-          echo "${HUGGINGFACE_TOKEN}" | huggingface-cli login --token
-
       - name: Download model to ./models
         run: |
           python ./src/allocation/service_layer/download.py
+        env:
+          HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}
 
       - name: Run tests with pytest
         run: |
