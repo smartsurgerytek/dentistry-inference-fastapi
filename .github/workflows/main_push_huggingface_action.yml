@@ -41,6 +41,24 @@ jobs:
           cd hf_space
           rm -rf docs
 
+      # Cache pip dependencies
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # Cache Hugging Face models
+      - name: Cache downloaded models (./models)
+        uses: actions/cache@v3
+        with:
+          path: ./models
+          key: ${{ runner.os }}-models-${{ hashFiles('src/allocation/service_layer/download.py') }}
+          restore-keys: |
+            ${{ runner.os }}-models-
+
       - name: Run pip install
         run: |
           pip install -r requirements.txt

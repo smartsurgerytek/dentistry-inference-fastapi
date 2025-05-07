@@ -1,105 +1,56 @@
-name: Deploy to Hugging Face Space
+name: Main push rule pytest
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
 
+    env:
+      HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}
+
     steps:
-      - name: Checkout GitHub repository (with LFS)
+      - name: Check out code
         uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          lfs: true
+          python-version: '3.10'
 
-      - name: Configure Git identity
-        run: |
-          git config --global user.email "developer@smartsurgerytek.com"
-          git config --global user.name "Smartsurgery CI"
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
-      - name: Clone Hugging Face Space with token authentication
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}  # Set HUGGINGFACE_TOKEN environment variable
-        run: |
-          git clone https://smartsurgery:$HF_TOKEN@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo hf_space
+      - name: Cache downloaded models (./models)
+        uses: actions/cache@v3
+        with:
+          path: ./models
+          key: ${{ runner.os }}-models-${{ hashFiles('src/allocation/service_layer/download.py') }}
+          restore-keys: |
+            ${{ runner.os }}-models-
 
-      - name: Enable Git LFS and track large files
+      - name: Install dependencies
         run: |
-          cd hf_space
-          git lfs install
-          # Track large file types (add more as necessary)
-          git lfs track "*.pdf" "*.pt" "*.pth" "*.png" "*.jpg" "*.npy"
-          git add .gitattributes
-          git commit -m "Track large files using Git LFS" || echo "No changes to commit"
-
-      - name: Clone and remove not necessary files
-        run: |
-          rsync -av --delete --exclude=".git" --exclude="hf_space/" ./ hf_space/ || [[ $? == 24 ]]
-          cd hf_space
-          rm -rf docs
-
-      - name: Run pip install
-        run: |
+          pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run download script
-        env:
-          HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}  # Make HUGGINGFACE_TOKEN available to the script if needed
+      - name: HuggingFace Login
+        run: |
+          echo "${HUGGINGFACE_TOKEN}" | huggingface-cli login --token
+
+      - name: Download model to ./models
         run: |
           python ./src/allocation/service_layer/download.py
 
-      - name: Debug Check if models folder exists
+      - name: Run tests with pytest
         run: |
-          ls -R ./models || echo "models folder not found after download.py"
-
-      - name: Copy download files
-        env:
-          HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}  # Make HUGGINGFACE_TOKEN available to the script if needed
-        run: |
-          cp -r ./models ./hf_space/
-          cp -r ./conf ./hf_space/
-
-      - name: Confirm contents copied to hf_space
-        run: |
-          ls -R ./hf_space/models || echo "models not copied"
-
-      - name: Update README.md with Space metadata
-        run: |
-          cat <<EOF > hf_space/README.md
-          ---
-          title: Smartsurgery Dentistry Models Demo
-          emoji: 🐰
-          colorFrom: red
-          colorTo: pink
-          sdk: gradio
-          sdk_version: 4.41.0
-          app_file: ./src/allocation/entrypoints/huggingface_gradio.py
-          pinned: false
-          ---
-          EOF
-
-      - name: Ensure models tracked by Git LFS and commit
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          cd hf_space
-
-          rm -f .gitignore
-          
-          git lfs track "*.pt" "*.pth"
-          git lfs track "*.jpg"
-          git lfs track "*.png"
-          git lfs track "*.npy"          
-          git add .gitattributes
-          git add models/ conf/ README.md
-          git add .
-
-          git status
-        
-          # Commit and push
-          git commit -m "smartsurgery CI auto push from dentistry-inference-core" || echo "No changes to commit"
-          git push https://smartsurgery:$HUGGINGFACE_TOKEN@huggingface.co/spaces/smartsurgery/Smartsurgery_Dentistry_Models_Demo main
+          pytest -vv tests/unit
