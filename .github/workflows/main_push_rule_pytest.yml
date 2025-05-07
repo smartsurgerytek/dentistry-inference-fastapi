@@ -15,41 +15,33 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-
-      - name: Cache virtualenv
-        uses: actions/cache@v3
-        with:
-          path: ~/.venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-venv-
+          python-version: '3.9'
+          cache: 'pip'
 
       - name: Cache downloaded models (./models)
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ./models
           key: ${{ runner.os }}-models-${{ hashFiles('src/allocation/service_layer/download.py') }}
           restore-keys: |
             ${{ runner.os }}-models-
-
+            
       - name: Install dependencies
         run: |
-          python -m venv ~/.venv
-          source ~/.venv/bin/activate
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Download model to ./models
         run: |
-          ~/.venv/bin/python ./src/allocation/service_layer/download.py
+          python ./src/allocation/service_layer/download.py
         env:
           HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}
 
       - name: Run tests with pytest
         run: |
-          ~/.venv/bin/python -m pytest -vv tests/unit
+          pytest -vv tests/unit
