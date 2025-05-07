@@ -41,16 +41,39 @@ steps:
       - '--quiet'
     entrypoint: gcloud
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
-    entrypoint: gcloud
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'Update Traffic'
+    entrypoint: bash
     args:
-      - run
-      - services
-      - update-traffic
-      - $_SERVICE_NAME
-      - '--platform=managed'
-      - '--region=$_DEPLOY_REGION'
-      - '--to-revisions=LATEST=10'
+      - -c
+      - |
+          echo "Getting the latest two active revisions..."
+          REVISIONS=$$(gcloud run revisions list \
+            --service=$_SERVICE_NAME \
+            --region=$_DEPLOY_REGION \
+            --platform=managed \
+            --filter="status.conditions.type=Ready AND status.conditions.status=True" \
+            --format="value(metadata.name)" \
+            --sort-by="~metadata.creationTimestamp" \
+            --limit=2)
+
+          echo "$$REVISIONS"
+
+          COUNT=$$(echo "$$REVISIONS" | wc -l)
+          if [ "$$COUNT" -lt 2 ]; then
+            echo "Error: Less than 2 active revisions found"
+            exit 1
+          fi
+
+          LATEST_REVISION=$$(echo "$$REVISIONS" | head -n 1)
+          OLD_REVISION=$$(echo "$$REVISIONS" | tail -n 1)
+
+          echo "Updating traffic: $$LATEST_REVISION=10, $$OLD_REVISION=90"
+
+          gcloud run services update-traffic $_SERVICE_NAME \
+            --platform=managed \
+            --region=$_DEPLOY_REGION \
+            --to-revisions=$$LATEST_REVISION=10,$$OLD_REVISION=90
 
 images:
   - >-
@@ -74,3 +97,4 @@ availableSecrets:
   secretManager:
     - versionName: projects/298229070754/secrets/HUGGINGFACE_TOKEN/versions/latest
       env: HUGGINGFACE_TOKEN
+#build test1
