@@ -2,6 +2,7 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..')))
 import torch
+import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 from torchvision import transforms
@@ -70,7 +71,7 @@ def pano_caries_detecion(model, weights_path, pil_img, return_type='image_array'
 
     if return_type == 'image_array':
         if len(predict_boxes) == 0:
-            return None, "No caries found"
+            return np.array(pil_img), "No caries found"
         plot_img = draw_objs(pil_img,
                              predict_boxes,
                              predict_classes,

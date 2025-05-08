@@ -66,14 +66,25 @@ class GeneralizedRCNNTransform(nn.Module):
         self.image_mean = image_mean  # 指定图像在标准化处理中的均值
         self.image_std = image_std    # 指定图像在标准化处理中的方差
 
+    # def normalize(self, image):
+    #     """标准化处理"""
+    #     dtype, device = image.dtype, image.device
+    #     mean = torch.as_tensor(self.image_mean, dtype=dtype, device=device)
+    #     std = torch.as_tensor(self.image_std, dtype=dtype, device=device)
+    #     # [:, None, None]: shape [3] -> [3, 1, 1]
+    #     return (image - mean[:, None, None]) / std[:, None, None]
     def normalize(self, image):
-        """标准化处理"""
+        """标准化处理，确保输入为3通道"""
         dtype, device = image.dtype, image.device
         mean = torch.as_tensor(self.image_mean, dtype=dtype, device=device)
         std = torch.as_tensor(self.image_std, dtype=dtype, device=device)
-        # [:, None, None]: shape [3] -> [3, 1, 1]
-        return (image - mean[:, None, None]) / std[:, None, None]
 
+        if image.shape[0] > 3:
+            image = image[:3, :, :]  # 若有超過3通道（如RGBA），只取前三個（RGB）
+
+        assert image.shape[0] == 3, f"Expected 3 channels, but got {image.shape[0]}"
+        
+        return (image - mean[:, None, None]) / std[:, None, None]
     def torch_choice(self, k):
         # type: (List[int]) -> int
         """

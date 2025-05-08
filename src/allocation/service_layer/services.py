@@ -13,6 +13,7 @@ import cv2
 from ultralytics import YOLO
 from PIL import Image
 import yaml
+import io
 def read_yaml(yaml_path):
     with open(yaml_path, 'r', encoding='utf-8') as file:
         config = yaml.safe_load(file)
@@ -139,6 +140,7 @@ class InferenceService:
         output_image_array, error_message=yolo_transform(image=image_np, model= model, return_type='image_array', plot_config=plot_config)
         #drop the mask cols in cvat_result_dict
         #show_plot(output_image_array)
+
         output_image_base64= numpy_to_base64(output_image_array, image_format='PNG')
 
         if error_message:
@@ -163,15 +165,18 @@ class InferenceService:
         output_image_array, error_message = pano_caries_detecion(model, weights_path, image_pil, return_type='image_array')
         #drop the mask cols in cvat_result_dict
         #show_plot(output_image_array)
-        output_image_base64= numpy_to_base64(output_image_array, image_format='PNG')
 
+
+        output_image_base64= numpy_to_base64(output_image_array, image_format='PNG')
+        
         if error_message:
             return ImageResponse(
             request_id=0,
             image=output_image_base64,
             content_type='image/png',
             messages=error_message
-        )
+        )        
+
 
         return ImageResponse(
             request_id=0,

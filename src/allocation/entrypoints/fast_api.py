@@ -21,13 +21,14 @@ from src.allocation.domain.aggregation.schemas import CombinedImageResponse
 from contextlib import asynccontextmanager
 from ultralytics import YOLO
 from src.allocation.adapters.utils import base64_to_bytes
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import asyncio
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global executor
-    executor = ProcessPoolExecutor(max_workers=os.cpu_count() or 1)
+    #executor = ProcessPoolExecutor(max_workers=os.cpu_count() or 1)
+    executor= ThreadPoolExecutor()
     # Load the ML model
     global pa_component_model
     pa_component_model = YOLO('./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
@@ -59,8 +60,8 @@ app = FastAPI(
     version="1.0.0",
     description="API to infer information from dental X-ray images.",
     lifespan=lifespan,
-    docs_url=None,
-    redoc_url=None,
+    #docs_url=None,
+    #redoc_url=None,
 )
 
 v1_router = APIRouter()
@@ -228,5 +229,5 @@ async def aggregate_pa_images_base64_dict(
 app.include_router(v1_router, prefix="/v1")
 
 if __name__ == "__main__":
-    #uvicorn.run(app)
-    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    uvicorn.run(app)
+    #uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
