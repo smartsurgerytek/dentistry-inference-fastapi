@@ -59,5 +59,7 @@ jobs:
         env:
           HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}
 
-      - name: Run unit tests
-        run: uv run pytest --cov=src -vv tests/unit
+      - name: Run production tests
+        run: uv run pytest --cov=src -vv tests/production
+        env:
+          HUGGINGFACE_TOKEN: ${{ secrets.DENTISTRY_API_KEY }}
