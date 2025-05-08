@@ -58,7 +58,7 @@ def test_production():
         print(f'Status Code: {response.status_code}')
         #print(f'Response: {response.json()}')
 
-        assert response.status_code == 200, f"❌ API 回傳錯誤: {response.status_code}, Response: {response.text}"
+        assert response.status_code == 200, f"❌ API 回傳錯誤: {response.status_code}, Response: {response.text}, path: {path}"
     
 def test_production_black_image():
     black_image_path = './tests/files/black.png'
@@ -90,7 +90,7 @@ def test_production_black_image():
         print(f'Status Code: {response.status_code}')
         #print(f'Response: {response.json()}')
 
-        assert response.status_code == 200, f"❌ API 回傳錯誤: {response.status_code}, Response: {response.text}"
+        assert response.status_code == 200, f"❌ API 回傳錯誤: {response.status_code}, Response: {response.text}, path: {path}"
 
 # if __name__ == '__main__':
 #     test_production_black_image()
