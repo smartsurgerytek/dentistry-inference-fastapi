@@ -2,6 +2,7 @@ import base64
 import requests
 import os
 import sys
+import yaml
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 from src.allocation.entrypoints.fast_api import app
 def image_to_base64(image_path):
@@ -11,6 +12,13 @@ def image_to_base64(image_path):
 api_key = None
 if os.environ.get("DENTISTRY_API_KEY"):
     api_key = os.environ.get("DENTISTRY_API_KEY")
+
+if api_key is None:
+    with open('./conf/credential.yaml', 'r', encoding='utf-8') as file:
+        credentials = yaml.safe_load(file)
+    api_key = credentials['HUGGINGFACE_TOKEN']
+    if api_key=="please write the token here":
+        raise ValueError('Please write the token in credential.yaml or set DENTISTRY_API_KEY as env variable')
 
 if api_key is None:
     raise Exception("DENTISTRY_API_KEY is not set")

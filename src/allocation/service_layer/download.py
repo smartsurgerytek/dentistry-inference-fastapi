@@ -1,6 +1,7 @@
 from huggingface_hub import hf_hub_download
 import shutil
 import os
+import yaml
 repo_id = "smartsurgery/dentistry-models"  # repo 名稱
 
 hf_token=None
@@ -8,8 +9,12 @@ if os.environ.get("HUGGINGFACE_TOKEN"):
     hf_token = os.environ.get("HUGGINGFACE_TOKEN")
 
 if hf_token is None:
-    with open('./conf/hf_token.txt', 'r', encoding='utf-8') as file:
-        hf_token = file.read()
+    with open('./conf/credential.yaml', 'r', encoding='utf-8') as file:
+        credentials = yaml.safe_load(file)
+    hf_token = credentials['HUGGINGFACE_TOKEN']
+    if hf_token=="please write the token here":
+        raise ValueError('Please write the token in credential.yaml or set HUGGINGFACE_TOKEN as env variable')
+    
 print('hf_token', hf_token)
 
 os.makedirs('./models',exist_ok=True)
