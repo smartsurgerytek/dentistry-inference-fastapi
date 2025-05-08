@@ -7,12 +7,12 @@ on:
     branches: [main]
 
 jobs:
-  unit_test:
+  production_test:
     runs-on: ubuntu-latest
 
     env:
       HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}
-
+      DENTISTRY_API_KEY: ${{ secrets.DENTISTRY_API_KEY }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -62,4 +62,4 @@ jobs:
       - name: Run production tests
         run: uv run pytest --cov=src -vv tests/production
         env:
-          HUGGINGFACE_TOKEN: ${{ secrets.DENTISTRY_API_KEY }}
+          DENTISTRY_API_KEY: ${{ secrets.DENTISTRY_API_KEY }}
