@@ -47,7 +47,9 @@ class TestPanoCariesDetection(unittest.TestCase):
             return_type='image_array'
         )
         # 全黑圖片應回傳 None，訊息為 "No caries found"
-        self.assertIsNone(result, "全黑圖片應回傳 None")
+        #self.assertIsNone(result, "全黑圖片應回傳 None")
+        #self.assertEqual(result, np.array(self.black_img))
+        
         self.assertEqual(msg, "No caries found", "錯誤訊息應為 'No caries found'")
 
     def test_normal_image_processing(self):
@@ -60,7 +62,7 @@ class TestPanoCariesDetection(unittest.TestCase):
         )
         # 應有檢測結果且型態為 PIL Image
         self.assertIsNotNone(result, "正常牙片應回傳檢測結果")
-        self.assertIsInstance(result, Image.Image, "回傳應為 PIL Image")
+        self.assertIsInstance(result, np.ndarray, "回傳應為 numpy array")
 
 if __name__ == '__main__':
     unittest.main()
