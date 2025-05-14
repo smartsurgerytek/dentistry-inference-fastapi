@@ -16,7 +16,7 @@ if os.environ.get("DENTISTRY_API_KEY"):
 if api_key is None:
     with open('./conf/credential.yaml', 'r', encoding='utf-8') as file:
         credentials = yaml.safe_load(file)
-    api_key = credentials['HUGGINGFACE_TOKEN']
+    api_key = credentials['DENTISTRY_API_KEY']
     if api_key=="please write the token here":
         raise ValueError('Please write the token in credential.yaml or set DENTISTRY_API_KEY as env variable')
 
