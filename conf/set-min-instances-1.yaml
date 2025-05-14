@@ -1,0 +1,10 @@
+steps:
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'services'
+      - 'update'
+      - 'dentistry-inference-core-2514'
+      - '--min-instances=1'
+      - '--region=asia-east1'

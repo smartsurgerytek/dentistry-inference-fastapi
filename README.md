@@ -220,7 +220,68 @@ for eaxmple, https://34.107.237.238.nip.io/smartsurgery-dentistry?apikey=QpDPpMY
 
 please check whether it is same as the gcloud run url
 
-# CI-CD
+# create the SSL cerification with google
 
-## huggingface
-## gcloud run
+gcloud apigee envgroup-ssl-certs create dentistry-cert-apigee-managed \
+  --envgroup=default-envgroup \
+  --type=managed \
+  --domains=api.smartsurgerytek.net \
+  --project=staging-456206
+
+## create the SSL cerification with Let's Encrypt
+
+see the jira card
+https://smartsurgerytek.atlassian.net/browse/MSA-363
+
+
+Manually upload that
+```
+sudo certbot certonly --manual --preferred-challenges dns -d api.smartsurgerytek.net
+```
+
+# SaSS schedulely set the minimal instance
+uptime 16 hours (8am-12am)
+## first setup (windows commnad)
+create topic 
+```
+gcloud pubsub topics create cloud-builds
+```
+
+create bucket
+```
+gcloud storage buckets create smartsurgery-dentistry-scheduler-stroage --location=asia-east1
+```
+
+set the cloud build yaml set-min-instances-0.yaml (as shown in ./config/set-min-instances-0.yaml)
+
+also set up the set-min-instances-1.yaml
+```
+steps:
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'services'
+      - 'update'
+      - 'dentistry-inference-core-2514'
+      - '--min-instances=0'
+      - '--region=asia-east1'
+```
+
+scheduler command
+```
+gcloud scheduler jobs create pubsub set-dentistry-min-instance ^
+  --schedule="0 8 * * 1-5" ^
+  --time-zone="Asia/Taipei" ^
+  --location=asia-east1 ^
+  --topic=cloud-builds ^
+  --message-body="{\"build\": {\"source\": {\"storageSource\": {\"bucket\": \"smartsurgery-dentistry-scheduler-stroage\", \"object\": \"set-min-instances-1.yaml\"}}}}"
+
+gcloud scheduler jobs create pubsub disable-dentistry-min-instance ^
+  --schedule="0 0 * * 2-6" ^
+  --time-zone="Asia/Taipei" ^
+  --location=asia-east1 ^
+  --topic=cloud-builds ^
+  --message-body="{\"build\": {\"source\": {\"storageSource\": {\"bucket\": \"smartsurgery-dentistry-scheduler-stroage\", \"object\": \"set-min-instances-1.yaml\"}}}}"
+
+```
