@@ -220,6 +220,22 @@ def pa_segmentation(image, model1, model2, return_type, plot_config):
     if return_type=='yolov8':
         result1=yolo_transform(image, model1, return_type, plot_config)
         result2=yolo_transform(image, model2, return_type, plot_config)
+        key_index_mapping_1={value: key for key, value in result1['class_names'].items()}
+        key_index_mapping_2={value: key for key, value in result2['class_names'].items()}
+        #filter
+        selected_indexes = [key_index_mapping_1[key] for key in model_1_select_key_list]
+        result1_filtered = []
+        for content in result1['yolov8_contents']:
+            if content[0] in selected_indexes:
+                label=result1['class_names'][content[0]]
+                content[0]=key_index_mapping_2[label]
+                result1_filtered.append(content)
+
+        result2_filtered=[content for content in result1['yolov8_contents'] if content[0] in [key_index_mapping_2[index] for index in model_2_select_key_list]]
+        result_dict['class_names']= result2['class_names']
+        result_dict['yolov8_contents']=result1_filtered+result2_filtered
+        return result_dict
+            
     elif return_type=='image_array':
         array_dict_1=yolo_transform(image, model1, return_type='dict')
         array_dict_2=yolo_transform(image, model2, return_type='dict')
@@ -250,23 +266,21 @@ def pa_segmentation(image, model1, model2, return_type, plot_config):
         legend_resized = cv2.resize(legend, (int(legend_width*plot_image.shape[0]/legend.shape[0]), plot_image.shape[0]))
         concat_image=np.concatenate((plot_image, legend_resized), axis=1)
         return concat_image
-
-    if return_type=='yolov8':
+    elif 'cvat' in return_type:
+        result1=yolo_transform(image, model1, return_type, plot_config)
+        result2=yolo_transform(image, model2, return_type, plot_config)
         key_index_mapping_1={value: key for key, value in result1['class_names'].items()}
         key_index_mapping_2={value: key for key, value in result2['class_names'].items()}
         #filter
-        selected_indexes = [key_index_mapping_1[key] for key in model_1_select_key_list]
-        result1_filtered = []
-        for content in result1['yolov8_contents']:
-            if content[0] in selected_indexes:
-                label=result1['class_names'][content[0]]
-                content[0]=key_index_mapping_2[label]
-                result1_filtered.append(content)
 
-        result2_filtered=[content for content in result1['yolov8_contents'] if content[0] in [key_index_mapping_2[index] for index in model_2_select_key_list]]
+        #selected_indexes = [key_index_mapping_1[key] for key in model_1_select_key_list]
+        result1_filtered = [content for content in result1['yolov8_contents'] if content['label'] in model_1_select_key_list]
+        result2_filtered = [content for content in result1['yolov8_contents'] if content['label'] in model_2_select_key_list]
+
         result_dict['class_names']= result2['class_names']
-        result_dict['yolov8_contents']=result1_filtered+result2_filtered
+        result_dict['yolov8_contents']=result1_filtered+result2_filtered        
         return result_dict
+
 def show_plot(image):
     #cv2.imshow("OpenCV Image", image)
     # 使用 matplotlib 绘制图形
@@ -282,7 +296,7 @@ if __name__=='__main__':
     with open('./conf/pa_segmentation_mask_color_setting.yaml', 'r') as file:
         config=yaml.safe_load(file)
     #test1, messages=yolo_transform(image, model, return_type='yolov8', plot_config=config, tolerance=0.5)
-    pa_segmentation(image, model1, model2, return_type='image_array' , plot_config=config)
+    pa_segmentation(image, model1, model2, return_type='cvat' , plot_config=config)
     # test2=yolo_transform(image, return_type='cvat')
     # test3=yolo_transform(image, return_type='dict')
 
