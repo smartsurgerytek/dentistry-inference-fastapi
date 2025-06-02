@@ -47,7 +47,7 @@ def get_yolov8_label(mask_binary,tolerance=0.5):
         points.extend(merged)
     return points
 
-def yolo_transform(image, model, return_type='dict', plot_config=None, tolerance=0.5):
+def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_list=None, show_plot_legend=True,  tolerance=0.5):
     # if return_type == 'image_array' and plot_config is None:
     #     raise ValueError("Provide a config for segmentation colors when return_type is 'image")
     if plot_config is None and return_type=='image_array':
@@ -147,8 +147,9 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, tolerance
                     mask_dict[label]=cv2.bitwise_or(mask_dict[label], mask_binary) 
                 
 
-            if class_name != 'Background' and return_type=='image_array':
-                mask_colored[mask_binary == 255] = color_dict[class_name]
+            if class_name != 'Background' and return_type == 'image_array':
+                if plot_key_list is None or class_name in plot_key_list:
+                    mask_colored[mask_binary == 255] = color_dict[class_name]
                 # Overlay the colored mask
                 plot_image = cv2.addWeighted(plot_image, 1, mask_colored, 0.8, 0)
 
@@ -174,19 +175,23 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, tolerance
 
             return legend
 
-        present_label_indexes=result.boxes.cls.cpu().numpy().astype(int)
-        label_width=200
-        label_image=draw_legend(color_dict, present_label_indexes, label_width)
-        label_image_resized = cv2.resize(label_image, (int(label_width*plot_image.shape[0]/label_image.shape[0]), plot_image.shape[0]))
-        concat_image=np.concatenate((plot_image, label_image_resized), axis=1)
+        if show_plot_legend:
+            present_label_indexes=result.boxes.cls.cpu().numpy().astype(int)
+            label_width=200
+            label_image=draw_legend(color_dict, present_label_indexes, label_width)
+            label_image_resized = cv2.resize(label_image, (int(label_width*plot_image.shape[0]/label_image.shape[0]), plot_image.shape[0]))
+            concat_image=np.concatenate((plot_image, label_image_resized), axis=1)
 
-        # label_image=get_label_text_img(result.boxes.cls.cpu().numpy().astype(int), plot_image.shape[1], color_dict, class_names)
+            # label_image=get_label_text_img(result.boxes.cls.cpu().numpy().astype(int), plot_image.shape[1], color_dict, class_names)
 
-        #plot_image=np.concatenate((plot_image, label_image), axis=0)
+            #plot_image=np.concatenate((plot_image, label_image), axis=0)
 
-        # plot_image = cv2.resize(plot_image, (image.shape[1], image.shape[0]))
-        return concat_image, error_message
-    
+            # plot_image = cv2.resize(plot_image, (image.shape[1], image.shape[0]))
+
+            return concat_image, error_message
+        else:
+
+            return plot_image, error_message
     else:
         result_dict={
             'class_names': class_names,
@@ -194,6 +199,74 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, tolerance
         }
         return result_dict
 
+
+def pa_segmentation(image, model1, model2, return_type, plot_config):
+
+    result_dict={}
+    model_1_select_key_list=['Alveolar_bone', 'Maxillary_sinus', 'Mandibular_alveolar_nerve']
+    model_2_select_key_list = [
+        "Caries",
+        "Crown",
+        "Dentin",
+        "Enamel",
+        "Implant",
+        "Periapical_lesion",
+        "Post_and_core",
+        "Pulp",
+        "Restoration",
+        "Root_canal_filling"
+    ]
+    
+    if return_type=='yolov8':
+        result1=yolo_transform(image, model1, return_type, plot_config)
+        result2=yolo_transform(image, model2, return_type, plot_config)
+    elif return_type=='image_array':
+        array_dict_1=yolo_transform(image, model1, return_type='dict')
+        array_dict_2=yolo_transform(image, model2, return_type='dict')
+        mask_colored=np.zeros_like(image, dtype=np.uint8)
+        present_labels=[]
+
+        for label, mask in array_dict_1.items():
+            if label in model_1_select_key_list:
+                mask_colored[mask == 255] = plot_config['color_dict'][label]
+                present_labels.append(label)
+        for label, mask in array_dict_2.items():
+            if label in model_2_select_key_list:
+                mask_colored[mask == 255] = plot_config['color_dict'][label]
+                present_labels.append(label)
+
+        plot_image = cv2.addWeighted(image, 1, mask_colored, 0.8, 0)
+
+        #draw legned
+        legend_width=200
+        legend_height = 30 * len(plot_config['color_dict'])
+        legend = np.zeros((legend_height, legend_width, 3), dtype=np.uint8)
+        j=0
+        for i, (label, color) in enumerate(plot_config['color_dict'].items()):
+            if label in present_labels:
+                cv2.rectangle(legend, (10, j * 30), (50, (j + 1) * 30), color, -1)
+                cv2.putText(legend, label, (60, (j + 1) * 30 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                j=j+1
+        legend_resized = cv2.resize(legend, (int(legend_width*plot_image.shape[0]/legend.shape[0]), plot_image.shape[0]))
+        concat_image=np.concatenate((plot_image, legend_resized), axis=1)
+        return concat_image
+
+    if return_type=='yolov8':
+        key_index_mapping_1={value: key for key, value in result1['class_names'].items()}
+        key_index_mapping_2={value: key for key, value in result2['class_names'].items()}
+        #filter
+        selected_indexes = [key_index_mapping_1[key] for key in model_1_select_key_list]
+        result1_filtered = []
+        for content in result1['yolov8_contents']:
+            if content[0] in selected_indexes:
+                label=result1['class_names'][content[0]]
+                content[0]=key_index_mapping_2[label]
+                result1_filtered.append(content)
+
+        result2_filtered=[content for content in result1['yolov8_contents'] if content[0] in [key_index_mapping_2[index] for index in model_2_select_key_list]]
+        result_dict['class_names']= result2['class_names']
+        result_dict['yolov8_contents']=result1_filtered+result2_filtered
+        return result_dict
 def show_plot(image):
     #cv2.imshow("OpenCV Image", image)
     # 使用 matplotlib 绘制图形
@@ -203,12 +276,14 @@ def show_plot(image):
 
 
 if __name__=='__main__':
-    model=YOLO('./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
+    model1=YOLO('./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
+    model2=YOLO('./models/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt')
     image=cv2.imread('./tests/files/nomal-x-ray-0.8510638-270-740_0_2022011008.png')
     with open('./conf/pa_segmentation_mask_color_setting.yaml', 'r') as file:
         config=yaml.safe_load(file)
-    test1, messages=yolo_transform(image, model, return_type='image_array', plot_config=config, tolerance=0.5)
+    #test1, messages=yolo_transform(image, model, return_type='yolov8', plot_config=config, tolerance=0.5)
+    pa_segmentation(image, model1, model2, return_type='image_array' , plot_config=config)
     # test2=yolo_transform(image, return_type='cvat')
     # test3=yolo_transform(image, return_type='dict')
 
-    show_plot(test1)
+    #show_plot(test1)
