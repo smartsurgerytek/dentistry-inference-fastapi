@@ -14,7 +14,7 @@ def donw_load_function():
         "PA_dental_contour/dentistry_pa-contour_yolov11n-seg_24.46.pt":"/opt/nuclio/models/dentistry_pa-contour_yolov11n-seg_24.46.pt",
         "PA_segmentation/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt":"/opt/nuclio/models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt",
         "PANO_caries_detection/dentistry_pano-CariesDetection_resNetFpn_25.12.pth":"/opt/nuclio/models/dentistry_pano-CariesDetection_resNetFpn_25.12.pth",
-        "PA_PANO_classification/dentistry_pa-pano-classification_cnn_25.10.pth":"/opt/nuclio/models/dentistry_pa-pano-classification_fpcl_25.10.pth",
+        "PA_PANO_classification/dentistry_pa-pano-classification_cnn_25.22.pth":"/opt/nuclio/models/dentistry_pa-pano-classification_cnn_25.22.pth",
         "PANO_fdi_segmentation/dentistry_pano-fdi-segmentation_yolo11x-seg_25.12.pt":'/opt/nuclio/models/dentistry_pano-fdi-segmentation_yolo11x-seg_25.12.pt'
         }
 
