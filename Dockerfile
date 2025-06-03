@@ -26,4 +26,5 @@ RUN uv pip install --system -r /workspace/requirements.txt
 
 EXPOSE 8080
 #CMD ["fastapi", "run", "/workspace/src/allocation/entrypoints/fast_api.py", "--port", "8080"]
-CMD ["uvicorn", "src.allocation.entrypoints.fast_api:app", "--host", "0.0.0.0", "--port", "8080"]
+#CMD ["uvicorn", "src.allocation.entrypoints.fast_api:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["sh", "-c", "uvicorn src.allocation.entrypoints.fast_api:app --host 0.0.0.0 --port ${PORT:-8080}"]
