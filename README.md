@@ -285,3 +285,32 @@ gcloud scheduler jobs create pubsub disable-dentistry-min-instance ^
   --message-body="{\"build\": {\"source\": {\"storageSource\": {\"bucket\": \"smartsurgery-dentistry-scheduler-stroage\", \"object\": \"set-min-instances-1.yaml\"}}}}"
 
 ```
+
+
+# Issue tracking: PORT=8080 issue and timeout
+```
+ERROR: (gcloud.run.deploy) Revision 'dentistry-inference-core-2514-00035-9b6' is not ready and cannot serve traffic. The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.
+```
+there are serveral reasons for this error.
+
+1. too small device: increasing the cpu and memory might solve the problem
+2. port setting issue: check the port whether is 8080 in entrypoints 
+3. cold start too long: one need to set up the startup-probe
+for example:
+```
+gcloud run deploy dentistry-inference-core-2514 \
+  --image=asia-east1-docker.pkg.dev/sandbox-446907/inference-core/dentistry-inference-core-2514 \
+  --cpu=8 \
+  --memory=16Gi \
+  --region=asia-east1 \
+  --platform=managed \
+  --timeout=900s \
+  --port=8080 \
+  --startup-probe=tcpSocket.port=8080,initialDelaySeconds=0,timeoutSeconds=240,failureThreshold=1,periodSeconds=240
+```
+
+## find the log
+gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="dentistry-inference-core-2514"' \
+  --project=sandbox-446907 \
+  --limit=100 \
+  --format="value(textPayload)"
