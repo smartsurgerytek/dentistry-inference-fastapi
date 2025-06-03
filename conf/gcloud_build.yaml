@@ -39,6 +39,7 @@ steps:
       - '--memory=32Gi'      
       - '--cpu=8'
       - '--quiet'
+      - '--startup-probe=tcpSocket.port=8080,initialDelaySeconds=0,timeoutSeconds=240,failureThreshold=1,periodSeconds=240'
     entrypoint: gcloud
 
   - name: 'gcr.io/cloud-builders/gcloud'
