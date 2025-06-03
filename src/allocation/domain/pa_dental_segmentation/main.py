@@ -72,7 +72,7 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_
         boxes = result.boxes  # Boxes object for bbox outputs
         masks = result.masks  # Masks object for segmentation masks outputs
         if masks is None:
-            error_message='No segmenation masks detected'
+            error_message='No segmentation masks detected'
             continue
         predict_label=[]
         for i, (mask, box) in enumerate(zip(masks.data, boxes)):
@@ -200,7 +200,7 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_
         return result_dict
 
 
-def pa_segmentation(image, model1, model2, return_type, plot_config):
+def pa_segmentation(image, model, model2, return_type, plot_config=None):
 
     result_dict={}
     model_1_select_key_list=['Alveolar_bone', 'Maxillary_sinus', 'Mandibular_alveolar_nerve']
@@ -218,7 +218,7 @@ def pa_segmentation(image, model1, model2, return_type, plot_config):
     ]
     
     if return_type=='yolov8':
-        result1=yolo_transform(image, model1, return_type, plot_config)
+        result1=yolo_transform(image, model, return_type, plot_config)
         result2=yolo_transform(image, model2, return_type, plot_config)
         key_index_mapping_1={value: key for key, value in result1['class_names'].items()}
         key_index_mapping_2={value: key for key, value in result2['class_names'].items()}
@@ -237,8 +237,12 @@ def pa_segmentation(image, model1, model2, return_type, plot_config):
         return result_dict
             
     elif return_type=='image_array':
-        array_dict_1=yolo_transform(image, model1, return_type='dict')
+        error_message=''
+        array_dict_1=yolo_transform(image, model, return_type='dict')
         array_dict_2=yolo_transform(image, model2, return_type='dict')
+        if not array_dict_1 and not array_dict_2:
+            return image, "No segmentation masks detected"
+        
         mask_colored=np.zeros_like(image, dtype=np.uint8)
         present_labels=[]
 
@@ -265,9 +269,10 @@ def pa_segmentation(image, model1, model2, return_type, plot_config):
                 j=j+1
         legend_resized = cv2.resize(legend, (int(legend_width*plot_image.shape[0]/legend.shape[0]), plot_image.shape[0]))
         concat_image=np.concatenate((plot_image, legend_resized), axis=1)
-        return concat_image
+        return concat_image, error_message
+    
     elif 'cvat' in return_type:
-        result1=yolo_transform(image, model1, return_type, plot_config)
+        result1=yolo_transform(image, model, return_type, plot_config)
         result2=yolo_transform(image, model2, return_type, plot_config)
         key_index_mapping_1={value: key for key, value in result1['class_names'].items()}
         key_index_mapping_2={value: key for key, value in result2['class_names'].items()}
@@ -292,11 +297,11 @@ def show_plot(image):
 if __name__=='__main__':
     model1=YOLO('./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
     model2=YOLO('./models/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt')
-    image=cv2.imread('./tests/files/nomal-x-ray-0.8510638-270-740_0_2022011008.png')
+    image=cv2.imread('./tests/files/black.png')
     with open('./conf/pa_segmentation_mask_color_setting.yaml', 'r') as file:
         config=yaml.safe_load(file)
     #test1, messages=yolo_transform(image, model, return_type='yolov8', plot_config=config, tolerance=0.5)
-    pa_segmentation(image, model1, model2, return_type='cvat' , plot_config=config)
+    pa_segmentation(image, model1, model2, return_type='image_array' , plot_config=config)
     # test2=yolo_transform(image, return_type='cvat')
     # test3=yolo_transform(image, return_type='dict')
 

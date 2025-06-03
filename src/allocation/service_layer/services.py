@@ -97,15 +97,17 @@ class InferenceService:
         )
     
     @staticmethod
-    def pa_segmentation_yolov8(image: bytes, model:YOLO) -> PaSegmentationYoloV8Response:
+    def pa_segmentation_yolov8(image: bytes, model:YOLO, model2:YOLO) -> PaSegmentationYoloV8Response:
         image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
-        yolov8_result_dict=yolo_transform(image=image_np, model= model, return_type='yolov8')
+        #yolov8_result_dict=yolo_transform(image=image_np, model= model, return_type='yolov8')
+        yolov8_result_dict=pa_segmentation(image=image_np, model= model, model2= model2, return_type='yolov8', plot_config=None)
         if not yolov8_result_dict.get('yolov8_contents'):
             return PaSegmentationYoloV8Response(
                 request_id=0,
                 yolo_results=yolov8_result_dict,
                 message="Nothing detected for the image"
             )
+        
         return PaSegmentationYoloV8Response(
             request_id=0,
             yolo_results=yolov8_result_dict,
@@ -113,9 +115,10 @@ class InferenceService:
         )
     
     @staticmethod
-    def pa_segmentation_cvat(image: bytes, model:YOLO) -> PaSegmentationCvatResponse:
+    def pa_segmentation_cvat(image: bytes, model:YOLO, model2:YOLO) -> PaSegmentationCvatResponse:
         image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
-        cvat_result_dict=yolo_transform(image=image_np, model= model, return_type='cvat')
+        #cvat_result_dict=yolo_transform(image=image_np, model= model, return_type='cvat')
+        cvat_result_dict=pa_segmentation(image=image_np, model= model, model2= model2, return_type='cvat', plot_config=None)
         #drop the mask cols in cvat_result_dict
         # for sublist in cvat_result_dict['yolov8_contents']:
         #     if 'mask' in sublist:
@@ -134,10 +137,11 @@ class InferenceService:
         )    
 
     @staticmethod
-    def pa_segmentation_image_base64(image: bytes, model:YOLO) -> ImageResponse:
+    def pa_segmentation_image_base64(image: bytes, model:YOLO, model2:YOLO) -> ImageResponse:
         image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
         plot_config=read_yaml('./conf/pa_segmentation_mask_color_setting.yaml')
-        output_image_array, error_message=yolo_transform(image=image_np, model= model, return_type='image_array', plot_config=plot_config)
+        #output_image_array, error_message=yolo_transform(image=image_np, model= model, return_type='image_array', plot_config=plot_config)
+        output_image_array, error_message=pa_segmentation(image=image_np, model= model, model2= model2, return_type='image_array', plot_config=plot_config)
         #drop the mask cols in cvat_result_dict
         #show_plot(output_image_array)
 

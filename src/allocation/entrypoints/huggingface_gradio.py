@@ -16,6 +16,7 @@ from src.allocation.domain.pano_fdi_segmentation.main import pano_fdi_segmentati
 title = "Dentistry Model segmentation Demo"
 description = "Input A Image and get the segmentation result"
 pa_segmentation_model = YOLO('./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
+pa_segmentation_model2 = YOLO('./models/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt')
 pa_measurement_component_model=pa_segmentation_model
 pa_measurement_contour_model=YOLO('./models/dentistry_pa-contour_yolov11n-seg_24.46.pt')
 pano_caries_detection_model=create_pano_caries_detection_model(num_classes=1)
@@ -36,11 +37,12 @@ def create_inference(fn_name='pa_segmentation', label="Input Image", test_image_
 
     if fn_name=='pa_segmentation':
         inference_button.click(
-            lambda img: yolo_transform(img, 
+            lambda img: pa_segmentation(img, 
                                        model=pa_segmentation_model,
+                                       model2=pa_segmentation_model2,
                                        return_type='image_array',
                                        plot_config=pa_segmentation_plot_config,
-                                       tolerance=0.5)[0],
+                                       )[0],
             inputs=image_input,
             outputs=image_output
         )

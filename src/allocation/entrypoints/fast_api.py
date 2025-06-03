@@ -32,7 +32,10 @@ async def lifespan(app: FastAPI):
     # Load the ML model
     global pa_component_model
     pa_component_model = YOLO('./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
-    
+
+    global pa_component_model2
+    pa_component_model2 = YOLO('./models/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt')
+
     global pa_contour_model
     pa_contour_model = YOLO('./models/dentistry_pa-contour_yolov11n-seg_24.46.pt')
 
@@ -127,7 +130,7 @@ async def generate_periapical_film_segmentations_yolov8(
     request: PaSegmentationRequest,
 ) -> PaSegmentationYoloV8Response:
     image=base64_to_bytes(request.image)
-    return InferenceService.pa_segmentation_yolov8(image, pa_component_model)
+    return InferenceService.pa_segmentation_yolov8(image, pa_component_model, pa_component_model2)
 
 @v1_router.post("/pa_segmentation_cvat", response_model=PaSegmentationCvatResponse)
 async def generate_periapical_film_segmentations_cvat(
@@ -135,14 +138,14 @@ async def generate_periapical_film_segmentations_cvat(
     request: PaSegmentationRequest
 ) -> PaSegmentationCvatResponse:
     image=base64_to_bytes(request.image)
-    return InferenceService.pa_segmentation_cvat(image, pa_component_model)
+    return InferenceService.pa_segmentation_cvat(image, pa_component_model, pa_component_model2)
 
 @v1_router.post("/pa_segmentation_image", response_model=ImageResponse)
 async def generate_periapical_film_segmentations_image_base64(
     request: PaSegmentationRequest
 ) -> PaSegmentationCvatResponse:
     image=base64_to_bytes(request.image)
-    return InferenceService.pa_segmentation_image_base64(image, pa_component_model)
+    return InferenceService.pa_segmentation_image_base64(image, pa_component_model, pa_component_model2)
 
 @v1_router.post("/pano_caries_detection_image", response_model=ImageResponse)
 async def generate_pano_caries_detection_image_base64(
@@ -179,7 +182,7 @@ async def generate_fdi_panoramic_xray_segmentations_cvat(
     request: PanoSegmentationRequest
 ) -> PanoSegmentationCvatResponse:
     image=base64_to_bytes(request.image)
-    return InferenceService.pa_segmentation_cvat(image, pano_fdi_segmentation_model)
+    return InferenceService.pano_fdi_segmentation_cvat(image, pano_fdi_segmentation_model)
 
 @v1_router.post("/pano_fdi_segmentation_image", response_model=ImageResponse)
 async def generate_fdi_panoramic_xray_segmentations_image_base64(
@@ -207,7 +210,7 @@ async def aggregate_pa_images_base64_dict(
         loop.run_in_executor(
             executor,
             InferenceService.pa_segmentation_image_base64,
-            image, pa_component_model
+            image, pa_component_model, pa_component_model2
         ),
         # 你可以在這裡繼續加入更多任務
         # loop.run_in_executor(executor, your_other_inference_fn, image, ...)
