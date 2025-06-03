@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
     pano_caries_detection_model_weight_path='./models/dentistry_pano-CariesDetection_resNetFpn_25.12.pth'
 
     global pa_pano_classification_model
-    pa_pano_classification_model=create_pa_pano_classification_model('./models/dentistry_pa-pano-classification_cnn_25.10.pth')
+    pa_pano_classification_model=create_pa_pano_classification_model('./models/dentistry_pa-pano-classification_cnn_25.22.pth')
 
     global pano_fdi_segmentation_model
     pano_fdi_segmentation_model= YOLO('./models/dentistry_pano-fdi-segmentation_yolo11x-seg_25.12.pt')
