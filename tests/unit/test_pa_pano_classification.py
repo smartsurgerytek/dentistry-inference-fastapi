@@ -15,7 +15,7 @@ class TestPAPanoClassification(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # 模型權重檔案
-        cls.model_path = './models/dentistry_pa-pano-classification_cnn_25.10.pth'
+        cls.model_path = './models/dentistry_pa-pano-classification_cnn_25.22.pth'
         if not os.path.exists(cls.model_path):
             raise FileNotFoundError(f"模型檔案不存在: {cls.model_path}")
         cls.model = create_pa_pano_classification_model(cls.model_path)
@@ -39,7 +39,7 @@ class TestPAPanoClassification(unittest.TestCase):
             self.normal_image
         )
         # 應分類為 periapical film 或 panoramic x-ray，且分數為 float
-        self.assertIn(pred_class, ['periapical film', 'panoramic x-ray'])
+        self.assertIn(pred_class, ['periapical film', 'panoramic x-ray', 'other'])
         self.assertIsInstance(score, (float, np.floating)) # 允許 numpy float
 
     def test_predict_black_image(self):
@@ -49,7 +49,7 @@ class TestPAPanoClassification(unittest.TestCase):
             self.black_image
         )
         # 應分類為 periapical film 或 panoramic x-ray，且分數為 float
-        self.assertIn(pred_class, ['periapical film', 'panoramic x-ray'])
+        self.assertIn(pred_class, ['periapical film', 'panoramic x-ray', 'other'])
         self.assertIsInstance(score, (float, np.floating))
 
 if __name__ == '__main__':
