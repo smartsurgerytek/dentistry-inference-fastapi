@@ -241,7 +241,7 @@ sudo certbot certonly --manual --preferred-challenges dns -d api.smartsurgerytek
 
 # SaSS schedulely set the minimal instance
 uptime 16 hours (8am-12am)
-## first setup (windows commnad)
+## first setup (windows command)
 create topic 
 ```
 gcloud pubsub topics create cloud-builds
