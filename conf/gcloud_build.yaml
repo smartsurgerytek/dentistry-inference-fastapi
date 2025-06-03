@@ -36,8 +36,8 @@ steps:
       - >-
         --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
       - '--region=$_DEPLOY_REGION'
-      - '--memory=16Gi'      
-      - '--cpu=8'
+      - '--memory=32Gi'      
+      - '--cpu=16'
       - '--quiet'
     entrypoint: gcloud
 
