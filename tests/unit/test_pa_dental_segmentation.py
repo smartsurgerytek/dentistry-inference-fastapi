@@ -57,7 +57,7 @@ class TestYoloTransform(unittest.TestCase):
         result_img, error_msg = yolo_transform(
             self.black_image, self.model, return_type='image_array', plot_config=self.plot_config
         )
-        self.assertIn('No segmenation', error_msg, '應回傳分割失敗訊息')
+        self.assertIn('No segmentation', error_msg, '應回傳分割失敗訊息')
         self.assertLess(np.mean(result_img), 10, '全黑圖片應回傳近乎全黑影像')
 
     def test_yolo_transform_invalid_return_type(self):
