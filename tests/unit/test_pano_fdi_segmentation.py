@@ -70,7 +70,7 @@ def test_black_image_empty_result(model):
     result, error_msg = pano_fdi_segmentation(image, model, return_type='image_array')
     assert isinstance(result, np.ndarray)
     # 應回傳特定錯誤訊息
-    assert error_msg == "No segmenation masks detected"
+    assert error_msg == "No segmentation masks detected"
     # 測試 cvat 回傳
     result_dict = pano_fdi_segmentation(image, model, return_type='cvat')
     assert isinstance(result_dict, dict)
