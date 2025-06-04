@@ -1,8 +1,8 @@
 metadata:
-  name: dentistry-pa-instance-dentalContour-2522
+  name: dentistry-pa-instance-dentalcontour-2522
   namespace: cvat
   annotations:
-    name: dentistry-pa-instance-dentalContour-2522
+    name: dentistry-pa-instance-dentalcontour-2522
     type: detector
     spec: |
       [
@@ -16,7 +16,7 @@ spec:
   eventTimeout: 30s
 
   build:
-    image: dentistry-pa-instance-dentalContour-2522
+    image: dentistry-pa-instance-dentalcontour-2522
     baseImage: python:3.9
     directives:
       preCopy:
