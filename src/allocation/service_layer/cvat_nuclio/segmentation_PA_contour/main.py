@@ -25,6 +25,7 @@ def handler(context, event):
     image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     result_dict=yolo_transform(image, context.user_data.model_handler, return_type='cvat_mask', plot_config=None, tolerance=0.5)
     rt=result_dict['yolov8_contents']
+    print(rt)
     return context.Response(body=json.dumps(rt), headers={},
         content_type='application/json', status_code=200)
 
