@@ -13,7 +13,7 @@ def init_context(context):
     context.logger.info("Init context...  0%")
     os.makedirs('/opt/nuclio/models', exist_ok=True)
     donw_load_function()
-    context.user_data.model_handler = YOLO('/opt/nuclio/models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
+    context.user_data.model_handler = YOLO('/opt/nuclio/models/dentistry_pa-segmentation_yolov11x-seg-all_25.22.pt')
     context.logger.info("Init context...100%")
     
 

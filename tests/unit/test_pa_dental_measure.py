@@ -14,7 +14,7 @@ class TestDentalEstimation(unittest.TestCase):
     def setUpClass(cls):
         # 設定模型路徑
         cls.component_model_path = './models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt'
-        cls.contour_model_path = './models/dentistry_pa-contour_yolov11n-seg_24.46.pt'
+        cls.contour_model_path = './models/dentistry_pa-contour_yolov11x-seg_25.22.pt'
         # 測試圖片路徑
         cls.normal_image_path = './tests/files/nomal-x-ray-0.8510638-270-740_0_2022011008.png'
         cls.black_image_path = './tests/files/black.png'
