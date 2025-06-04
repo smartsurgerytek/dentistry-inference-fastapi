@@ -6,7 +6,7 @@ metadata:
     type: detector
     spec: |
       [
-        { "id": 14, "name": "Dental Contour", "type": "mask", "color": "#aaf0d1" }
+        { "id": 0, "name": "Dental Contour", "type": "mask", "color": "#aaf0d1" }
       ]
 
 spec:
