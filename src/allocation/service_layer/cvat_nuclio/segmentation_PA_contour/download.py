@@ -1,7 +1,7 @@
 from huggingface_hub import hf_hub_download
 import shutil
 import os
-from src.allocation.service_layer.cvat_nuclio.segmentation_PA.download import model_path
+from src.allocation.service_layer.download import model_path
 with open('./conf/hf_token.txt', 'r', encoding='utf-8') as file:
     hf_token = file.read().strip()
     print(hf_token)
