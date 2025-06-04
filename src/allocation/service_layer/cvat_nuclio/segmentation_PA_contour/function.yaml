@@ -1,0 +1,64 @@
+metadata:
+  name: dentistry-pa-instance-dentalContour-2522
+  namespace: cvat
+  annotations:
+    name: dentistry-pa-instance-dentalContour-2522
+    type: detector
+    spec: |
+      [
+        { "id": 14, "name": "Dental Contour", "type": "mask", "color": "#aaf0d1" }
+      ]
+
+spec:
+  description: Yolo v11x from sst
+  runtime: 'python:3.9'
+  handler: main:handler
+  eventTimeout: 30s
+
+  build:
+    image: dentistry-pa-instance-dentalContour-2522
+    baseImage: python:3.9
+    directives:
+      preCopy:
+        - kind: ENV
+          value: DEBIAN_FRONTEND=noninteractive
+        - kind: WORKDIR
+          value: /opt/nuclio
+        - kind: RUN
+          value: apt-get update && apt-get install -y libgl1-mesa-glx
+        - kind: RUN
+          value: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+        - kind: RUN
+          value: pip install -U "huggingface_hub[cli]" ultralytics scikit-image          
+
+  triggers:
+    myHttpTrigger:
+      maxWorkers: 1
+      kind: 'http'
+      workerAvailabilityTimeoutMilliseconds: 10000
+      attributes:
+        maxRequestBodySize: 33554432 # 32MB
+
+  volumes:
+    - volume:
+        name: src-volume
+        hostPath:
+          path: ./src/
+      volumeMount:
+        name: src-volume
+        mountPath: /opt/nuclio/src
+
+    - volume:
+        name: conf-volume
+        hostPath:
+          path: ./conf/
+      volumeMount:
+        name: conf-volume
+        mountPath: /opt/nuclio/conf
+
+  platform:
+    attributes:
+      restartPolicy:
+        name: always
+        maximumRetryCount: 3
+      mountMode: volume

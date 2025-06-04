@@ -17,15 +17,24 @@ if hf_token is None:
     
 print('hf_token', hf_token)
 
-os.makedirs('./models',exist_ok=True)
-save_map={
-    "PA_dental_contour/dentistry_pa-contour_yolov11x-seg_25.22.pt":"./models/dentistry_pa-contour_yolov11x-seg_25.22.pt",
-    "PA_segmentation/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt":"./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt",
-    "PA_segmentation/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt":"./models/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt",
-    "PANO_caries_detection/dentistry_pano-CariesDetection_resNetFpn_25.12.pth":"models/dentistry_pano-CariesDetection_resNetFpn_25.12.pth",
-    "PA_PANO_classification/dentistry_pa-pano-classification_cnn_25.22.pth":"models/dentistry_pa-pano-classification_cnn_25.22.pth",
-    "PANO_fdi_segmentation/dentistry_pano-fdi-segmentation_yolo11x-seg_25.12.pt":'models/dentistry_pano-fdi-segmentation_yolo11x-seg_25.12.pt'
-    }
+
+
+base_path = "./models/"
+os.makedirs(base_path,exist_ok=True)
+
+model_path = [
+    "PA_dental_contour/dentistry_pa-contour_yolov11x-seg_25.22.pt",
+    "PA_segmentation/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt",
+    "PA_segmentation/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt",
+    "PANO_caries_detection/dentistry_pano-CariesDetection_resNetFpn_25.12.pth",
+    "PA_PANO_classification/dentistry_pa-pano-classification_cnn_25.22.pth",
+    "PANO_fdi_segmentation/dentistry_pano-fdi-segmentation_yolo11x-seg_25.12.pt"
+]
+
+save_map = {
+    key: base_path + key.split("/")[-1]
+    for key in model_path
+}
 
 for filename, save_path in save_map.items():
     if os.path.exists(save_path):
