@@ -7,12 +7,12 @@ import os
 import sys
 
 from src.allocation.domain.pa_dental_segmentation.main import *
-from src.allocation.service_layer.cvat_nuclio.segmentation_PA.download import donw_load_function
+from src.allocation.service_layer.download import donw_load_function
 
 def init_context(context):
     context.logger.info("Init context...  0%")
     os.makedirs('/opt/nuclio/models', exist_ok=True)
-    donw_load_function()
+    donw_load_function('/opt/nuclio/models')
     context.user_data.model_handler = YOLO('/opt/nuclio/models/dentistry_pa-segmentation_yolov11x-seg-all_25.22.pt')
     context.logger.info("Init context...100%")
     
