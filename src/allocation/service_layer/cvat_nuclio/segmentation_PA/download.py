@@ -11,7 +11,7 @@ def donw_load_function():
 
     os.makedirs('./models',exist_ok=True)
     save_map={
-        "PA_dental_contour/dentistry_pa-contour_yolov11n-seg_24.46.pt":"/opt/nuclio/models/dentistry_pa-contour_yolov11n-seg_24.46.pt",
+        "PA_dental_contour/dentistry_pa-contour_yolov11x-seg_25.22.pt":"/opt/nuclio/models/dentistry_pa-contour_yolov11x-seg_25.22.pt",
         "PA_segmentation/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt":"/opt/nuclio/models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt",
         "PA_segmentation/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt":"/opt/nuclio/models/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt",
         "PANO_caries_detection/dentistry_pano-CariesDetection_resNetFpn_25.12.pth":"/opt/nuclio/models/dentistry_pano-CariesDetection_resNetFpn_25.12.pth",

@@ -18,7 +18,7 @@ description = "Input A Image and get the segmentation result"
 pa_segmentation_model = YOLO('./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
 pa_segmentation_model2 = YOLO('./models/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt')
 pa_measurement_component_model=pa_segmentation_model
-pa_measurement_contour_model=YOLO('./models/dentistry_pa-contour_yolov11n-seg_24.46.pt')
+pa_measurement_contour_model=YOLO('./models/dentistry_pa-contour_yolov11x-seg_25.22.pt')
 pano_caries_detection_model=create_pano_caries_detection_model(num_classes=1)
 pano_caries_detection_wieght_path='./models/dentistry_pano-CariesDetection_resNetFpn_25.12.pth'
 

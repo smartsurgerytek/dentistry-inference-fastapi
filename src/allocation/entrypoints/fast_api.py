@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
     pa_component_model2 = YOLO('./models/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt')
 
     global pa_contour_model
-    pa_contour_model = YOLO('./models/dentistry_pa-contour_yolov11n-seg_24.46.pt')
+    pa_contour_model = YOLO('./models/dentistry_pa-contour_yolov11x-seg_25.22.pt')
 
     global pano_caries_detection_model
     pano_caries_detection_model= create_pano_caries_detection_model(1)
