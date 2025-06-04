@@ -322,8 +322,30 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
                                                               image, 
                                                               method='semantic', 
                                                               mask_threshold=DENTAL_MODEL_THRESHOLD)
-    components_model_masks_dict = {denti_measure_names_map.get(k, k): v for k, v in components_model_masks_dict_init.items()} #mapping the key
+    
+    # components_model_masks_dict_init_2=get_mask_dict_from_model(YOLO('./models/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt'),
+    #                                                           image, 
+    #                                                           method='semantic', 
+    #                                                           mask_threshold=DENTAL_MODEL_THRESHOLD)
+    # model_2_select_key_list = [
+    #     "Caries",
+    #     "Crown",
+    #     "Dentin",
+    #     "Enamel",
+    #     "Implant",
+    #     "Periapical_lesion",
+    #     "Post_and_core",
+    #     "Pulp",
+    #     "Restoration",
+    #     "Root_canal_filling"
+    # ]        
+    # for key in model_2_select_key_list:
+    #     components_model_masks_dict_init[key]=components_model_masks_dict_init_2.get(key)
 
+    components_model_masks_dict = {denti_measure_names_map.get(k, k): v for k, v in components_model_masks_dict_init.items()} #relace the name
+
+
+    
     contours_model_masks_dict=get_mask_dict_from_model(contour_model,
                                                        image, 
                                                        method='instance', 
@@ -353,14 +375,15 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
 
     predictions = []
     image_for_drawing=image.copy()
+
+    ###post-processing for semantic segmentation
     #for i in range(1, num_labels):  # 從1開始，0是背景
-    dentin_mask_splited=enhance_split_detin(masks_dict['dentin'], config) # alan mod
+    # dentin_mask_splited=enhance_split_detin(masks_dict['dentin'], config) # alan mod
+    # num_labels, index_masks = cv2.connectedComponents(dentin_mask_splited)
 
-    num_labels, index_masks = cv2.connectedComponents(dentin_mask_splited)
-
-    #for i, component_mask in enumerate(contours_model_masks_dict['dental_contour']):
-    for i in range(1, num_labels):
-        component_mask = np.uint8(index_masks == i) * 255
+    for i, component_mask in enumerate(contours_model_masks_dict['dental_contour']):
+    # for i in range(1, num_labels):
+    #     component_mask = np.uint8(index_masks == i) * 255
 
         # 取得分析後的點
         prediction = locate_points(image_for_drawing, component_mask, masks_dict, i+1, overlay, config)
@@ -376,9 +399,13 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
         prediction['teeth_center']=prediction['mid']
         if dental_pair_list:
             predictions.append(prediction)
+
+    if not predictions and 'image' in return_type:
+        return image , "No intersection prediction found"
+    
     if not predictions:
         return []
-    
+
     if return_type=='cvat':
 
         points_label = ['CEJ', 'APEX', 'ALC']
@@ -488,6 +515,6 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
 if __name__ == "__main__":
     image=cv2.imread("./tests/files/caries-0.6741573-260-760_1_2022052768.png")
     components_model=YOLO('./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
-    contour_model=YOLO('./models/dentistry_pa-contour_yolov11n-seg_24.46.pt')
+    contour_model=YOLO('./models/dentistry_pa-contour_yolov11x-seg_25.22.pt')
     predictions=dental_estimation(image, components_model, contour_model, scale_x=31/960, scale_y=41 / 1080, return_type='dict', config=None)
     print(predictions)
