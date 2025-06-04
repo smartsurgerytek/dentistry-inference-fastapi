@@ -34,7 +34,7 @@ def donw_load_function(base_path):
         key: os.path.join(base_path , key.split("/")[-1])
         for key in model_path
     }
-
+    print(save_map)
     for filename, save_path in save_map.items():
         if os.path.exists(save_path):
             continue
@@ -43,5 +43,5 @@ def donw_load_function(base_path):
         shutil.copy(file_path, save_path)
 
 if __name__ == "__main__":
-    base_path = "./models/"
+    base_path = "./models"
     donw_load_function(base_path)

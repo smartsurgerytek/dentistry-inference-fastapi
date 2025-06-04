@@ -1,8 +1,8 @@
 metadata:
-  name: dentistry-pa-instance-segmentation-2522
+  name: dentistry-pa-instance-segmentation-2520
   namespace: cvat
   annotations:
-    name: dentistry-pa-instance-segmentation-2522
+    name: dentistry-pa-instance-segmentation-2520
     type: detector
     spec: |
       [
@@ -28,7 +28,7 @@ spec:
   eventTimeout: 30s
 
   build:
-    image: dentistry-pa-instance-segmentation-2522
+    image: dentistry-pa-instance-segmentation-2520
     baseImage: python:3.9
     directives:
       preCopy:
