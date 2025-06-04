@@ -31,7 +31,7 @@ def donw_load_function(base_path):
     ]
 
     save_map = {
-        key: base_path + key.split("/")[-1]
+        key: os.path.join(base_path , key.split("/")[-1])
         for key in model_path
     }
 
