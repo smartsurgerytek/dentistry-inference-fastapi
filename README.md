@@ -293,6 +293,10 @@ ERROR: (gcloud.run.deploy) Revision 'dentistry-inference-core-2514-00035-9b6' is
 ```
 there are serveral reasons for this error.
 
+one can check the jira card
+
+https://smartsurgerytek.atlassian.net/browse/MSA-454
+
 1. too small device: increasing the cpu and memory might solve the problem
 2. port setting issue: check the port whether is 8080 in entrypoints 
 3. cold start too long: one need to set up the startup-probe
