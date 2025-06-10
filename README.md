@@ -318,3 +318,45 @@ gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.serv
   --project=sandbox-446907 \
   --limit=100 \
   --format="value(textPayload)"
+
+# issue tracking: ERROR: (gcloud.run.deploy) Revision 'dentistry-inference-core-2514-00100-6mh' is not ready and cannot serve traffic. Container import failed.
+
+```
+# 1. build image
+docker build --build-arg HUGGINGFACE_TOKEN=<huggingface_token> -t asia-east1-docker.pkg.dev/sandbox-446907/cloud-run-source-deploy/dentistry-inference-core-2514 .
+
+# 2. push image to Artifact Registry
+docker push asia-east1-docker.pkg.dev/sandbox-446907/cloud-run-source-deploy/dentistry-inference-core-2514
+
+# 3. (optional) local test
+docker run -e PORT=8080 -p 8080:8080 asia-east1-docker.pkg.dev/sandbox-446907/cloud-run-source-deploy/dentistry-inference-core-2514
+
+# 4. deploy to Cloud Run
+gcloud run deploy dentistry-inference-core-2514 \
+  --image=asia-east1-docker.pkg.dev/sandbox-446907/cloud-run-source-deploy/dentistry-inference-core-2514 \
+  --cpu=8 \
+  --memory=32Gi \
+  --region=asia-east1 \
+  --platform=managed \
+  --timeout=900s \
+  --port=8080 \
+  --startup-probe=tcpSocket.port=8080,initialDelaySeconds=30,timeoutSeconds=240,failureThreshold=3,periodSeconds=240
+```
+
+```
+Deploying container to Cloud Run service [dentistry-inference-core-2514] in project [sandbox-446907] region [asia-east1]
+X Deploying...                                                                                                                                                                                 
+  - Creating Revision...                                                                                                                                                                       
+Deployment failed                                                                                                                                                                              
+ERROR: (gcloud.run.deploy) Revision 'dentistry-inference-core-2514-00100-6mh' is not ready and cannot serve traffic. Container import failed.
+```
+
+## list aviailable revisions
+```
+gcloud run revisions list --service=dentistry-inference-core-2514 --region=asia-east1
+```
+one need to manually delete problematic one
+
+## delete problematic revision
+
+cloud run -> dentistry-inference-core-2514 -> revisions -> dentistry-inference-core-2514-00100-6mh -> Action: delete
