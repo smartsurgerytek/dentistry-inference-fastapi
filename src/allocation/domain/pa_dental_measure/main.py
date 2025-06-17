@@ -135,7 +135,7 @@ def locate_points(image, component_mask, binary_images, idx, overlay, config=Non
     return prediction
 
 def get_mask_dict_from_model(model, image, method='semantic', mask_threshold=0.5):
-    results=model.predict(image, verbose=False)
+    results=model.predict(image, iou=0.4, verbose=False)
     result=results[0]
 
     # get class name
@@ -303,7 +303,7 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
             globals()[label] = values
 
     error_messages=''
-    # note that crown is a tooth-shaped "cap" made of artifial material that is placed over a damaged, decayed, or weakened tooth.
+    # note that crown is a tooth-shaped "cap" made of artificial material that is placed over a damaged, decayed, or weakened tooth.
     # while the dental crown refers to the visible portion of a tooth that is above the gum line in atonomy.
     denti_measure_names_map={
         'Alveolar_bone': 'gum',
@@ -322,7 +322,7 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
                                                               image, 
                                                               method='semantic', 
                                                               mask_threshold=DENTAL_MODEL_THRESHOLD)
-    
+    ### model2 selection: will be append in the future
     # components_model_masks_dict_init_2=get_mask_dict_from_model(YOLO('./models/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt'),
     #                                                           image, 
     #                                                           method='semantic', 
@@ -376,12 +376,13 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
     predictions = []
     image_for_drawing=image.copy()
 
-    ###post-processing for semantic segmentation
+    ###post-processing for semantic segmentation Alan's code
     #for i in range(1, num_labels):  # 從1開始，0是背景
     # dentin_mask_splited=enhance_split_detin(masks_dict['dentin'], config) # alan mod
     # num_labels, index_masks = cv2.connectedComponents(dentin_mask_splited)
 
     for i, component_mask in enumerate(contours_model_masks_dict['dental_contour']):
+    ### post-processing for semantic segmentation Alan's code
     # for i in range(1, num_labels):
     #     component_mask = np.uint8(index_masks == i) * 255
 
@@ -459,55 +460,11 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
 
                 cvat_results.append(append_metadata(pair_measurement, tag_label, teeth_id, side_id))
         
-        # cvat_results=[]
-        # points_label=['CEJ','APEX','ALC']
-        # polyline_label=['CAL','TRL']
-        # tag_label=['ABLD','stage']
-        # polyline_mapping={
-        #     'CAL': ['enamel','gum'],
-        #     'TRL': ['enamel','dentin']
-        # }
-        # left_right=['left','right']
-        # for prediction in predictions:
-        #     teeth_id=prediction['teeth_id']
-        #     for pair_measurement in prediction['pair_measurements']:
-        #         side_id=pair_measurement['side_id']
-        #         for label, values in pair_measurement.items():
-        #             if label in points_label:
-        #                 cvat_results.append({'label':label,
-        #                                     'type':'point',
-        #                                     'points':list(values), 
-        #                                     'teeth_id':teeth_id, 
-        #                                     'side_id':side_id})
-        #             elif label in polyline_label:
-        #                 side=left_right[side_id]
-        #                 enamel_key=polyline_mapping[label][0]+"_"+side
-        #                 gum_or_dentin_key=polyline_mapping[label][1]+"_"+side
-        #                 points=list(prediction[enamel_key]+prediction[gum_or_dentin_key])                    
-        #                 cvat_results.append({'label':label,
-        #                                     'type':'polyline',
-        #                                     'points':points, 
-        #                                     'attributes':[{
-        #                                         'name':'length',
-        #                                         'input_type':'number',
-        #                                         'value': values,
-        #                                     }],
-        #                                     'teeth_id':teeth_id, 
-        #                                     'side_id':side_id})
-        #         meta_data_atrributes=[{'name': key,
-        #                                 'input_type': 'number',
-        #                                 'value': pair_measurement[key],} for key in tag_label]
-        #         cvat_results.append({'label':'metadata',
-        #                             'type':'tag',
-        #                             'attributes': meta_data_atrributes,
-        #                             'teeth_id':teeth_id, 
-        #                             'side_id':side_id})     
         return cvat_results           
 
     if return_type=='image_array':
         return image_for_drawing, error_messages
-    # elif return_type=='image_base64':
-    #     return numpy_to_base64(image_for_drawing, image_format='PNG'), error_messages
+
     else:
         return predictions
     
