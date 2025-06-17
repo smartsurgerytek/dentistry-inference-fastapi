@@ -2,26 +2,14 @@ from ultralytics import YOLO
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-from skimage.measure import label, regionprops, find_contours
+from skimage.measure import find_contours
 from skimage.measure import approximate_polygon
 import os 
 import sys
+import yaml
+from PIL import Image, ImageDraw, ImageFont
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..')))
 from src.allocation.domain.pa_dental_segmentation.utils import *
-import yaml
-
-#model=YOLO('./models/dentistry_yolov11x-seg-all_4.42.pt')
-def find_center_mask(mask_binary):
-    moments = cv2.moments(mask_binary)
-
-    # 計算質心
-    if moments['m00'] != 0:  # 確保掩膜不全為零
-        cx = int(moments['m10'] / moments['m00'])
-        cy = int(moments['m01'] / moments['m00'])
-    else:
-        cx, cy = None, None  # 如果掩膜全為零
-    return (cx,cy)
-
 
 def get_yolov8_label(mask_binary,tolerance=0.5):
     points = []
@@ -67,6 +55,7 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_
     yolov8_contents=[]
     mask_dict={}
     error_message=''
+    predict_label=None
     # 處理結果
     for result in results:
         boxes = result.boxes  # Boxes object for bbox outputs
@@ -132,7 +121,6 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_
                 yolov8_line.extend(yolov8_points)
                 if yolov8_points:
                     yolov8_contents.append(yolov8_line)
-                #breakpoint()
                 # Check if the mask is valid
                 if np.sum(mask_binary) == 0:
                     continue
@@ -155,43 +143,54 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_
 
     if return_type=="dict":
         return mask_dict
-                
-                
+
     if return_type=='image_array':
-        def draw_legend(color_dict, present_label_indexes, legend_width=200):
-            
-            """根據顏色字典創建圖例圖片，動態調整高度"""
-            # 計算圖例的高度
-            legend_height = 30 * len(color_dict)  # 每個標籤30像素
-            legend = np.zeros((legend_height, legend_width, 3), dtype=np.uint8)
-            
-            # 繪製圖例
-            j=0
-            for i, (label, color) in enumerate(color_dict.items()):
-                if i in present_label_indexes:
-                    cv2.rectangle(legend, (10, j * 30), (50, (j + 1) * 30), color, -1)
-                    cv2.putText(legend, label, (60, (j + 1) * 30 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-                    j=j+1
-
-            return legend
-
-        if show_plot_legend:
-            present_label_indexes=result.boxes.cls.cpu().numpy().astype(int)
-            label_width=200
-            label_image=draw_legend(color_dict, present_label_indexes, label_width)
-            label_image_resized = cv2.resize(label_image, (int(label_width*plot_image.shape[0]/label_image.shape[0]), plot_image.shape[0]))
-            concat_image=np.concatenate((plot_image, label_image_resized), axis=1)
-
-            # label_image=get_label_text_img(result.boxes.cls.cpu().numpy().astype(int), plot_image.shape[1], color_dict, class_names)
-
-            #plot_image=np.concatenate((plot_image, label_image), axis=0)
-
-            # plot_image = cv2.resize(plot_image, (image.shape[1], image.shape[0]))
-
-            return concat_image, error_message
-        else:
-
+        present_labels=predict_label
+        if not present_labels:
+            return image, "No segmentation masks detected"
+        if not show_plot_legend:
             return plot_image, error_message
+        
+        legend_width = int(image.shape[1]*0.15625) #200 when width=1280
+        block_height= int(image.shape[0]*0.03125) #30 when height=960
+        legend_height = block_height * len(plot_config['color_dict']) 
+        legend = np.zeros((legend_height, legend_width, 3), dtype=np.uint8)
+
+        # Plot color blocks
+        block_x1=int(legend_width*1/20)
+        block_x2=int(legend_width*5/20)
+        j = 0
+        for label, color in plot_config['color_dict'].items():
+            if label in present_labels:
+                cv2.rectangle(legend, (block_x1, j * block_height), (block_x2, (j + 1) * block_height), color, -1)
+                j += 1
+
+        # After drawing the color blocks, convert to a PIL image to draw the text (vector text)
+        legend_pil = Image.fromarray(legend)
+        draw = ImageDraw.Draw(legend_pil)
+
+        # Load a custom or system font
+        font = ImageFont.truetype("./conf/arial.ttf", 20)
+
+        # Plot text
+        text_width=int(legend_width*6/20)
+        text_height=int(block_height)
+        text_y_offset=int(block_height*1/6)
+        j = 0
+        for label, color in plot_config['color_dict'].items():
+            if label in present_labels:
+                draw.text((text_width, j * text_height + text_y_offset), label, font=font, fill=(255, 255, 255))
+                j += 1
+
+        # Convert back to a NumPy array for further processing
+        legend = np.array(legend_pil)
+
+        # Resize the legend and concatenate it with the plot image
+        legend_resized = cv2.resize(legend, (int(legend_width * plot_image.shape[0] / legend.shape[0]), plot_image.shape[0]))
+        concat_image = np.concatenate((plot_image, legend_resized), axis=1)
+        concat_image = cv2.cvtColor(concat_image, cv2.COLOR_BGR2RGB)        
+        return concat_image, error_message
+
     else:
         result_dict={
             'class_names': class_names,
@@ -248,30 +247,55 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
 
         for label, mask in array_dict_1.items():
             if label in model_1_select_key_list:
-                mask_colored[mask == 255] = plot_config['color_dict'][label]
+                filtered_mask=remove_small_regions(mask, min_area=int(0.0000813802*image.shape[0]*image.shape[1])) 
+                smoothed = smooth_mask(filtered_mask, smoothing_factor= 10000, points_interp= 200)
+                mask_colored[smoothed == 255] = plot_config['color_dict'][label]
                 present_labels.append(label)
         for label, mask in array_dict_2.items():
             if label in model_2_select_key_list:
-                mask_colored[mask == 255] = plot_config['color_dict'][label]
+                smoothed = smooth_mask(mask, smoothing_factor= 10000, points_interp= 200)
+                mask_colored[smoothed == 255] = plot_config['color_dict'][label]
                 present_labels.append(label)
 
         plot_image = cv2.addWeighted(image, 0.5, mask_colored, 1, 0)
-        
-        #draw legned
-        legend_width=200
-        legend_height = 30 * len(plot_config['color_dict'])
+        legend_width = int(image.shape[1]*0.15625) #200 when width=1280
+        block_height= int(image.shape[0]*0.03125) #30 when height=960
+        legend_height = block_height * len(plot_config['color_dict']) 
         legend = np.zeros((legend_height, legend_width, 3), dtype=np.uint8)
-        j=0
-        for i, (label, color) in enumerate(plot_config['color_dict'].items()):
-            if label in present_labels:
-                cv2.rectangle(legend, (10, j * 30), (50, (j + 1) * 30), color, -1)
-                cv2.putText(legend, label, (60, (j + 1) * 30 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-                j=j+1
-        legend_resized = cv2.resize(legend, (int(legend_width*plot_image.shape[0]/legend.shape[0]), plot_image.shape[0]))
-        concat_image=np.concatenate((plot_image, legend_resized), axis=1)
-        
-        concat_image=cv2.cvtColor(concat_image, cv2.COLOR_BGR2RGB)
 
+        # Plot color blocks
+        block_x1=int(legend_width*1/20)
+        block_x2=int(legend_width*5/20)
+        j = 0
+        for label, color in plot_config['color_dict'].items():
+            if label in present_labels:
+                cv2.rectangle(legend, (block_x1, j * block_height), (block_x2, (j + 1) * block_height), color, -1)
+                j += 1
+
+        # After drawing the color blocks, convert to a PIL image to draw the text (vector text)
+        legend_pil = Image.fromarray(legend)
+        draw = ImageDraw.Draw(legend_pil)
+
+        # Load a custom or system font
+        font = ImageFont.truetype("./conf/arial.ttf", 20)
+
+        # Plot text
+        text_width=int(legend_width*6/20)
+        text_height=int(block_height)
+        text_y_offset=int(block_height*1/6)
+        j = 0
+        for label, color in plot_config['color_dict'].items():
+            if label in present_labels:
+                draw.text((text_width, j * text_height + text_y_offset), label, font=font, fill=(255, 255, 255))
+                j += 1
+
+        # Convert back to a NumPy array for further processing
+        legend = np.array(legend_pil)
+
+        # Resize the legend and concatenate it with the plot image
+        legend_resized = cv2.resize(legend, (int(legend_width * plot_image.shape[0] / legend.shape[0]), plot_image.shape[0]))
+        concat_image = np.concatenate((plot_image, legend_resized), axis=1)
+        concat_image = cv2.cvtColor(concat_image, cv2.COLOR_BGR2RGB)
         return concat_image, error_message
     
     elif 'cvat' in return_type:
@@ -279,22 +303,13 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
         result2=yolo_transform(image, model2, return_type, plot_config)
         key_index_mapping_1={value: key for key, value in result1['class_names'].items()}
         key_index_mapping_2={value: key for key, value in result2['class_names'].items()}
-        #filter
 
-        #selected_indexes = [key_index_mapping_1[key] for key in model_1_select_key_list]
         result1_filtered = [content for content in result1['yolov8_contents'] if content['label'] in model_1_select_key_list]
         result2_filtered = [content for content in result1['yolov8_contents'] if content['label'] in model_2_select_key_list]
 
         result_dict['class_names']= result2['class_names']
         result_dict['yolov8_contents']=result1_filtered+result2_filtered        
         return result_dict
-
-def show_plot(image):
-    #cv2.imshow("OpenCV Image", image)
-    # 使用 matplotlib 绘制图形
-    plt.figure()
-    plt.imshow(image)
-    plt.show()
 
 
 if __name__=='__main__':
@@ -303,8 +318,10 @@ if __name__=='__main__':
     image=cv2.imread('./tests/files/caries-0.8510638-272-735_1_2022021402.png')
     with open('./conf/pa_segmentation_mask_color_setting.yaml', 'r') as file:
         config=yaml.safe_load(file)
+    ###test code
     #test1, messages=yolo_transform(image, model, return_type='yolov8', plot_config=config, tolerance=0.5)
-    pa_segmentation(image, model1, model2, return_type='image_array' , plot_config=config)
+    final_image, error_message=pa_segmentation(image, model1, model2, return_type='image_array' , plot_config=config)
+    show_plot(final_image)
     # test2=yolo_transform(image, return_type='cvat')
     # test3=yolo_transform(image, return_type='dict')
 
