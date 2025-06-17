@@ -45,6 +45,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-uv-venv-
 
+      - name: Create or fix virtual environment with uv
+        run: |
+          if [ ! -x ".venv/bin/python3" ]; then
+            echo "⚠️ Detected broken or missing .venv. Recreating..."
+            rm -rf .venv
+            uv venv .venv
+          else
+            echo "✅ .venv looks valid. Skipping recreation."
+          fi
+          
       - name: Create virtual environment with uv (if not exists)
         run: |
           if [ ! -d ".venv" ]; then
