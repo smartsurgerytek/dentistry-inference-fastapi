@@ -253,11 +253,10 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
                 present_labels.append(label)
         for label, mask in array_dict_2.items():
             if label in model_2_select_key_list:
-                smoothed = smooth_mask(mask, smoothing_factor= 10000, points_interp= 200)
+                smoothed = smooth_mask(mask, smoothing_factor= 5000, points_interp= 200)
                 mask_colored[smoothed == 255] = plot_config['color_dict'][label]
                 present_labels.append(label)
-
-        plot_image = cv2.addWeighted(image, 0.5, mask_colored, 1, 0)
+        plot_image = cv2.addWeighted(image, 0.3, mask_colored, 1, 0)
         legend_width = int(image.shape[1]*0.15625) #200 when width=1280
         block_height= int(image.shape[0]*0.03125) #30 when height=960
         legend_height = block_height * len(plot_config['color_dict']) 
@@ -296,6 +295,7 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
         legend_resized = cv2.resize(legend, (int(legend_width * plot_image.shape[0] / legend.shape[0]), plot_image.shape[0]))
         concat_image = np.concatenate((plot_image, legend_resized), axis=1)
         concat_image = cv2.cvtColor(concat_image, cv2.COLOR_BGR2RGB)
+
         return concat_image, error_message
     
     elif 'cvat' in return_type:
@@ -321,7 +321,7 @@ if __name__=='__main__':
     ###test code
     #test1, messages=yolo_transform(image, model, return_type='yolov8', plot_config=config, tolerance=0.5)
     final_image, error_message=pa_segmentation(image, model1, model2, return_type='image_array' , plot_config=config)
-    show_plot(final_image)
+    #show_plot(final_image)
     # test2=yolo_transform(image, return_type='cvat')
     # test3=yolo_transform(image, return_type='dict')
 
