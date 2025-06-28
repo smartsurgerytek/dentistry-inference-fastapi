@@ -26,11 +26,6 @@ class PaSegmentationYoloV8Response(BaseModel):
         description=(
             "A unique identifier corresponding to the original measurement request. "
             "A value of 0 indicates that the result will not be stored in the database."
-        )
-    )
-    yolo_results: YoloV8Segmentation = Field(
-        ...,
-        description=(
             "Detection results from YOLOv8 segmentation model:\n\n"
             "**class_names:** Mapping from class ID to class name and anatomical description:\n\n"
             "- 0: Crown — The visible part of the tooth above the gumline, covered by enamel, responsible for biting and chewing.\n"
@@ -50,9 +45,10 @@ class PaSegmentationYoloV8Response(BaseModel):
             "A list of detected segmentation entries. Each entry is a list where:\n"
             "- The first element is the class ID (int).\n"
             "- The following four elements are bounding box coordinates: [x1, y1, x2, y2] (float).\n\n"
-            "This represents the class label and the top-left (x1, y1) and bottom-right (x2, y2) corners of the bounding box."
+            "This represents the class label and the top-left (x1, y1) and bottom-right (x2, y2) corners of the bounding box."            
         )
     )
+    yolo_results: YoloV8Segmentation
     messages: str = Field(
         ..., 
         description="Status or informational message. If successful, result in empty string."
