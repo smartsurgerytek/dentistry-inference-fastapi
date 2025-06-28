@@ -321,6 +321,7 @@ gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.serv
 
 # issue tracking: ERROR: (gcloud.run.deploy) Revision 'dentistry-inference-core-2514-00100-6mh' is not ready and cannot serve traffic. Container import failed.
 
+one can build the image directly to check
 ```
 # 1. build image
 docker build --build-arg HUGGINGFACE_TOKEN=<huggingface_token> -t asia-east1-docker.pkg.dev/sandbox-446907/cloud-run-source-deploy/dentistry-inference-core-2514 .
@@ -349,6 +350,30 @@ X Deploying...
   - Creating Revision...                                                                                                                                                                       
 Deployment failed                                                                                                                                                                              
 ERROR: (gcloud.run.deploy) Revision 'dentistry-inference-core-2514-00100-6mh' is not ready and cannot serve traffic. Container import failed.
+```
+
+## Manually delete problematic one
+
+```
+gcloud run revisions list --service=dentistry-inference-core --region=asia-east1
+```
+
+for example
+```
+   REVISION                                 ACTIVE  SERVICE                        DEPLOYED                 DEPLOYED BY
+X  dentistry-inference-core-2514-00131-tkd          dentistry-inference-core-2514  2025-06-28 11:45:32 UTC  298229070754-compute@developer.gserviceaccount.com
+✔  dentistry-inference-core-2514-00130-zfr  yes     dentistry-inference-core-2514  2025-06-28 06:11:12 UTC  298229070754-compute@developer.gserviceaccount.com
+✔  dentistry-inference-core-2514-00129-t7x  yes     dentistry-inference-core-2514  2025-06-20 09:17:08 UTC  298229070754
+```
+
+```
+gcloud run services update-traffic dentistry-inference-core-2514 ^
+  --to-revisions=dentistry-inference-core-2514-00130-zfr=100 ^
+  --region=asia-east1
+```
+
+```
+gcloud run revisions delete dentistry-inference-core-2514-00131-tkd --region=asia-east1
 ```
 
 ## list aviailable revisions
