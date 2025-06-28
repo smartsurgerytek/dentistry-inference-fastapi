@@ -360,3 +360,42 @@ one need to manually delete problematic one
 ## delete problematic revision
 
 cloud run -> dentistry-inference-core-2514 -> revisions -> dentistry-inference-core-2514-00100-6mh -> Action: delete
+
+## robot tests
+
+```
+robot tests/production/test_production_detail.robot
+```
+Once the tests have run successfully, you should see output similar to the following in your terminal:
+```
+==============================================================================
+Test Production Detail
+==============================================================================
+Test PA Aggregation Images - Valid                                    
+Test PA Aggregation Images - Valid                                    | PASS |
+------------------------------------------------------------------------------
+Test PA Aggregation Images - Empty                                    
+Test PA Aggregation Images - Empty                                    | PASS |
+------------------------------------------------------------------------------
+Test PA Aggregation Images - Malformed                                
+Test PA Aggregation Images - Malformed                                | PASS |
+------------------------------------------------------------------------------
+                                      .
+                                      .
+                                      .
+                                      .
+                                      .         
+------------------------------------------------------------------------------
+Test Pano FDI Segmentation YOLOv8 - Empty                             
+Test Pano FDI Segmentation YOLOv8 - Empty                             | PASS |
+------------------------------------------------------------------------------
+Test Pano FDI Segmentation YOLOv8 - Malformed                         
+Test Pano FDI Segmentation YOLOv8 - Malformed                         | PASS |
+------------------------------------------------------------------------------
+Test Production Detail                                                | PASS |
+39 tests, 39 passed, 0 failed
+==============================================================================
+Output:  .\dentistry-inference-core\output.xml
+Log:     .\dentistry-inference-core\log.html
+Report:  .\dentistry-inference-core\report.html
+```
