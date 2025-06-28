@@ -13,6 +13,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 COPY ./src /workspace/src
 COPY ./conf /workspace/conf
+COPY ./tests /workspace/tests
 
 RUN uv pip install --system huggingface_hub
 
