@@ -17,7 +17,7 @@ class PaPanoClassificationResponse(BaseModel):
         ..., 
         description="The confidence score (probability) associated with the predicted class, ranging from 0.0 to 1.0."
     )
-    messages: str = Field(
+    message: str = Field(
         ..., 
         description="Status or informational message. If successful, result in empty string."
     )

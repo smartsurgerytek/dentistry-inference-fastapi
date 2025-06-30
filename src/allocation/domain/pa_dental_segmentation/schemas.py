@@ -49,7 +49,7 @@ class PaSegmentationYoloV8Response(BaseModel):
         )
     )
     yolo_results: YoloV8Segmentation
-    messages: str = Field(
+    message: str = Field(
         ..., 
         description="Status or informational message. If successful, result in empty string."
     )
@@ -176,7 +176,7 @@ class PaSegmentationCvatResponse(BaseModel):
         ..., 
         description="Segmentation results containing CVAT shapes object. Note that in CvatSegmentation, it is necessary to add a mask key by converting the points into a mask."
     )
-    messages: str = Field(
+    message: str = Field(
         ..., 
         description="Status or informational message. If successful, result in empty string."
     )

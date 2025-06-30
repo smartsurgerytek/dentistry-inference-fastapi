@@ -45,7 +45,7 @@ def pano_caries_detecion(model, weights_path, pil_img, return_type='image_array'
     img = torch.unsqueeze(img, dim=0)
     torch.backends.cudnn.benchmark = True  
     model.eval()
-    error_messages = ""  
+    error_message = ""  
     with torch.no_grad():
         # init
         img_height, img_width = img.shape[-2:]
@@ -62,7 +62,7 @@ def pano_caries_detecion(model, weights_path, pil_img, return_type='image_array'
             'boxes': predict_boxes.tolist(),
             'labels': predict_classes.tolist(),
             'scores': predict_scores.tolist(),
-            'error_messages': error_messages
+            'error_message': error_message
         }
 
 
@@ -81,7 +81,7 @@ def pano_caries_detecion(model, weights_path, pil_img, return_type='image_array'
                              line_thickness=3,
                              font='./conf/arial.ttf',
                              font_size=20)        
-        return plot_img, error_messages
+        return plot_img, error_message
     else:
         return results_dict
 
@@ -91,6 +91,6 @@ if __name__ == '__main__':
     model = create_pano_caries_detection_model(num_classes=1)
     weights_path = "./models/dentistry_pano-CariesDetection_resNetFpn_25.12.pth"
     pil_img = Image.open("./tests/files/027107.jpg")
-    plot_img, error_messages = pano_caries_detecion(model, weights_path, pil_img, return_type='image_array')
+    plot_img, error_message = pano_caries_detecion(model, weights_path, pil_img, return_type='image_array')
     plt.imshow(plot_img)
     plt.show()

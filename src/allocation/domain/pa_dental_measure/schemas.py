@@ -121,7 +121,7 @@ class ImageResponse(BaseModel):
         ..., 
         description="Base64-encoded image string"
     )
-    messages: str = Field(
+    message: str = Field(
         ..., 
         description="Status or informational message. If successful, result in empty string."
     )

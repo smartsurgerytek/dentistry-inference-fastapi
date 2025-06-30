@@ -86,14 +86,14 @@ class InferenceService:
             request_id=0,
             image=output_image_base64,
             content_type='image/png',
-            messages=error_message
+            message=error_message
         )
 
         return ImageResponse(
             request_id=0,
             image=output_image_base64,
             content_type='image/png',
-            messages="Inference completed successfully"
+            message="Inference completed successfully"
         )
     
     @staticmethod
@@ -101,6 +101,7 @@ class InferenceService:
         image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)# Inference logic goes here
         #yolov8_result_dict=yolo_transform(image=image_np, model= model, return_type='yolov8')
         yolov8_result_dict=pa_segmentation(image=image_np, model= model, model2= model2, return_type='yolov8', plot_config=None)
+
         if not yolov8_result_dict.get('yolov8_contents'):
             return PaSegmentationYoloV8Response(
                 request_id=0,
@@ -152,14 +153,14 @@ class InferenceService:
             request_id=0,
             image=output_image_base64,
             content_type='image/png',
-            messages=error_message
+            message=error_message
         )
 
         return ImageResponse(
             request_id=0,
             image=output_image_base64,
             content_type='image/png',
-            messages="Inference completed successfully"
+            message="Inference completed successfully"
         )
 
     @staticmethod
@@ -178,7 +179,7 @@ class InferenceService:
             request_id=0,
             image=output_image_base64,
             content_type='image/png',
-            messages=error_message
+            message=error_message
         )        
 
 
@@ -186,14 +187,14 @@ class InferenceService:
             request_id=0,
             image=output_image_base64,
             content_type='image/png',
-            messages="Inference completed successfully"
+            message="Inference completed successfully"
         )
     
     @staticmethod
     def pano_caries_detection_dict(image: bytes, model, weights_path: str ) -> PanoCariesDetectionDictResponse:
         image_pil= Image.open(io.BytesIO(image))
         results_dict = pano_caries_detecion(model, weights_path, image_pil, return_type='dict')
-        if not results_dict['error_messages']:
+        if not results_dict['error_message']:
             return PanoCariesDetectionDictResponse(
                 request_id=0,
                 pano_caries_detection_dict=results_dict,  
@@ -228,14 +229,14 @@ class InferenceService:
             request_id=0,
             image=output_image_base64,
             content_type='image/png',
-            messages=error_message
+            message=error_message
         )
 
         return ImageResponse(
             request_id=0,
             image=output_image_base64,
             content_type='image/png',
-            messages="Inference completed successfully"
+            message="Inference completed successfully"
         )        
     @staticmethod
     def pano_fdi_segmentation_cvat(image: bytes, model:YOLO) -> PanoSegmentationCvatResponse:

@@ -100,5 +100,6 @@ def test_production_black_image():
 
         assert response.status_code == 200, f"❌ API 回傳錯誤: {response.status_code}, Response: {response.text}, path: {path}"
 
-# if __name__ == '__main__':
-#     test_production_black_image()
+if __name__ == '__main__':
+    test_production()
+    test_production_black_image()

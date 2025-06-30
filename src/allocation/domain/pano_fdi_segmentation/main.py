@@ -26,7 +26,7 @@ def pano_fdi_segmentation(image, model, plot_config=None, return_type='cvat'):
 if __name__=='__main__':
     model=YOLO('./models/dentistry_pano-fdi-segmentation_yolo11x-seg_25.12.pt')
     image=cv2.imread('./tests/files/027107.jpg')
-    image, messages =pano_fdi_segmentation(image, model, return_type='image_array')
+    image, message =pano_fdi_segmentation(image, model, return_type='image_array')
     show_plot(image)
     result_dict=pano_fdi_segmentation(image, model, plot_config=None, return_type='cvat')
     print(result_dict)

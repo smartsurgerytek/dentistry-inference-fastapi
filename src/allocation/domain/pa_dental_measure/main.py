@@ -302,7 +302,7 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
         for label, values in config.items():
             globals()[label] = values
 
-    error_messages=''
+    error_message=''
     # note that crown is a tooth-shaped "cap" made of artificial material that is placed over a damaged, decayed, or weakened tooth.
     # while the dental crown refers to the visible portion of a tooth that is above the gum line in atonomy.
     denti_measure_names_map={
@@ -355,18 +355,18 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
     # check 'dentin' and 'gum' existed
     for component, error_message in required_components.items():
         if components_model_masks_dict.get(component) is None:
-            error_messages=error_message
-            return (generate_error_image(error_messages), error_messages) if 'image' in return_type else []
+            error_message=error_message
+            return (generate_error_image(error_message), error_message) if 'image' in return_type else []
         
     # check 'dental_crown', 'crown' existed
     if all(components_model_masks_dict.get(key) is None for key in ['dental_crown', 'artificial_crown']):
-        error_messages="No dental_crown detected"
-        return (generate_error_image(error_messages), error_messages) if 'image' in return_type else [] 
+        error_message="No dental_crown detected"
+        return (generate_error_image(error_message), error_message) if 'image' in return_type else [] 
     
     # contour model check
     if contours_model_masks_dict.get('dental_contour') is None:
-        error_messages = "No dental instance detected"
-        return (generate_error_image(error_messages), error_messages) if 'image' in return_type else []
+        error_message = "No dental instance detected"
+        return (generate_error_image(error_message), error_message) if 'image' in return_type else []
         
 
     masks_dict=update_with_contour_and_crown_info(components_model_masks_dict, contours_model_masks_dict, image)
@@ -411,6 +411,9 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
 
         points_label = ['CEJ', 'APEX', 'ALC']
         polyline_label = ['CAL', 'TRL']
+
+
+        
         tag_label = ['ABLD', 'stage']
         polyline_mapping = {
             'CAL': ['enamel', 'gum'],
@@ -463,7 +466,7 @@ def dental_estimation(image, component_model, contour_model, scale_x=31/960, sca
         return cvat_results           
 
     if return_type=='image_array':
-        return image_for_drawing, error_messages
+        return image_for_drawing, error_message
 
     else:
         return predictions

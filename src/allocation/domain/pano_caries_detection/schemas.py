@@ -13,18 +13,18 @@ class PanoCariesDetectionDict(BaseModel):
     boxes: List[List[int]] = Field(..., description="Bounding boxes in [x_min, y_min, x_max, y_max] format")
     labels: List[int] = Field(..., description="Class labels for each detected object")
     scores: List[float] = Field(..., description="Confidence scores for each detection")
-    messages: str = Field(
+    message: str = Field(
         ..., 
         description="Status or informational message. If successful, result in empty string."
     )
     
     # @classmethod
-    # def from_torch(cls, boxes: np.ndarray, labels: np.ndarray, scores: np.ndarray, error_messages: Optional[str] = None):
+    # def from_torch(cls, boxes: np.ndarray, labels: np.ndarray, scores: np.ndarray, error_message: Optional[str] = None):
     #     return cls(
     #         boxes=boxes.tolist(),
     #         labels=labels.tolist(),
     #         scores=scores.tolist(),
-    #         error_messages=error_messages 
+    #         error_message=error_message 
     #     )
 
 class PanoCariesDetectionDictResponse(BaseModel):
@@ -36,7 +36,7 @@ class PanoCariesDetectionDictResponse(BaseModel):
         )
     )
     pano_caries_detection_dict: PanoCariesDetectionDict  
-    messages: str = Field(
+    message: str = Field(
         ..., 
         description="Status or informational message. If successful, result in empty string."
     )

@@ -319,7 +319,7 @@ if __name__=='__main__':
     with open('./conf/pa_segmentation_mask_color_setting.yaml', 'r') as file:
         config=yaml.safe_load(file)
     ###test code
-    #test1, messages=yolo_transform(image, model, return_type='yolov8', plot_config=config, tolerance=0.5)
+    #test1, message=yolo_transform(image, model, return_type='yolov8', plot_config=config, tolerance=0.5)
     final_image, error_message=pa_segmentation(image, model1, model2, return_type='image_array' , plot_config=config)
     #show_plot(final_image)
     # test2=yolo_transform(image, return_type='cvat')
