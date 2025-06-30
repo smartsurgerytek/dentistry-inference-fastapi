@@ -13,7 +13,7 @@ class PanoCariesDetectionDict(BaseModel):
     boxes: List[List[int]] = Field(..., description="Bounding boxes in [x_min, y_min, x_max, y_max] format")
     labels: List[int] = Field(..., description="Class labels for each detected object")
     scores: List[float] = Field(..., description="Confidence scores for each detection")
-    message: str = Field(
+    error_message: str = Field(
         ..., 
         description="Status or informational message. If successful, result in empty string."
     )
@@ -38,7 +38,13 @@ class PanoCariesDetectionDictResponse(BaseModel):
     pano_caries_detection_dict: PanoCariesDetectionDict  
     message: str = Field(
         ..., 
-        description="Status or informational message. If successful, result in empty string."
+        description=(
+            "### Message Description\n"
+            "This message describes the result of the postprocessing step in the process.\n\n"
+            "**Possible values:**\n\n"
+            "- `Inference completed successfully`: Inference completed normally.\n" \
+            "- `No caries detected`: Inference completed normally but no caries found in the image. \n\n" \
+        )
     )
 
 class PanoCariesDetectionRequest(BaseModel):

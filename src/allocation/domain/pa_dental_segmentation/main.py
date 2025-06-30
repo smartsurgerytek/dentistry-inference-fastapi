@@ -61,7 +61,7 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_
         boxes = result.boxes  # Boxes object for bbox outputs
         masks = result.masks  # Masks object for segmentation masks outputs
         if masks is None:
-            error_message='No segmentation masks detected'
+            error_message='Nothing detected for the image'
             continue
         predict_label=[]
         for i, (mask, box) in enumerate(zip(masks.data, boxes)):
@@ -240,7 +240,7 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
         array_dict_1=yolo_transform(image, model, return_type='dict')
         array_dict_2=yolo_transform(image, model2, return_type='dict')
         if not array_dict_1 and not array_dict_2:
-            return image, "No segmentation masks detected"
+            return image, "Nothing detected for the image"
         
         mask_colored=np.zeros_like(image, dtype=np.uint8)
         present_labels=[]

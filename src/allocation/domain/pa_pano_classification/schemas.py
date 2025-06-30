@@ -19,6 +19,12 @@ class PaPanoClassificationResponse(BaseModel):
     )
     message: str = Field(
         ..., 
-        description="Status or informational message. If successful, result in empty string."
+        description=(
+            "### Message Description\n"
+            "This message describes the result of the postprocessing step in the measurement process.\n\n"
+            "**Possible values:**\n\n"
+            "- `Classification completed successfully`: Inference completed normally.\n\n" \
+            "If not correct format, it will raise the pydantic error 422."
+        )
     )
 

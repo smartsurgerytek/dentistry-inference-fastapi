@@ -38,7 +38,13 @@ class PanoSegmentationYoloV8Response(BaseModel):
     yolo_results: YoloV8Segmentation
     message: str = Field(
         ..., 
-        description="Status or informational message. If successful, result in empty string."
+        description=(
+            "### Message Description\n"
+            "This message describes the result of the postprocessing step in the inference process.\n\n"
+            "**Possible values:**\n\n"
+            "- `Inference completed successfully`: Inference and postprocessing completed normally, se were detected.\n"
+            "- `Nothing detected for the image`: Inference completed, but teeth segmentation were detected in the image. As a result, the `yolov8_contents` in element of `yolo_results` will be empty (`yolov8_contents=[]`)\n\n"
+        )
     )
 
 class CvatSegmentation(BaseModel):
@@ -151,7 +157,13 @@ class PanoSegmentationCvatResponse(BaseModel):
     )
     message: str = Field(
         ..., 
-        description="Status or informational message. If successful, result in empty string."
+        description=(
+            "### Message Description\n"
+            "This message describes the result of the postprocessing step in the inference process.\n\n"
+            "**Possible values:**\n\n"
+            "- `Inference completed successfully`: Inference and postprocessing completed normally, se were detected.\n"
+            "- `Nothing detected for the image`: Inference completed, but no teeth segmentation were detected in the image. As a result, the `yolov8_contents` in element of `yolo_results` will be empty (`yolov8_contents=[]`)\n\n"
+        )
     )
 
 

@@ -62,8 +62,14 @@ class PaMeasureDictResponse(BaseModel):
         )
     )
     message: str = Field(
-        ..., 
-        description="Status or informational message indicating the result of the measurement process. An empty string means no error occurred."
+        ...,
+        description=(
+            "### Message Description\n"
+            "This message describes the result of the postprocessing step in the measurement process.\n\n"
+            "**Possible values:**\n\n"
+            "- `Inference completed successfully`: Inference and postprocessing completed normally, and dental contours were detected.\n"
+            "- `Nothing detected for the image`: Inference completed, but no dental contours were detected in the image. As a result, the `measurements` list will be empty (`measurements=[]`)\n\n"
+        )
     )
 
 class PaMeasureCvatResponse(BaseModel):
@@ -73,7 +79,7 @@ class PaMeasureCvatResponse(BaseModel):
     )
     measurements: List[dict] = Field(
         ..., 
-        description="List of measurement results. Each item represents the CVAT shapes format for points and polylines.\n\n"
+        description="List of measurement results. Each item represents the CVAT shapes format for points and polylines. The key represents as follows\n\n"
     "### If label is `point`:\n"
     "- `label`, `type`, `points` [x1, y1], `teeth_id`, `side_id`\n\n"
     "### If label is `polyline`:\n"
@@ -82,8 +88,14 @@ class PaMeasureCvatResponse(BaseModel):
     "`attributes` with `name='stage'`: values can be `I`, `II`, `III`, or `'0'`"
     )
     message: str = Field(
-        ..., 
-        description="Informational or status message describing the result of the measurement process. No error will be returned empty string"
+        ...,
+        description=(
+            "### Message Description\n"
+            "This message describes the result of the postprocessing step in the measurement process.\n\n"
+            "**Possible values:**\n\n"
+            "- `Inference completed successfully`: Inference and postprocessing completed normally, and dental contours were detected.\n"
+            "- `Nothing detected for the image`: Inference completed, but no dental contours were detected in the image. As a result, the `measurements` list will be empty (`measurements=[]`)\n\n"
+        )
     )
 
 #DentalMeasureDictResponse
@@ -122,8 +134,15 @@ class ImageResponse(BaseModel):
         description="Base64-encoded image string"
     )
     message: str = Field(
-        ..., 
-        description="Status or informational message. If successful, result in empty string."
+        ...,
+        description=(
+            "### Message Description\n"
+            "This message describes the result of the postprocessing step in the measurement process.\n\n"
+            "**Possible values:**\n\n"
+            "- `Inference completed successfully`: Inference and postprocessing completed normally, and dental contours were detected.\n"
+            "- `No gum detected`: Inference completed, but no gums were detected in the image. As a result, the `image` will return the same.\n"
+            "- `No dental instance detected`: Inference completed, but no dental contours were detected in the image. As a result, the `image` will return the same.\n\n"
+        )
     )
 
 

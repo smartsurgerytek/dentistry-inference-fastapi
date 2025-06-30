@@ -194,6 +194,7 @@ class InferenceService:
     def pano_caries_detection_dict(image: bytes, model, weights_path: str ) -> PanoCariesDetectionDictResponse:
         image_pil= Image.open(io.BytesIO(image))
         results_dict = pano_caries_detecion(model, weights_path, image_pil, return_type='dict')
+
         if not results_dict['error_message']:
             return PanoCariesDetectionDictResponse(
                 request_id=0,
@@ -204,7 +205,7 @@ class InferenceService:
             return PanoCariesDetectionDictResponse(
                 request_id=0,
                 pano_caries_detection_dict=results_dict,  
-                message="Inference failed"
+                message="No caries detected"
             )
         
     @staticmethod

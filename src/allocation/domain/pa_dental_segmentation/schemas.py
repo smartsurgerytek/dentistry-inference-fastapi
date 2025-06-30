@@ -24,7 +24,7 @@ class PaSegmentationYoloV8Response(BaseModel):
     request_id: int = Field(
         ...,
         description=(
-            "A unique identifier corresponding to the original measurement request. "
+            "A unique identifier corresponding to the original inference request. "
             "A value of 0 indicates that the result will not be stored in the database."
             "Detection results from YOLOv8 segmentation model:\n\n"
             "**class_names:** Mapping from class ID to class name and anatomical description:\n\n"
@@ -51,7 +51,13 @@ class PaSegmentationYoloV8Response(BaseModel):
     yolo_results: YoloV8Segmentation
     message: str = Field(
         ..., 
-        description="Status or informational message. If successful, result in empty string."
+        description=(
+            "### Message Description\n"
+            "This message describes the result of the postprocessing step in the inference process.\n\n"
+            "**Possible values:**\n\n"
+            "- `Inference completed successfully`: Inference and postprocessing completed normally, se were detected.\n"
+            "- `Nothing detected for the image`: Inference completed, but no dental elements were detected in the image. As a result, the `yolov8_contents` in element of `yolo_results` will be empty (`yolov8_contents=[]`)\n\n"
+        )
     )
 
 
@@ -168,7 +174,7 @@ class PaSegmentationCvatResponse(BaseModel):
     request_id: int = Field(
         ..., 
         description=(
-            "A unique identifier corresponding to the original measurement request. "
+            "A unique identifier corresponding to the original inference request. "
             "A value of 0 indicates that the result will not be stored in the database."
         )
     )
@@ -178,7 +184,13 @@ class PaSegmentationCvatResponse(BaseModel):
     )
     message: str = Field(
         ..., 
-        description="Status or informational message. If successful, result in empty string."
+        description=(
+            "### Message Description\n"
+            "This message describes the result of the postprocessing step in the inference process.\n\n"
+            "**Possible values:**\n\n"
+            "- `Inference completed successfully`: Inference and postprocessing completed normally, se were detected.\n"
+            "- `Nothing detected for the image`: Inference completed, but no dental elements were detected in the image. As a result, the `yolov8_contents` in element of `yolo_results` will be empty (`yolov8_contents=[]`)\n\n"
+        )
     )
 
 class PaSegmentationRequest(BaseModel):
