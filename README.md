@@ -228,6 +228,7 @@ gcloud apigee envgroup-ssl-certs create dentistry-cert-apigee-managed \
   --domains=api.smartsurgerytek.net \
   --project=staging-456206
 
+Note that the command is unable to use in 20250630, one need to manully create the SSL certificate
 ## create the SSL cerification with Let's Encrypt
 
 see the jira card
