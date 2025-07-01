@@ -27,7 +27,7 @@ security_definitions = {
     "securityDefinitions": {
         "api_key": {
             "type": "apiKey",
-            "name": "apikey", # apigee: apikey ; google gateway: key 
+            "name": "key", # apigee: apikey ; google gateway: key 
             "in": "query"
         }
     }
@@ -44,5 +44,5 @@ security = {
 }
 spec.update(security)
 
-with open('./conf/openai2_spec.yaml', 'w', encoding='utf-8') as file:
+with open('./conf/gateway_openai2_spec.yaml', 'w', encoding='utf-8') as file:
     yaml.dump(spec, file, sort_keys=False, allow_unicode=True)
