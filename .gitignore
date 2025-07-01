@@ -12,9 +12,11 @@ val_data/
 datasets/
 data/
 runs/
+tmp_save/
 *.zip
 *.pt
 *.pyc
 *.rar
 *.tgz
+*.pth
 .coverage

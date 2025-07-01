@@ -2,7 +2,14 @@ from pydantic import BaseModel, ConfigDict
 from typing import List, Dict, Union
 from pydantic import BaseModel, model_validator, Field
 import base64
+import yaml
 def read_base64_example():
+    with open("./conf/api_docs_setting.yaml", "r") as f:
+        api_docs_setting = yaml.safe_load(f)
+    # 取得 show_example_bool 的值
+    show_example_bool = api_docs_setting.get("show_example_bool", False)
+    if not show_example_bool:
+        return "image: ,/9j/4AAQSkZJRgA......"
     image_path='./tests/files/027107.jpg'
     with open(image_path, "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
