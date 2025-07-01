@@ -200,7 +200,7 @@ gcloud run deploy dentistry-inference-core-2512 --image <your docker account nam
 1. go to the apigee console, logging and choose the sandbox (ex: sandbox-446907)
 apigee.google.com
 
-2. Deveop API Proxies: create a new proxy (for example: smartsurgery-dentistry)
+2. Deveope API Proxies: create a new proxy (for example: smartsurgery-dentistry). Note that only inmediate proxy surpport the apikey verification.
 
 choose the reverse proxy and setting the name, path, target (target should be gcloud run url entry)
 
@@ -212,9 +212,11 @@ deploy the proxy
 
 5. Publish Apps: create a new app and the API key will be generated (for example: QpDPpMYkSAFJd0RNFI2eU15Ri5aA7ePWqTk4jhkr4c2mTzn9)
 
-6. Admin Environments Groups: check the hostnames (for example 34.107.237.238.nip.io)
+6. Check IP and hostname: go to environments groups check the hostnames and check ip in the apigee load balancer.
 
-7. test the proxy:
+7. SSL certification: create one google certificate and setting in the apigee load balancer if using self-defined domain. (Optional)
+
+8. test the proxy: (the above step may requires, one can check after one hour)
 
 for eaxmple, https://34.107.237.238.nip.io/smartsurgery-dentistry?apikey=QpDPpMYkSAFJd0RNFI2eU15Ri5aA7ePWqTk4jhkr4c2mTzn9
 
