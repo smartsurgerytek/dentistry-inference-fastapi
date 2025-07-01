@@ -38,6 +38,7 @@ steps:
       - '--region=$_DEPLOY_REGION'
       - '--memory=32Gi'      
       - '--cpu=8'
+      - '--timeout=900s'
       - '--quiet'
       - '--startup-probe=tcpSocket.port=8080,initialDelaySeconds=0,timeoutSeconds=240,failureThreshold=1,periodSeconds=240'
     entrypoint: gcloud
