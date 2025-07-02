@@ -58,6 +58,8 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_
     mask_dict={}
     error_message=''
     predict_label=None
+    plot_alpha=0.3
+    real_color_dict={}
     # 處理結果
     for result in results:
         boxes = result.boxes  # Boxes object for bbox outputs
@@ -66,6 +68,7 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_
             error_message='Nothing detected for the image'
             continue
         predict_label=[]
+        mask_colored = np.zeros_like(image)
         for i, (mask, box) in enumerate(zip(masks.data, boxes)):
             # Get class ID and confidence
             class_id = int(box.cls)
@@ -81,7 +84,6 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_
             
             # Convert mask to binary image
             mask_binary = (mask_np > 0.5).astype(np.uint8) * 255
-            mask_colored = np.zeros((mask_binary.shape[0], mask_binary.shape[1], 3), dtype=np.uint8)
             if 'cvat' in return_type:
                 contours = find_contours(mask_binary, 0.5)
                 if len(contours)==0:
@@ -140,8 +142,16 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_
             if class_name != 'Background' and return_type == 'image_array':
                 if plot_key_list is None or class_name in plot_key_list:
                     mask_colored[mask_binary == 255] = color_dict[class_name]
+                    #no smmoothed so far
+                    smoothed=mask_binary
+                    #get the real color
+                    blended =image[smoothed == 255]*plot_alpha+mask_colored[smoothed == 255]*(1-plot_alpha)
+                    blended_uint8 = np.clip(blended, 0, 255).astype(np.uint8)
+                    mean_RGB=blended_uint8.mean(axis=0).astype(np.uint8).tolist()
+                    real_color_dict[class_name]=mean_RGB
                 # Overlay the colored mask
-                plot_image = cv2.addWeighted(plot_image, 1, mask_colored, 0.8, 0)
+                #plot_image = cv2.addWeighted(plot_image, 1, mask_colored, 0.8, 0)
+                
 
     if return_type=="dict":
         return mask_dict
@@ -152,7 +162,8 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_
             return image, "No segmentation masks detected"
         if not show_plot_legend:
             return plot_image, error_message
-        
+        #plot image
+        plot_image = cv2.addWeighted(image, plot_alpha, mask_colored, 1-plot_alpha, 0)
         # Load a custom or system font
         font = ImageFont.truetype("./conf/arial.ttf", 20)
         # find the plot text maximum width
@@ -177,7 +188,8 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_
         j = 0
         for label, color in plot_config['color_dict'].items():
             if label in present_labels:
-                cv2.rectangle(legend, (block_x1, j * block_height), (block_x2, (j + 1) * block_height), color, -1)
+                real_color=real_color_dict[label]
+                cv2.rectangle(legend, (block_x1, j * block_height), (block_x2, (j + 1) * block_height), real_color, -1)
                 j += 1
 
         # After drawing the color blocks, convert to a PIL image to draw the text (vector text)
@@ -256,18 +268,29 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
         
         mask_colored=np.zeros_like(image, dtype=np.uint8)
         present_labels=[]
-
+        plot_alpha=0.3
+        real_color_dict={}
         for label, mask in array_dict_1.items():
             if label in model_1_select_key_list:
                 filtered_mask=remove_small_regions(mask, min_area=int(0.0000813802*image.shape[0]*image.shape[1])) 
                 smoothed = smooth_mask(filtered_mask, smoothing_factor= 10000, points_interp= 200)
                 mask_colored[smoothed == 255] = plot_config['color_dict'][label]
+                #compute the average color
+                blended =image[smoothed == 255]*plot_alpha+mask_colored[smoothed == 255]*(1-plot_alpha)
+                blended_uint8 = np.clip(blended, 0, 255).astype(np.uint8)
+                mean_RGB=blended_uint8.mean(axis=0).astype(np.uint8).tolist()
+                real_color_dict[label]=mean_RGB
                 present_labels.append(label)
         for label, mask in array_dict_2.items():
             if label in model_2_select_key_list:
                 smoothed = smooth_mask(mask, smoothing_factor= 5000, points_interp= 200)
                 mask_colored[smoothed == 255] = plot_config['color_dict'][label]
                 present_labels.append(label)
+                #compute the average color
+                blended =image[smoothed == 255]*plot_alpha+mask_colored[smoothed == 255]*(1-plot_alpha)
+                blended_uint8 = np.clip(blended, 0, 255).astype(np.uint8)
+                mean_RGB=blended_uint8.mean(axis=0).astype(np.uint8).tolist()
+                real_color_dict[label]=mean_RGB
 
         # Load a custom or system font
         font = ImageFont.truetype("./conf/arial.ttf", 20)
@@ -281,7 +304,7 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
                 if text_width > max_text_width:
                     max_text_width = int(text_width)
 
-        plot_image = cv2.addWeighted(image, 0.3, mask_colored, 1, 0)
+        plot_image = cv2.addWeighted(image, plot_alpha, mask_colored, 1-plot_alpha, 0)
         legend_width = int(image.shape[1]*0.078125)+max_text_width #100+max_text_width when width=1280
         block_height= int(image.shape[0]*0.03125) #30 when height=960
         legend_height = block_height * len(plot_config['color_dict']) 
@@ -293,7 +316,8 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
         j = 0
         for label, color in plot_config['color_dict'].items():
             if label in present_labels:
-                cv2.rectangle(legend, (block_x1, j * block_height), (block_x2, (j + 1) * block_height), color, -1)
+                real_color=real_color_dict[label]
+                cv2.rectangle(legend, (block_x1, j * block_height), (block_x2, (j + 1) * block_height), real_color, -1)
                 j += 1
 
         # After drawing the color blocks, convert to a PIL image to draw the text (vector text)
@@ -337,16 +361,17 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
 if __name__=='__main__':
     model1=YOLO('./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
     model2=YOLO('./models/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt')
-    image=cv2.imread('./caries -1.185185-258-763_1_17659783_章雲生_檢查20200605__匯出20220317_2.png')
+    image=cv2.imread('.//tests/files/caries-0.6741573-260-760_1_2022052768.png')
     with open('./conf/pa_segmentation_mask_color_setting.yaml', 'r') as file:
         config=yaml.safe_load(file)
     ###test code
     #test1, message=yolo_transform(image, model, return_type='yolov8', plot_config=config, tolerance=0.5)
     #final_image, error_message=pa_segmentation(image, model1, model2, return_type='image_array' , plot_config=config)
-
-    final_image, _=yolo_transform(image, model1, return_type='image_array', plot_config=config, plot_key_list=None, show_plot_legend=True,  tolerance=0.5)
-
-    show_plot(final_image)
+    
+    #final_image, _=yolo_transform(image, model1, return_type='image_array', plot_config=config, plot_key_list=None, show_plot_legend=True,  tolerance=0.5)
+    #show_two(image,final_image)
+    
+    #show_plot(final_image)
     # test2=yolo_transform(image, return_type='cvat')
     # test3=yolo_transform(image, return_type='dict')
 
