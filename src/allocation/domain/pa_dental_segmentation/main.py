@@ -35,6 +35,8 @@ def get_yolov8_label(mask_binary,tolerance=0.5):
         points.extend(merged)
     return points
 
+
+
 def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_list=None, show_plot_legend=True,  tolerance=0.5):
     # if return_type == 'image_array' and plot_config is None:
     #     raise ValueError("Provide a config for segmentation colors when return_type is 'image")
@@ -188,7 +190,8 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_
         # Resize the legend and concatenate it with the plot image
         legend_resized = cv2.resize(legend, (int(legend_width * plot_image.shape[0] / legend.shape[0]), plot_image.shape[0]))
         concat_image = np.concatenate((plot_image, legend_resized), axis=1)
-        concat_image = cv2.cvtColor(concat_image, cv2.COLOR_BGR2RGB)        
+        concat_image = cv2.cvtColor(concat_image, cv2.COLOR_BGR2RGB)
+   
         return concat_image, error_message
 
     else:
@@ -202,14 +205,13 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_
 def pa_segmentation(image, model, model2, return_type, plot_config=None):
 
     result_dict={}
-    model_1_select_key_list=['Alveolar_bone', 'Maxillary_sinus', 'Mandibular_alveolar_nerve']
+    model_1_select_key_list=['Alveolar_bone', 'Maxillary_sinus', 'Mandibular_alveolar_nerve', 'Periapical_lesion']
     model_2_select_key_list = [
         "Caries",
         "Crown",
         "Dentin",
         "Enamel",
         "Implant",
-        "Periapical_lesion",
         "Post_and_core",
         "Pulp",
         "Restoration",
@@ -315,12 +317,15 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
 if __name__=='__main__':
     model1=YOLO('./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
     model2=YOLO('./models/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt')
-    image=cv2.imread('./tests/files/caries-0.8510638-272-735_1_2022021402.png')
+    image=cv2.imread('./tests/files/caries-0.6741573-260-760_1_2022052768.png')
     with open('./conf/pa_segmentation_mask_color_setting.yaml', 'r') as file:
         config=yaml.safe_load(file)
     ###test code
     #test1, message=yolo_transform(image, model, return_type='yolov8', plot_config=config, tolerance=0.5)
     final_image, error_message=pa_segmentation(image, model1, model2, return_type='image_array' , plot_config=config)
+
+    #test_image, _=yolo_transform(image, model1, return_type='image_array', plot_config=config, plot_key_list=None, show_plot_legend=True,  tolerance=0.5)
+
     #show_plot(final_image)
     # test2=yolo_transform(image, return_type='cvat')
     # test3=yolo_transform(image, return_type='dict')
