@@ -153,7 +153,20 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_
         if not show_plot_legend:
             return plot_image, error_message
         
-        legend_width = int(image.shape[1]*0.15625) #200 when width=1280
+        # Load a custom or system font
+        font = ImageFont.truetype("./conf/arial.ttf", 20)
+        # find the plot text maximum width
+        dummy_img = Image.new("RGB", (1, 1))
+        dummy_draw = ImageDraw.Draw(dummy_img)
+        max_text_width = 0
+        for label in plot_config['color_dict']:
+            if label in present_labels:
+                text_width = dummy_draw.textlength(label, font=font)
+                if text_width > max_text_width:
+                    max_text_width = int(text_width)
+
+
+        legend_width = int(image.shape[1]*0.078125)+max_text_width #100+max_text_width when width=1280
         block_height= int(image.shape[0]*0.03125) #30 when height=960
         legend_height = block_height * len(plot_config['color_dict']) 
         legend = np.zeros((legend_height, legend_width, 3), dtype=np.uint8)
@@ -170,9 +183,6 @@ def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_
         # After drawing the color blocks, convert to a PIL image to draw the text (vector text)
         legend_pil = Image.fromarray(legend)
         draw = ImageDraw.Draw(legend_pil)
-
-        # Load a custom or system font
-        font = ImageFont.truetype("./conf/arial.ttf", 20)
 
         # Plot text
         text_width=int(legend_width*6/20)
@@ -258,8 +268,21 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
                 smoothed = smooth_mask(mask, smoothing_factor= 5000, points_interp= 200)
                 mask_colored[smoothed == 255] = plot_config['color_dict'][label]
                 present_labels.append(label)
+
+        # Load a custom or system font
+        font = ImageFont.truetype("./conf/arial.ttf", 20)
+        # find the plot text maximum width
+        dummy_img = Image.new("RGB", (1, 1))
+        dummy_draw = ImageDraw.Draw(dummy_img)
+        max_text_width = 0
+        for label in plot_config['color_dict']:
+            if label in present_labels:
+                text_width = dummy_draw.textlength(label, font=font)
+                if text_width > max_text_width:
+                    max_text_width = int(text_width)
+
         plot_image = cv2.addWeighted(image, 0.3, mask_colored, 1, 0)
-        legend_width = int(image.shape[1]*0.15625) #200 when width=1280
+        legend_width = int(image.shape[1]*0.078125)+max_text_width #100+max_text_width when width=1280
         block_height= int(image.shape[0]*0.03125) #30 when height=960
         legend_height = block_height * len(plot_config['color_dict']) 
         legend = np.zeros((legend_height, legend_width, 3), dtype=np.uint8)
@@ -276,9 +299,6 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
         # After drawing the color blocks, convert to a PIL image to draw the text (vector text)
         legend_pil = Image.fromarray(legend)
         draw = ImageDraw.Draw(legend_pil)
-
-        # Load a custom or system font
-        font = ImageFont.truetype("./conf/arial.ttf", 20)
 
         # Plot text
         text_width=int(legend_width*6/20)
@@ -317,16 +337,16 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
 if __name__=='__main__':
     model1=YOLO('./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
     model2=YOLO('./models/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt')
-    image=cv2.imread('./tests/files/caries-0.6741573-260-760_1_2022052768.png')
+    image=cv2.imread('./caries -1.185185-258-763_1_17659783_章雲生_檢查20200605__匯出20220317_2.png')
     with open('./conf/pa_segmentation_mask_color_setting.yaml', 'r') as file:
         config=yaml.safe_load(file)
     ###test code
     #test1, message=yolo_transform(image, model, return_type='yolov8', plot_config=config, tolerance=0.5)
-    final_image, error_message=pa_segmentation(image, model1, model2, return_type='image_array' , plot_config=config)
+    #final_image, error_message=pa_segmentation(image, model1, model2, return_type='image_array' , plot_config=config)
 
-    #test_image, _=yolo_transform(image, model1, return_type='image_array', plot_config=config, plot_key_list=None, show_plot_legend=True,  tolerance=0.5)
+    final_image, _=yolo_transform(image, model1, return_type='image_array', plot_config=config, plot_key_list=None, show_plot_legend=True,  tolerance=0.5)
 
-    #show_plot(final_image)
+    show_plot(final_image)
     # test2=yolo_transform(image, return_type='cvat')
     # test3=yolo_transform(image, return_type='dict')
 
