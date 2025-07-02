@@ -204,6 +204,8 @@ apigee.google.com
 
 choose the reverse proxy and setting the name, path, target (target should be gcloud run url entry)
 
+If apikey is required, please go to the develop page and create a "verify API key" policy and add it under Proxy endpoint: PreFlow in default.
+
 3. Publish API Products: edit the product
 
 deploy the proxy
@@ -221,6 +223,18 @@ deploy the proxy
 for eaxmple, https://34.107.237.238.nip.io/smartsurgery-dentistry?apikey=QpDPpMYkSAFJd0RNFI2eU15Ri5aA7ePWqTk4jhkr4c2mTzn9
 
 please check whether it is same as the gcloud run url
+
+## Apigee portals set up
+
+1. Add the CORS policy in Deveope pages and put in under Target endpoint:PreFlow in default.
+
+2. Goes to the portal page and crate protal pages.
+
+3. using my code src/allocation/service_layer/generate_apigee_openapi2.py to generate the openapi2 yaml
+
+4. Upload in API Catalog
+
+5. View live portal and test with API key
 
 # create the SSL cerification with google
 
