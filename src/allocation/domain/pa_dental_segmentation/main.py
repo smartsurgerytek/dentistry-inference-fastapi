@@ -8,6 +8,7 @@ import os
 import sys
 import yaml
 from PIL import Image, ImageDraw, ImageFont
+# from scipy.optimize import linprog
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..')))
 from src.allocation.domain.pa_dental_segmentation.utils import *
 
@@ -34,9 +35,71 @@ def get_yolov8_label(mask_binary,tolerance=0.5):
         merged=[item for pair in zip(x_norm, y_norm) for item in pair]
         points.extend(merged)
     return points
+# def visualize_new_vs_ref(image_mean, alpha, step=30, B_value=255):
+#     image_mean = np.array(image_mean, dtype=np.float32)
+#     denom = 1 - alpha
+
+#     # 建立所有可能的 ref_color 取樣
+#     ref_rg = np.mgrid[0:256:step, 0:256:step].reshape(2, -1).T
+#     ref_b = np.full((ref_rg.shape[0], 1), B_value)
+#     ref_colors = np.hstack([ref_rg, ref_b]).astype(np.float32)
+
+#     # 計算對應的 new_color
+#     new_colors = alpha * image_mean + denom * ref_colors
+
+#     # 篩選只保留合法範圍的 new_color
+#     mask_valid = np.all((new_colors >= 0) & (new_colors <= 255), axis=1)
+#     new_valid = new_colors[mask_valid]
+#     ref_valid = ref_colors[mask_valid]
+
+#     fig, ax = plt.subplots(figsize=(6, 6))
+#     sc = ax.scatter(new_valid[:, 0], new_valid[:, 1],
+#                     c=ref_valid[:, [2, 1, 0]] / 255.0,  # BGR → RGB
+#                     s=40, marker='s', edgecolor='k')
+
+#     ax.set_xlim(0, 255)
+#     ax.set_ylim(0, 255)
+#     ax.set_xlabel('new_color R')
+#     ax.set_ylabel('new_color G')
+#     ax.set_title(f'Legit new_color for B={B_value} (hover for info)')
+
+#     # 使用 mplcursors 加入 hover 標籤顯示 new_color 與 ref_color
+#     cursor = mplcursors.cursor(sc, hover=True)
+#     @cursor.connect("add")
+#     def on_add(sel):
+#         idx = sel.index
+#         new_c = new_valid[idx].astype(int)
+#         ref_c = ref_valid[idx].astype(int)
+#         sel.annotation.set_text(
+#             f"new_color = ({new_c[0]}, {new_c[1]}, {int(new_c[2])})\n"
+#             f"ref_color (BGR) = ({ref_c[0]}, {ref_c[1]}, {ref_c[2]})"
+#         )
+#         sel.annotation.get_bbox_patch().set(fc="white", alpha=0.8)
+
+#     plt.tight_layout()
+#     plt.show()
 
 
+def solve_setting_color(color, image_mean, alpha, eps=1e-6, mode="clip"):
+    """
+    根據希望呈現的 color，反推應該使用的 setting_color。
+    如果無法實現（超出 [0,255]），根據 mode 處理：
+      - "clip": 強行 clip 到 0~255（可能導致色偏）
+      - "scale": 按比例縮放 RGB 向量（保色相方向）
+    """
+    color = np.array(color, dtype=np.float32)
+    image_mean = np.array(image_mean, dtype=np.float32)
 
+    # denom = 1 - alpha + eps
+    # setting_color = (color - alpha * image_mean) / denom
+    clip_bool=False
+    if mode == "clip":
+        setting_color = ((np.array(color) - alpha * image_mean)) / (1-alpha+eps)
+        new_color = np.clip(setting_color, 0, 255)
+        if any(element for element in setting_color if (element > 255 or element < 0)):
+            clip_bool=True
+        
+    return new_color.astype(np.uint8), clip_bool
 def yolo_transform(image, model, return_type='dict', plot_config=None, plot_key_list=None, show_plot_legend=True,  tolerance=0.5):
     # if return_type == 'image_array' and plot_config is None:
     #     raise ValueError("Provide a config for segmentation colors when return_type is 'image")
@@ -268,29 +331,34 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
         
         mask_colored=np.zeros_like(image, dtype=np.uint8)
         present_labels=[]
-        plot_alpha=0.3
-        real_color_dict={}
+        plot_alpha=0.5
         for label, mask in array_dict_1.items():
             if label in model_1_select_key_list:
+                present_labels.append(label)
                 filtered_mask=remove_small_regions(mask, min_area=int(0.0000813802*image.shape[0]*image.shape[1])) 
                 smoothed = smooth_mask(filtered_mask, smoothing_factor= 10000, points_interp= 200)
-                mask_colored[smoothed == 255] = plot_config['color_dict'][label]
-                #compute the average color
-                blended =image[smoothed == 255]*plot_alpha+mask_colored[smoothed == 255]*(1-plot_alpha)
-                blended_uint8 = np.clip(blended, 0, 255).astype(np.uint8)
-                mean_RGB=blended_uint8.mean(axis=0).astype(np.uint8).tolist()
-                real_color_dict[label]=mean_RGB
-                present_labels.append(label)
+                color=plot_config['color_dict'][label]
+                image_mean=image[smoothed == 255].mean(axis=0)
+                # print(label)
+                # visualize_new_vs_ref(image_mean, plot_alpha, step=10)
+                clipped_color, clip_bool = solve_setting_color(color, image_mean, plot_alpha, eps=1e-6, mode="clip")
+                if clip_bool:
+                    ref_color=((1-plot_alpha)*clipped_color+plot_alpha*image_mean).astype(np.uint8)
+                    #print(f'label {label}, color {color} is not reachable with alpha {plot_alpha}, clipping with {clipped_color}, ref input color is {ref_color} ')
+                mask_colored[smoothed == 255] = clipped_color
+
         for label, mask in array_dict_2.items():
             if label in model_2_select_key_list:
-                smoothed = smooth_mask(mask, smoothing_factor= 5000, points_interp= 200)
-                mask_colored[smoothed == 255] = plot_config['color_dict'][label]
                 present_labels.append(label)
-                #compute the average color
-                blended =image[smoothed == 255]*plot_alpha+mask_colored[smoothed == 255]*(1-plot_alpha)
-                blended_uint8 = np.clip(blended, 0, 255).astype(np.uint8)
-                mean_RGB=blended_uint8.mean(axis=0).astype(np.uint8).tolist()
-                real_color_dict[label]=mean_RGB
+                smoothed = smooth_mask(mask, smoothing_factor= 5000, points_interp= 200)
+                color=plot_config['color_dict'][label]
+                image_mean=image[smoothed == 255].mean(axis=0)
+                
+                clipped_color, clip_bool = solve_setting_color(color, image_mean, plot_alpha, eps=1e-6, mode="clip")
+                if clip_bool:
+                    ref_color=((1-plot_alpha)*clipped_color+plot_alpha*image_mean).astype(np.uint8)
+                    #print(f'label {label}, color {color} is not reachable with alpha {plot_alpha}, clipping with {clipped_color}, ref input color is {ref_color} ')
+                mask_colored[smoothed == 255] = clipped_color
 
         # Load a custom or system font
         font = ImageFont.truetype("./conf/arial.ttf", 20)
@@ -316,8 +384,9 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
         j = 0
         for label, color in plot_config['color_dict'].items():
             if label in present_labels:
-                real_color=real_color_dict[label]
-                cv2.rectangle(legend, (block_x1, j * block_height), (block_x2, (j + 1) * block_height), real_color, -1)
+                color=plot_config['color_dict'][label]
+                #enhanced_color=adjust_hsv_weights_bgr()
+                cv2.rectangle(legend, (block_x1, j * block_height), (block_x2, (j + 1) * block_height), color, -1)
                 j += 1
 
         # After drawing the color blocks, convert to a PIL image to draw the text (vector text)
@@ -341,7 +410,8 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
         legend_resized = cv2.resize(legend, (int(legend_width * plot_image.shape[0] / legend.shape[0]), plot_image.shape[0]))
         concat_image = np.concatenate((plot_image, legend_resized), axis=1)
         concat_image = cv2.cvtColor(concat_image, cv2.COLOR_BGR2RGB)
-
+        
+        #show_two(concat_image, enhanced_image)
         return concat_image, error_message
     
     elif 'cvat' in return_type:
@@ -361,16 +431,17 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
 if __name__=='__main__':
     model1=YOLO('./models/dentistry_pa-segmentation_yolov11x-seg-all_24.42.pt')
     model2=YOLO('./models/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt')
-    image=cv2.imread('.//tests/files/caries-0.6741573-260-760_1_2022052768.png')
+    image=cv2.imread('./caries-1.166464-264-751_0_20220308129.png')
     with open('./conf/pa_segmentation_mask_color_setting.yaml', 'r') as file:
         config=yaml.safe_load(file)
     ###test code
     #test1, message=yolo_transform(image, model, return_type='yolov8', plot_config=config, tolerance=0.5)
-    #final_image, error_message=pa_segmentation(image, model1, model2, return_type='image_array' , plot_config=config)
-    
+    final_image, error_message=pa_segmentation(image, model1, model2, return_type='image_array' , plot_config=config)
+    show_plot(final_image)
+    #show_two(image, final_image)
     #final_image, _=yolo_transform(image, model1, return_type='image_array', plot_config=config, plot_key_list=None, show_plot_legend=True,  tolerance=0.5)
     #show_two(image,final_image)
-    
+
     #show_plot(final_image)
     # test2=yolo_transform(image, return_type='cvat')
     # test3=yolo_transform(image, return_type='dict')
