@@ -35,49 +35,35 @@ def get_yolov8_label(mask_binary,tolerance=0.5):
         merged=[item for pair in zip(x_norm, y_norm) for item in pair]
         points.extend(merged)
     return points
-# def visualize_new_vs_ref(image_mean, alpha, step=30, B_value=255):
-#     image_mean = np.array(image_mean, dtype=np.float32)
-#     denom = 1 - alpha
 
-#     # 建立所有可能的 ref_color 取樣
-#     ref_rg = np.mgrid[0:256:step, 0:256:step].reshape(2, -1).T
-#     ref_b = np.full((ref_rg.shape[0], 1), B_value)
-#     ref_colors = np.hstack([ref_rg, ref_b]).astype(np.float32)
+def adjust_hsv_image_bgr(image_bgr, h_shift=0, s_scale=1.0, v_scale=1.0):
+    """
+    調整一整張 BGR 圖片的 HSV 分量。
 
-#     # 計算對應的 new_color
-#     new_colors = alpha * image_mean + denom * ref_colors
+    參數:
+        image_bgr: np.ndarray, 原始 BGR 圖片 (H, W, 3)
+        h_shift: 色相偏移量 (0~179)，循環調整
+        s_scale: 飽和度縮放比例 (>1.0 更飽和, <1.0 更灰)
+        v_scale: 明度縮放比例 (>1.0 更亮, <1.0 更暗)
 
-#     # 篩選只保留合法範圍的 new_color
-#     mask_valid = np.all((new_colors >= 0) & (new_colors <= 255), axis=1)
-#     new_valid = new_colors[mask_valid]
-#     ref_valid = ref_colors[mask_valid]
+    回傳:
+        調整後的 BGR 圖片 (np.ndarray, dtype=uint8)
+    """
+    hsv = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2HSV).astype(np.float32)
 
-#     fig, ax = plt.subplots(figsize=(6, 6))
-#     sc = ax.scatter(new_valid[:, 0], new_valid[:, 1],
-#                     c=ref_valid[:, [2, 1, 0]] / 255.0,  # BGR → RGB
-#                     s=40, marker='s', edgecolor='k')
+    # 拆出 H, S, V
+    h, s, v = cv2.split(hsv)
 
-#     ax.set_xlim(0, 255)
-#     ax.set_ylim(0, 255)
-#     ax.set_xlabel('new_color R')
-#     ax.set_ylabel('new_color G')
-#     ax.set_title(f'Legit new_color for B={B_value} (hover for info)')
+    # 調整 HSV
+    h = (h + h_shift) % 180
+    s = np.clip(s * s_scale, 0, 255)
+    v = np.clip(v * v_scale, 0, 255)
 
-#     # 使用 mplcursors 加入 hover 標籤顯示 new_color 與 ref_color
-#     cursor = mplcursors.cursor(sc, hover=True)
-#     @cursor.connect("add")
-#     def on_add(sel):
-#         idx = sel.index
-#         new_c = new_valid[idx].astype(int)
-#         ref_c = ref_valid[idx].astype(int)
-#         sel.annotation.set_text(
-#             f"new_color = ({new_c[0]}, {new_c[1]}, {int(new_c[2])})\n"
-#             f"ref_color (BGR) = ({ref_c[0]}, {ref_c[1]}, {ref_c[2]})"
-#         )
-#         sel.annotation.get_bbox_patch().set(fc="white", alpha=0.8)
+    # 合併並轉回 BGR
+    hsv_adjusted = cv2.merge([h, s, v]).astype(np.uint8)
+    bgr_adjusted = cv2.cvtColor(hsv_adjusted, cv2.COLOR_HSV2BGR)
 
-#     plt.tight_layout()
-#     plt.show()
+    return bgr_adjusted
 
 
 def solve_setting_color(color, image_mean, alpha, eps=1e-6, mode="clip"):
@@ -409,6 +395,7 @@ def pa_segmentation(image, model, model2, return_type, plot_config=None):
         # Resize the legend and concatenate it with the plot image
         legend_resized = cv2.resize(legend, (int(legend_width * plot_image.shape[0] / legend.shape[0]), plot_image.shape[0]))
         concat_image = np.concatenate((plot_image, legend_resized), axis=1)
+        concat_image=adjust_hsv_image_bgr(concat_image, v_scale=1.3)
         concat_image = cv2.cvtColor(concat_image, cv2.COLOR_BGR2RGB)
         
         #show_two(concat_image, enhanced_image)
