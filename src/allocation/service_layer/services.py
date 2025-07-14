@@ -8,6 +8,8 @@ from src.allocation.domain.pa_pano_classification.main import *
 from src.allocation.domain.pa_pano_classification.schemas import *
 from src.allocation.domain.pano_fdi_segmentation.main import *
 from src.allocation.domain.pano_fdi_segmentation.schemas import *
+from src.allocation.domain.leyan_clinic_scenario_classfication.main import *
+from src.allocation.domain.leyan_clinic_scenario_classfication.schemas import *
 import numpy as np
 import cv2
 from ultralytics import YOLO
@@ -219,6 +221,19 @@ class InferenceService:
             message="Classification completed successfully"
         )
     
+    @staticmethod
+    def leyan_clinic_scenario_classification_dict(image: bytes, model) -> LeyanClinicScenarioClassificationResponse:
+        image_pil = Image.open(io.BytesIO(image)).convert('RGB')
+        # 呼叫您在 domain/main.py 中定義的預測函式
+        predicted_class, scores = predict_image_Leyan_clinic_scenario_classfication(model, image_pil)
+        # [修正] 使用您新的 LeyanClinicScenarioClassificationResponse 來打包結果
+        return LeyanClinicScenarioClassificationResponse(
+            request_id=0,
+            predicted_class=predicted_class,
+            scores=scores, # 這裡傳入的是包含所有分數的字典
+            message="Classification completed successfully"
+        )
+
     @staticmethod
     def pano_fdi_segmentation_image_base64(image: bytes, model) -> ImageResponse:
         image_np = cv2.imdecode(np.frombuffer(image, np.uint8),cv2.IMREAD_COLOR)

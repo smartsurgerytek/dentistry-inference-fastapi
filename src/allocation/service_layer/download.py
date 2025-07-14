@@ -27,7 +27,8 @@ def donw_load_function(base_path):
         "PA_segmentation/dentistry_pa-segmentation_yolov11n-seg-all_25.20.pt",
         "PANO_caries_detection/dentistry_pano-CariesDetection_resNetFpn_25.12.pth",
         "PA_PANO_classification/dentistry_pa-pano-classification_cnn_25.22.pth",
-        "PANO_fdi_segmentation/dentistry_pano-fdi-segmentation_yolo11x-seg_25.12.pt"
+        "PANO_fdi_segmentation/dentistry_pano-fdi-segmentation_yolo11x-seg_25.12.pt",
+        "leyan_clinic_scenario_classification/dentistry_leyan_clinic-classification_cnn_25.28.pth"
     ]
 
     save_map = {

@@ -18,6 +18,8 @@ from src.allocation.domain.pa_pano_classification.main import create_pa_pano_cla
 from src.allocation.domain.pa_pano_classification.schemas import PaPanoClassificationResponse
 from src.allocation.domain.pano_fdi_segmentation.schemas import PanoSegmentationYoloV8Response, PanoSegmentationCvatResponse, PanoSegmentationRequest
 from src.allocation.domain.aggregation.schemas import CombinedImageResponse
+from src.allocation.domain.leyan_clinic_scenario_classfication.schemas import LeyanClinicScenarioClassificationResponse
+from src.allocation.domain.leyan_clinic_scenario_classfication.main import create_Leyan_clinic_scenario_classfication
 from contextlib import asynccontextmanager
 from ultralytics import YOLO
 from src.allocation.adapters.utils import base64_to_bytes
@@ -47,6 +49,9 @@ async def lifespan(app: FastAPI):
 
     global pa_pano_classification_model
     pa_pano_classification_model=create_pa_pano_classification_model('./models/dentistry_pa-pano-classification_cnn_25.22.pth')
+
+    global leyan_clinic_scenario_classfication_model
+    leyan_clinic_scenario_classfication_model = create_Leyan_clinic_scenario_classfication('./models/dentistry_leyan_clinic-classification_cnn_25.28.pth')
 
     global pano_fdi_segmentation_model
     pano_fdi_segmentation_model= YOLO('./models/dentistry_pano-fdi-segmentation_yolo11x-seg_25.12.pt')
@@ -167,6 +172,28 @@ async def generate_pa_pano_classification(
 ) -> PaPanoClassificationResponse:
     image=base64_to_bytes(request.image)
     return InferenceService.pa_pano_classification_dict(image, pa_pano_classification_model)
+
+
+@v1_router.post(
+    "/leyan_clinic_scenario_classification_dict", 
+    response_model=LeyanClinicScenarioClassificationResponse  # 規則一：給 FastAPI 的規則
+)
+async def generate_leyan_clinic_scenario_classification(
+    request: PaSegmentationRequest
+) -> LeyanClinicScenarioClassificationResponse: # 規則二：給開發者看的「說明書」
+    """
+    接收一張圖片，並回傳 Leyan 臨床情境的分類結果。
+    """
+    image_bytes = base64_to_bytes(request.image)
+    
+    # 這裡回傳的是 LeyanClinicScenarioClassificationResponse 物件
+    result = InferenceService.leyan_clinic_scenario_classification_dict(
+        image=image_bytes, 
+        model=leyan_clinic_scenario_classfication_model
+    )
+    
+    return result # 規則三：實際回傳的內容
+
 
 @v1_router.post("/pano_fdi_segmentation_yolov8", response_model=PanoSegmentationYoloV8Response)
 async def generate_fdi_panoramic_xray_segmentations_yolov8(
