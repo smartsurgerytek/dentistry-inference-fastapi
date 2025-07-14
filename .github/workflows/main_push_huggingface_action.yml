@@ -104,10 +104,15 @@ jobs:
 
           rm -f .gitignore
           
-          git lfs track "*.pt" "*.pth"
-          git lfs track "*.jpg"
-          git lfs track "*.png"
-          git lfs track "*.npy"          
+          # git lfs track "*.pt" "*.pth"
+          # git lfs track "*.jpg"
+          # git lfs track "*.png"
+          # git lfs track "*.npy" #cause sometimes the old cache in lfs is not tracked
+          find models -type f \( -name "*.pt" -o -name "*.pth" -o -name "*.npy" -o -name "*.jpg" -o -name "*.png" \) > tracked_files.txt
+          while read file; do
+            git lfs track "$file"  
+          done < tracked_files.txt
+                              
           git add .gitattributes
           git add models/ conf/ README.md
           git add .
