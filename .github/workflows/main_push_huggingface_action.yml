@@ -64,11 +64,11 @@ jobs:
         env:
           HUGGINGFACE_TOKEN: ${{ secrets.HF_TOKEN }}  # Make HUGGINGFACE_TOKEN available to the script if needed
         run: |
-          ~/.venv/bin/python ./src/allocation/service_layer/download.py
+          ~/.venv/bin/python ./src/allocation/service_layer/download_huggingface_deploy.py
 
       - name: Debug Check if models folder exists
         run: |
-          ls -R ./models || echo "models folder not found after download.py"
+          ls -R ./models || echo "models folder not found after download_huggingface_deploy.py"
 
       - name: Copy download files
         env:
