@@ -44,6 +44,38 @@ steps:
     entrypoint: gcloud
 
   - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'Clean the Revisions'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+          echo "🔍 Listing recent revisions (including unhealthy ones)..."
+          RAW_REVISIONS=$$(gcloud run revisions list \
+            --service=$_SERVICE_NAME \
+            --region=$_DEPLOY_REGION \
+            --platform=managed \
+            --format="value(metadata.name,status.conditions.type,status.conditions.status)" \
+            --sort-by="~metadata.creationTimestamp" \
+            --limit=10)
+
+          echo "$$RAW_REVISIONS"
+
+          echo "🧹 Deleting unhealthy revisions..."
+          echo "$$RAW_REVISIONS" | while read revision_line; do
+            REV_NAME=$$(echo $$revision_line | awk '{print $$1}')
+            CONDITION_TYPE=$$(echo $$revision_line | awk '{print $$2}')
+            CONDITION_STATUS=$$(echo $$revision_line | awk '{print $$3}')
+
+            if [ "$$CONDITION_TYPE" = "Ready" ] && [ "$$CONDITION_STATUS" != "True" ]; then
+              echo "🚫 Deleting bad revision: $$REV_NAME"
+              gcloud run revisions delete $$REV_NAME \
+                --region=$_DEPLOY_REGION \
+                --platform=managed \
+                --quiet
+            fi
+          done
+
+  - name: 'gcr.io/cloud-builders/gcloud'
     id: 'Update Traffic'
     entrypoint: bash
     args:
